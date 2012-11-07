@@ -1,0 +1,30 @@
+apply plugin: 'java'
+apply plugin: 'maven'
+apply plugin: 'application'
+
+group = 'qdb.io.server'
+version = '0.9.0'
+mainClassName = 'qdb.io.server.Main'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile 'org.simpleframework:simple:4.1.21'
+    compile 'com.google.inject:guice:3.0'
+    compile 'ch.qos.logback:logback-core:1.0.7'
+    compile 'ch.qos.logback:logback-classic:1.0.7'
+    compile 'org.slf4j:slf4j-api:1.6.6'
+    testCompile 'junit:junit:4.10'
+}
+
+task sourceJar(type: Jar) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+artifacts {
+    archives sourceJar
+}
+
