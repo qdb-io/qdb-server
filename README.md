@@ -1,7 +1,7 @@
-qdb-buffer
+qdb-server
 ==========
 
-Disk based message queue supporting sequential retrieval of old messages by id and timestamp.
+HTTP interface to qdb message queues.
 
 License
 -------
