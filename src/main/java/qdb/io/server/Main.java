@@ -1,5 +1,10 @@
 package qdb.io.server;
 
+import com.google.inject.Guice;
+import com.google.inject.Injector;
+import com.sun.net.httpserver.HttpServer;
+import com.typesafe.config.Config;
+import com.typesafe.config.ConfigFactory;
 import org.simpleframework.http.core.Container;
 import org.simpleframework.transport.connect.Connection;
 import org.simpleframework.transport.connect.SocketConnection;
@@ -19,9 +24,14 @@ public class Main {
 
     public static void main(String[] args) {
         try {
-            Container container = new HttpServer();
+            log.debug(System.getProperty("config.file"));
+
+            Injector injector = Guice.createInjector(new StdModule());
+            Config cfg = injector.getInstance(Config.class);
+            Container container = injector.getInstance(Container.class);
             Connection connection = new SocketConnection(container);
-            SocketAddress address = new InetSocketAddress(8080);
+            SocketAddress address = new InetSocketAddress(cfg.getString("host"), cfg.getInt("port"));
+            log.info("Listening on " + address);
             connection.connect(address);
         } catch (IOException e) {
             log.error(e.getMessage(), e);
