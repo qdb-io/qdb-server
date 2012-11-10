@@ -3,6 +3,9 @@ package qdb.io.server;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.typesafe.config.Config;
+import org.apache.zookeeper.WatchedEvent;
+import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.ZooKeeper;
 import org.simpleframework.http.core.Container;
 import org.simpleframework.transport.connect.Connection;
 import org.simpleframework.transport.connect.SocketConnection;
@@ -22,13 +25,21 @@ public class Main {
 
     public static void main(String[] args) {
         try {
-            Injector injector = Guice.createInjector(new StandaloneModule());
-            Config cfg = injector.getInstance(Config.class);
-            Container container = injector.getInstance(Container.class);
-            Connection connection = new SocketConnection(container);
-            SocketAddress address = new InetSocketAddress(cfg.getString("host"), cfg.getInt("port"));
-            log.info("Listening on " + address);
-            connection.connect(address);
+            Watcher watcher = new Watcher() {
+                @Override
+                public void process(WatchedEvent event) {
+                    log.debug(event.toString());
+                }
+            };
+            ZooKeeper zk = new ZooKeeper("127.0.0.1", 2181, watcher);
+
+//            Injector injector = Guice.createInjector(new StandaloneModule());
+//            Config cfg = injector.getInstance(Config.class);
+//            Container container = injector.getInstance(Container.class);
+//            Connection connection = new SocketConnection(container);
+//            SocketAddress address = new InetSocketAddress(cfg.getString("host"), cfg.getInt("port"));
+//            log.info("Listening on " + address);
+//            connection.connect(address);
         } catch (IOException e) {
             log.error(e.getMessage(), e);
         }

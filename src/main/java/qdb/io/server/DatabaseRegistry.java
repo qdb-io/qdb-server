@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -13,7 +14,7 @@ import java.util.Map;
  * Manages our databases.
  */
 @Singleton
-public class DatabaseRegistry {
+public class DatabaseRegistry implements Closeable {
 
     private final MetaDataStore mds;
     private final Map<String, Database> databases = new HashMap<String, Database>();
@@ -37,7 +38,22 @@ public class DatabaseRegistry {
         log.info("Opened " + databases.size() + " database(s)");
     }
 
-    public int getDatabaseCount() {
+    @Override
+    public synchronized void close() throws IOException {
+        for (Map.Entry<String, Database> e : databases.entrySet()) {
+            try {
+                e.getValue().close();
+            } catch (IOException e1) {
+                log.error("Error closing database [" + e.getKey() + "]: " + e, e);
+            }
+        }
+    }
+
+    public synchronized int getDatabaseCount() {
         return databases.size();
+    }
+
+    public synchronized Database getDatabase(String name) {
+        return databases.get(name);
     }
 }

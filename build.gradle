@@ -22,6 +22,14 @@ dependencies {
     compile 'org.slf4j:slf4j-api:1.6.6'
     compile 'com.typesafe:config:1.0.0'
     compile 'org.codehaus.jackson:jackson-mapper-asl:1.9.7'
+    compile('org.apache.zookeeper:zookeeper:3.4.4') {
+        exclude group: 'org.slf4j'
+        exclude group: 'com.sun.jmx', module: 'jmxri'
+        exclude group: 'com.sun.jdmk', module: 'jmxtools'
+        exclude group: 'javax.jms', module: 'jms'
+        exclude group: 'log4j'
+        exclude group: 'jline'
+    }
     testCompile 'junit:junit:4.10'
 }
 

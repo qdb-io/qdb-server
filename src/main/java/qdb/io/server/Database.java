@@ -3,17 +3,19 @@ package qdb.io.server;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.Closeable;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
  * Collection of MessageStore's.
  */
-public class Database {
+public class Database implements Closeable {
 
     private MetaDataStore mds;
     private String path;
-    private Map<String, MessageQueue> queues;
+    private Map<String, MessageQueue> queues = new HashMap<String, MessageQueue>();
 
     private static final Logger log = LoggerFactory.getLogger(Database.class);
 
@@ -31,13 +33,28 @@ public class Database {
                 queues.put(name, queue);
                 if (log.isDebugEnabled()) log.debug("Opened " + queuePath);
             } catch (IOException e) {
-                log.error("Error opening message queue [" + queuePath + "]: " + e, e);
+                log.error("Error opening queue [" + queuePath + "]: " + e, e);
             }
         }
     }
 
-    public int getQueueCount() {
+    @Override
+    public synchronized void close() throws IOException {
+        for (Map.Entry<String, MessageQueue> e : queues.entrySet()) {
+            try {
+                e.getValue().close();
+            } catch (IOException e1) {
+                log.error("Error closing queue [" + path + "/" + e.getKey() + "]: " + e, e);
+            }
+        }
+    }
+
+    public synchronized int getQueueCount() {
         return queues.size();
+    }
+
+    public synchronized MessageQueue getQueue(String name) {
+        return queues.get(name);
     }
 
 }
