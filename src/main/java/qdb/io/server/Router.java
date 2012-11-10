@@ -24,7 +24,6 @@ public class Router implements Container {
     private static final Logger log = LoggerFactory.getLogger(Router.class);
 
     private Config cfg;
-    private PersistentMessageBuffer buffer;
 
     @Inject
     private DatabaseRegistry databaseRegistry;
@@ -32,13 +31,6 @@ public class Router implements Container {
     @Inject
     public Router(Config cfg) throws IOException {
         this.cfg = cfg;
-        buffer = new PersistentMessageBuffer(new File("data"));
-        buffer.setMaxLength(1000 * 1000000L);
-    }
-
-    @Override
-    public String toString() {
-        return super.toString() + " " + databaseRegistry;
     }
 
     @Override
@@ -46,17 +38,17 @@ public class Router implements Container {
         try {
             log.debug("path = " + req.getPath());
             if ("POST".equals(req.getMethod())) {
-                buffer.append(System.currentTimeMillis(), req.getPath().getPath(), req.getByteChannel(),
-                        req.getContentLength());
-                buffer.sync();
+//                buffer.append(System.currentTimeMillis(), req.getPath().getPath(), req.getByteChannel(),
+//                        req.getContentLength());
+//                buffer.sync();
             } else {
-                resp.set("Content-Type", "text/plain");
-                PrintStream p = resp.getPrintStream();
-                MessageCursor c = buffer.cursor(0);
-                while (c.next()) {
-                    p.println("id " + c.getId() + " timestamp " + c.getTimestamp() + " key " + c.getRoutingKey());
-                }
-                c.close();
+//                resp.set("Content-Type", "text/plain");
+//                PrintStream p = resp.getPrintStream();
+//                MessageCursor c = buffer.cursor(0);
+//                while (c.next()) {
+//                    p.println("id " + c.getId() + " timestamp " + c.getTimestamp() + " key " + c.getRoutingKey());
+//                }
+//                c.close();
             }
             resp.setCode(200);
             resp.close();

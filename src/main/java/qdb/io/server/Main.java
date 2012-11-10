@@ -22,8 +22,6 @@ public class Main {
 
     public static void main(String[] args) {
         try {
-            log.debug(System.getProperty("config.file"));
-
             Injector injector = Guice.createInjector(new StandaloneModule());
             Config cfg = injector.getInstance(Config.class);
             Container container = injector.getInstance(Container.class);

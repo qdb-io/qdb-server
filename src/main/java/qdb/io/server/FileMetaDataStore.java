@@ -6,6 +6,7 @@ import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.SerializationConfig;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -16,6 +17,7 @@ import java.util.Set;
 /**
  * Stores meta data on the filesystem in json files.
  */
+@Singleton
 public class FileMetaDataStore implements MetaDataStore {
 
     private final File dir;
