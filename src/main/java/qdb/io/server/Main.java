@@ -2,9 +2,7 @@ package qdb.io.server;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import com.sun.net.httpserver.HttpServer;
 import com.typesafe.config.Config;
-import com.typesafe.config.ConfigFactory;
 import org.simpleframework.http.core.Container;
 import org.simpleframework.transport.connect.Connection;
 import org.simpleframework.transport.connect.SocketConnection;
@@ -26,7 +24,7 @@ public class Main {
         try {
             log.debug(System.getProperty("config.file"));
 
-            Injector injector = Guice.createInjector(new StdModule());
+            Injector injector = Guice.createInjector(new StandaloneModule());
             Config cfg = injector.getInstance(Config.class);
             Container container = injector.getInstance(Container.class);
             Connection connection = new SocketConnection(container);

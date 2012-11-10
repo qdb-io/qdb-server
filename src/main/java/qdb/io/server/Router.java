@@ -1,5 +1,6 @@
 package qdb.io.server;
 
+import com.typesafe.config.Config;
 import org.simpleframework.http.Request;
 import org.simpleframework.http.Response;
 import org.simpleframework.http.core.Container;
@@ -8,6 +9,8 @@ import org.slf4j.LoggerFactory;
 import qdb.io.buffer.MessageCursor;
 import qdb.io.buffer.PersistentMessageBuffer;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -15,15 +18,27 @@ import java.io.PrintStream;
 /**
  * Routes requests to handlers for processing.
  */
+@Singleton
 public class Router implements Container {
 
     private static final Logger log = LoggerFactory.getLogger(Router.class);
 
+    private Config cfg;
     private PersistentMessageBuffer buffer;
 
-    public Router() throws IOException {
+    @Inject
+    private DatabaseRegistry databaseRegistry;
+
+    @Inject
+    public Router(Config cfg) throws IOException {
+        this.cfg = cfg;
         buffer = new PersistentMessageBuffer(new File("data"));
         buffer.setMaxLength(1000 * 1000000L);
+    }
+
+    @Override
+    public String toString() {
+        return super.toString() + " " + databaseRegistry;
     }
 
     @Override
