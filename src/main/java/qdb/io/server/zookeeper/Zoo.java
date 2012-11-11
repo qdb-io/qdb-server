@@ -1,6 +1,5 @@
-package qdb.io.server;
+package qdb.io.server.zookeeper;
 
-import com.typesafe.config.Config;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooDefs;
@@ -8,6 +7,7 @@ import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.ACL;
 
 import javax.inject.Inject;
+import javax.inject.Named;
 import javax.inject.Singleton;
 import java.io.Closeable;
 import java.io.IOException;
@@ -24,8 +24,8 @@ public class Zoo implements Closeable {
     private ZooKeeper zooKeeper;
 
     @Inject
-    public Zoo(Config cfg) {
-        rootPath = "/qdb/" + cfg.getString("cluster.name");
+    public Zoo(@Named("clusterName") String clusterName) {
+        rootPath = "/qdb/" + clusterName;
     }
 
     public String create(String path, byte data[], List<ACL> acl, CreateMode createMode)
@@ -54,6 +54,7 @@ public class Zoo implements Closeable {
             zk.create(rootPath, new byte[0], ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
         } catch (KeeperException.NodeExistsException ignore) {
         }
+
     }
 
     @Override

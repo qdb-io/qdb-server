@@ -1,10 +1,10 @@
 package qdb.io.server;
 
-import com.typesafe.config.Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
+import javax.inject.Named;
 import javax.inject.Singleton;
 import java.io.File;
 import java.io.IOException;
@@ -20,8 +20,8 @@ public class Storage {
     private File dataDir;
 
     @Inject
-    public Storage(Config cfg) throws IOException {
-        dataDir = new File(cfg.getString("data.dir"));
+    public Storage(@Named("data.dir") String dir) throws IOException {
+        dataDir = new File(dir);
         if (!dataDir.exists()) {
             if (!dataDir.mkdirs()) {
                 throw new IOException("Unable to create data.dir [" + dataDir + "]");

@@ -1,9 +1,10 @@
-package qdb.io.server;
+package qdb.io.server.zookeeper;
 
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import qdb.io.server.ServerInfo;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;

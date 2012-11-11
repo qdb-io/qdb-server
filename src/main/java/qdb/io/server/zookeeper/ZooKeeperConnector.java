@@ -1,11 +1,11 @@
-package qdb.io.server;
+package qdb.io.server.zookeeper;
 
-import com.typesafe.config.Config;
 import org.apache.zookeeper.ZooKeeper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
+import javax.inject.Named;
 import javax.inject.Singleton;
 import java.io.IOException;
 
@@ -17,21 +17,14 @@ public class ZooKeeperConnector {
 
     private static final Logger log = LoggerFactory.getLogger(ZooKeeperConnector.class);
 
-    private final ZooWatcher watcher;
-    private final Zoo zoo;
-
-    private final String connectString;
-    private final int sessionTimeout;
-
     @Inject
-    public ZooKeeperConnector(Config cfg, ZooWatcher watcher, Zoo zoo) throws IOException {
-        this.watcher = watcher;
-        this.zoo = zoo;
-
-        cfg = cfg.getConfig("zookeeper");
-        this.connectString = cfg.getString("connectString");
-        this.sessionTimeout = cfg.getInt("sessionTimeout");
-    }
+    private ZooWatcher watcher;
+    @Inject
+    private Zoo zoo;
+    @Inject @Named("zookeeper.connectString")
+    private String connectString;
+    @Inject @Named("zookeeper.sessionTimeout")
+    private int sessionTimeout;
 
     public synchronized void ensureConnected() throws IOException {
         if (zoo.getZooKeeper() == null) {

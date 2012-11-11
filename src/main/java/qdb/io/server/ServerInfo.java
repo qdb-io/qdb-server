@@ -1,15 +1,15 @@
 package qdb.io.server;
 
-import com.typesafe.config.Config;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooDefs;
-import org.apache.zookeeper.ZooKeeper;
 import org.codehaus.jackson.annotate.JsonIgnore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import qdb.io.server.zookeeper.Zoo;
 
 import javax.inject.Inject;
+import javax.inject.Named;
 import java.io.*;
 import java.net.*;
 import java.util.Enumeration;
@@ -26,11 +26,14 @@ public class ServerInfo {
     private final JsonService jsonService;
     private final Zoo zoo;
 
-    private String clusterName;
     private final Info ourInfo = new Info();
 
     @Inject
-    public ServerInfo(Config cfg, Storage storage, JsonService jsonService, Zoo zoo) throws IOException {
+    public ServerInfo(
+                @Named("clusterName") String clusterName,
+                @Named("ipAddress") String ipAddress,
+                @Named("region") String region,
+                Storage storage, JsonService jsonService, Zoo zoo) throws IOException {
         this.jsonService = jsonService;
         this.zoo = zoo;
 
@@ -53,21 +56,14 @@ public class ServerInfo {
             log.info("Generated new server ID: " + ourInfo.getId());
         }
 
-        clusterName = cfg.getString("cluster.name");
-
-        String ipAddress = cfg.getString("ipAddress").trim();
         if (ipAddress.length() == 0) {
             ipAddress = getFirstNonLoopbackAddress(true, false).toString();
         }
 
         ourInfo.setIpAddress(ipAddress);
-        ourInfo.setRegion(cfg.getString("region"));
+        ourInfo.setRegion(region);
 
-        log.info("This server " + ourInfo + " cluster.name [" + clusterName + "]");
-    }
-
-    public String getClusterName() {
-        return clusterName;
+        log.info("This server " + ourInfo + " clusterName [" + clusterName + "]");
     }
 
     /**

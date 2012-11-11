@@ -12,7 +12,9 @@ public class StdModule extends AbstractModule {
 
     @Override
     protected void configure() {
-        bind(Config.class).toInstance(ConfigFactory.load());
+        Config cfg = ConfigFactory.load();
+        ConfigUtil.bindProperties(binder(), cfg);
+        bind(Config.class).toInstance(cfg);
         bind(Container.class).to(Router.class);
     }
 }

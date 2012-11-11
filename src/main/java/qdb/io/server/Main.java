@@ -1,6 +1,7 @@
 package qdb.io.server;
 
 import com.google.inject.*;
+import com.google.inject.name.Names;
 import com.typesafe.config.Config;
 import org.apache.zookeeper.*;
 import org.apache.zookeeper.data.ACL;
@@ -9,6 +10,7 @@ import org.simpleframework.transport.connect.Connection;
 import org.simpleframework.transport.connect.SocketConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import qdb.io.server.zookeeper.ZooKeeperConnector;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -30,10 +32,6 @@ public class Main {
             Injector injector = Guice.createInjector(new StdModule());
             ZooKeeperConnector zoo = injector.getInstance(ZooKeeperConnector.class);
             zoo.ensureConnected();
-
-//            ZooKeeper zk = new ZooKeeper("127.0.0.1", 2181, watcher);
-//            zk.create("/oink", new byte[]{123}, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
-//            zk.exists("/oink", watcher);
 
             for (;;) {
                 Thread.sleep(1000);
