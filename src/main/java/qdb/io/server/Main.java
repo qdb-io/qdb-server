@@ -1,7 +1,6 @@
 package qdb.io.server;
 
-import com.google.inject.Guice;
-import com.google.inject.Injector;
+import com.google.inject.*;
 import com.typesafe.config.Config;
 import org.apache.zookeeper.*;
 import org.apache.zookeeper.data.ACL;
@@ -17,6 +16,7 @@ import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Bootstraps the qdb server.
@@ -29,7 +29,7 @@ public class Main {
         try {
             Injector injector = Guice.createInjector(new StdModule());
             ZooKeeperConnector zoo = injector.getInstance(ZooKeeperConnector.class);
-
+            zoo.ensureConnected();
 
 //            ZooKeeper zk = new ZooKeeper("127.0.0.1", 2181, watcher);
 //            zk.create("/oink", new byte[]{123}, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);

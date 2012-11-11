@@ -8,26 +8,26 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.io.Closeable;
 import java.io.IOException;
 
 /**
  * Manages our connection to ZooKeeper.
  */
 @Singleton
-public class ZooKeeperConnector implements Closeable {
+public class ZooKeeperConnector {
 
     private static final Logger log = LoggerFactory.getLogger(ZooKeeperConnector.class);
 
+    private final ZooWatcher watcher;
+    private final Zoo zoo;
+
     private final String connectString;
     private final int sessionTimeout;
-    private final ZooWatcher watcher;
-
-    private ZooKeeper zooKeeper;
 
     @Inject
-    public ZooKeeperConnector(Config cfg, ZooWatcher watcher) throws IOException {
+    public ZooKeeperConnector(Config cfg, ZooWatcher watcher, Zoo zoo) throws IOException {
         this.watcher = watcher;
+        this.zoo = zoo;
 
         String clusterName = cfg.getString("cluster.name");
         cfg = cfg.getConfig("zookeeper");
@@ -47,29 +47,10 @@ public class ZooKeeperConnector implements Closeable {
         this.sessionTimeout = cfg.getInt("sessionTimeout");
     }
 
-    @PostConstruct
-    private synchronized void connect() throws IOException {
-        log.info("Connecting to ZooKeeper(s) [" + connectString + "] sessionTimeout " + sessionTimeout);
-        zooKeeper = new ZooKeeper(connectString, sessionTimeout, watcher);
-    }
-
-    /**
-     * Get our ZooKeeper instance, attempting to connect if we are not already connected.
-     */
-    public synchronized ZooKeeper get() throws IOException {
-        if (zooKeeper == null) connect();
-        return zooKeeper;
-    }
-
-    @Override
-    public synchronized void close() throws IOException {
-        if (zooKeeper != null) {
-            try {
-                zooKeeper.close();
-                zooKeeper = null;
-            } catch (InterruptedException e) {
-                throw new IOException("Error closing ZooKeeper connection: " + e, e);
-            }
+    public synchronized void ensureConnected() throws IOException {
+        if (zoo.get() == null) {
+            log.info("Connecting to ZooKeeper(s) [" + connectString + "] sessionTimeout " + sessionTimeout);
+            zoo.set(new ZooKeeper(connectString, sessionTimeout, watcher));
         }
     }
 }

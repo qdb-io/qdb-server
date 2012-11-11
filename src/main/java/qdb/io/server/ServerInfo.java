@@ -10,9 +10,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
-import java.io.IOException;
+import java.io.*;
 import java.net.*;
 import java.util.Enumeration;
+import java.util.UUID;
 
 /**
  * Publishes information about this server in ZooKeeper and discovers information about other servers in the same
@@ -22,18 +23,35 @@ public class ServerInfo {
 
     private static final Logger log = LoggerFactory.getLogger(ServerInfo.class);
 
-    private final ServerId serverId;
     private final JsonService jsonService;
-    @Inject
-    private ZooKeeperConnector zoo;
+    private final Zoo zoo;
 
     private String clusterName;
     private final Info ourInfo = new Info();
 
     @Inject
-    public ServerInfo(Config cfg, ServerId serverId, JsonService jsonService) throws IOException {
-        this.serverId = serverId;
+    public ServerInfo(Config cfg, Storage storage, JsonService jsonService, Zoo zoo) throws IOException {
         this.jsonService = jsonService;
+        this.zoo = zoo;
+
+        File f = new File(storage.getDataDir(), "server-id.txt");
+        if (f.exists()) {
+            BufferedReader r = new BufferedReader(new FileReader(f));
+            try {
+                ourInfo.setId(r.readLine());
+            } finally {
+                r.close();
+            }
+        } else {
+            ourInfo.setId(UUID.randomUUID().toString());
+            FileWriter w = new FileWriter(f);
+            try {
+                w.write(ourInfo.getId());
+            } finally {
+                w.close();
+            }
+            log.info("Generated new server ID: " + ourInfo.getId());
+        }
 
         clusterName = cfg.getString("cluster.name");
 
@@ -42,7 +60,6 @@ public class ServerInfo {
             ipAddress = getFirstNonLoopbackAddress(true, false).toString();
         }
 
-        ourInfo.setId(serverId.toString());
         ourInfo.setIpAddress(ipAddress);
         ourInfo.setRegion(cfg.getString("region"));
 
@@ -58,7 +75,7 @@ public class ServerInfo {
      */
     public void publish() throws IOException, InterruptedException, KeeperException {
         ZooKeeper zk = zoo.get();
-        zk.create("/nodes/" + serverId, jsonService.toJson(ourInfo), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
+        zk.create("/nodes/" + ourInfo.getId(), jsonService.toJson(ourInfo), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
     }
 
     /**
