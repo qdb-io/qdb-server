@@ -27,21 +27,18 @@ public class Main {
 
     public static void main(String[] args) {
         try {
-            Watcher watcher = new Watcher() {
-                @Override
-                public void process(WatchedEvent event) {
-                    log.debug(event.toString());
-                }
-            };
-            ZooKeeper zk = new ZooKeeper("127.0.0.1", 2181, watcher);
-            zk.create("/oink", new byte[]{123}, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
-            zk.exists("/oink", watcher);
+            Injector injector = Guice.createInjector(new StdModule());
+            ZooKeeperConnector zoo = injector.getInstance(ZooKeeperConnector.class);
+
+
+//            ZooKeeper zk = new ZooKeeper("127.0.0.1", 2181, watcher);
+//            zk.create("/oink", new byte[]{123}, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
+//            zk.exists("/oink", watcher);
 
             for (;;) {
                 Thread.sleep(1000);
             }
 
-//            Injector injector = Guice.createInjector(new StandaloneModule());
 //            Config cfg = injector.getInstance(Config.class);
 //            Container container = injector.getInstance(Container.class);
 //            Connection connection = new SocketConnection(container);

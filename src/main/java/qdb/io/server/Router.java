@@ -6,14 +6,10 @@ import org.simpleframework.http.Response;
 import org.simpleframework.http.core.Container;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import qdb.io.buffer.MessageCursor;
-import qdb.io.buffer.PersistentMessageBuffer;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.io.File;
 import java.io.IOException;
-import java.io.PrintStream;
 
 /**
  * Routes requests to handlers for processing.
@@ -25,8 +21,8 @@ public class Router implements Container {
 
     private Config cfg;
 
-    @Inject
-    private DatabaseRegistry databaseRegistry;
+//    @Inject
+//    private QueueManager databaseRegistry;
 
     @Inject
     public Router(Config cfg) throws IOException {
