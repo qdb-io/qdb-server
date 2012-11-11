@@ -17,10 +17,12 @@ public class ZooWatcher implements Watcher {
     private static final Logger log = LoggerFactory.getLogger(ZooWatcher.class);
 
     private final ServerInfo serverInfo;
+    private final Zoo zoo;
 
     @Inject
-    public ZooWatcher(ServerInfo serverInfo) {
+    public ZooWatcher(ServerInfo serverInfo, Zoo zoo) {
         this.serverInfo = serverInfo;
+        this.zoo = zoo;
     }
 
     @Override
@@ -29,6 +31,7 @@ public class ZooWatcher implements Watcher {
             log.debug(event.toString());
             Event.KeeperState state = event.getState();
             if (state == Event.KeeperState.SyncConnected) {
+                zoo.createRootNode();
                 serverInfo.publish();
             }
         } catch (Exception e) {

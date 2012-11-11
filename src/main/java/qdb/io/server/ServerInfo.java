@@ -74,8 +74,11 @@ public class ServerInfo {
      * Publish information about this server to ZooKeeper.
      */
     public void publish() throws IOException, InterruptedException, KeeperException {
-        ZooKeeper zk = zoo.get();
-        zk.create("/nodes/" + ourInfo.getId(), jsonService.toJson(ourInfo), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
+        try {
+            zoo.create("/nodes", new byte[0], ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+        } catch (KeeperException.NodeExistsException ignore) {
+        }
+        zoo.create("/nodes/" + ourInfo.getId(), jsonService.toJson(ourInfo), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
     }
 
     /**
