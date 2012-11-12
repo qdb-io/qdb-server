@@ -1,9 +1,6 @@
-package qdb.io.server.zookeeper;
+package qdb.io.server;
 
-import org.apache.zookeeper.CreateMode;
-import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.ZooDefs;
-import org.apache.zookeeper.ZooKeeper;
+import org.apache.zookeeper.*;
 import org.apache.zookeeper.data.ACL;
 
 import javax.inject.Inject;
@@ -31,6 +28,22 @@ public class Zoo implements Closeable {
     public String create(String path, byte data[], List<ACL> acl, CreateMode createMode)
             throws InterruptedException, KeeperException {
         return getZooKeeper().create(rootPath + path, data, acl, createMode);
+    }
+
+    /**
+     * Like {@link ZooKeeper#create(String, byte[], java.util.List, org.apache.zookeeper.CreateMode)} but
+     * does not throw an exception if the node exists.
+     */
+    public void ensure(String path, byte data[], List<ACL> acl, CreateMode createMode)
+            throws InterruptedException, KeeperException {
+        try {
+            create(path, data, acl, createMode);
+        } catch (KeeperException.NodeExistsException ignore) {
+        }
+    }
+
+    public List<String> getChildren(final String path, Watcher watcher) throws InterruptedException, KeeperException {
+        return getZooKeeper().getChildren(rootPath + path, watcher);
     }
 
     public synchronized ZooKeeper getZooKeeper() {

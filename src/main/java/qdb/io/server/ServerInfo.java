@@ -6,7 +6,7 @@ import org.apache.zookeeper.ZooDefs;
 import org.codehaus.jackson.annotate.JsonIgnore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import qdb.io.server.zookeeper.Zoo;
+import qdb.io.server.Zoo;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -29,11 +29,10 @@ public class ServerInfo {
     private final Info ourInfo = new Info();
 
     @Inject
-    public ServerInfo(
+    public ServerInfo(LocalStorage storage, JsonService jsonService, Zoo zoo,
                 @Named("clusterName") String clusterName,
                 @Named("ipAddress") String ipAddress,
-                @Named("region") String region,
-                Storage storage, JsonService jsonService, Zoo zoo) throws IOException {
+                @Named("region") String region) throws IOException {
         this.jsonService = jsonService;
         this.zoo = zoo;
 
@@ -70,10 +69,7 @@ public class ServerInfo {
      * Publish information about this server to ZooKeeper.
      */
     public void publish() throws IOException, InterruptedException, KeeperException {
-        try {
-            zoo.create("/nodes", new byte[0], ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
-        } catch (KeeperException.NodeExistsException ignore) {
-        }
+        zoo.ensure("/nodes", new byte[0], ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
         zoo.create("/nodes/" + ourInfo.getId(), jsonService.toJson(ourInfo), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
     }
 

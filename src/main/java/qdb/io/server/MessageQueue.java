@@ -4,14 +4,27 @@ import java.io.Closeable;
 import java.io.IOException;
 
 /**
- * Wraps a PersistentMessageBuffer and manages its configuration.
+ * Base class for a message queue.
  */
-public class MessageQueue implements Closeable {
+public abstract class MessageQueue implements Closeable {
 
-    public MessageQueue() {
+    protected final String id;
+    protected String name;
+
+    protected MessageQueue(String id) {
+        this.id = id;
     }
 
-    public void init() throws IOException {
+    public String getId() {
+        return id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     @Override
