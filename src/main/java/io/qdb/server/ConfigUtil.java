@@ -1,4 +1,4 @@
-package qdb.io.server;
+package io.qdb.server;
 
 import com.google.inject.Binder;
 import com.google.inject.Key;

@@ -1,4 +1,4 @@
-package qdb.io.server;
+package io.qdb.server;
 
 import org.codehaus.jackson.map.DeserializationConfig;
 import org.codehaus.jackson.map.ObjectMapper;
@@ -26,7 +26,7 @@ public class JsonService {
     /**
      * Convert o to JSON.
      */
-    byte[] toJson(Object o) throws IOException {
+    public byte[] toJson(Object o) throws IOException {
         return mapper.writeValueAsBytes(o);
     }
 

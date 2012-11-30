@@ -2,9 +2,9 @@ apply plugin: 'java'
 apply plugin: 'maven'
 apply plugin: 'application'
 
-group = 'qdb.io'
-version = '0.9.0'
-mainClassName = 'qdb.io.server.Main'
+group = 'io.qdb'
+version = '0.1.0-SNAPSHOT'
+mainClassName = 'io.qdb.server.Main'
 
 repositories {
     mavenCentral()
@@ -14,7 +14,7 @@ repositories {
 }
 
 dependencies {
-    compile 'qdb.io:qdb-buffer:0.9.0'
+    compile 'io.qdb:qdb-buffer:0.2.0'
     compile 'org.simpleframework:simple:4.1.21'
     compile 'com.google.inject:guice:3.0'
     compile 'ch.qos.logback:logback-core:1.0.7'

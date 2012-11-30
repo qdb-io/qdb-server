@@ -1,7 +1,7 @@
-package qdb.io.server;
+package io.qdb.server;
 
-import qdb.io.buffer.MessageBuffer;
-import qdb.io.buffer.PersistentMessageBuffer;
+import io.qdb.buffer.MessageBuffer;
+import io.qdb.buffer.PersistentMessageBuffer;
 
 import java.io.File;
 import java.io.IOException;

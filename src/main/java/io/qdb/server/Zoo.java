@@ -1,4 +1,4 @@
-package qdb.io.server;
+package io.qdb.server;
 
 import org.apache.zookeeper.*;
 import org.apache.zookeeper.data.ACL;

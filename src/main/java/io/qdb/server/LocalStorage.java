@@ -1,4 +1,4 @@
-package qdb.io.server;
+package io.qdb.server;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
