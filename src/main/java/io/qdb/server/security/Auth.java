@@ -1,5 +1,7 @@
 package io.qdb.server.security;
 
+import io.qdb.server.model.User;
+
 /**
  * An authenticated user.
  */

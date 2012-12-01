@@ -12,17 +12,19 @@ import java.util.Map;
 @Singleton
 public class ServerStatusController {
 
-    private final Renderer renderer;
-
     @Inject
-    public ServerStatusController(Renderer renderer) {
-        this.renderer = renderer;
+    public ServerStatusController() {
     }
 
-    public void index(Call call) throws IOException {
+    public void show(Call call) throws IOException {
+        if (!call.isGet()) {
+            call.setCode(400);
+            return;
+        }
+
         Map map = new HashMap();
         map.put("wibble", "wobble");
-        renderer.renderJson(call, map);
+        call.setJson(map);
     }
 
 }

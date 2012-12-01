@@ -1,0 +1,6 @@
+[{
+    "id": "1",
+    "email": "david.tinker@gmail.com",
+    "passwordHash": "secret",
+    "admin": true
+}]

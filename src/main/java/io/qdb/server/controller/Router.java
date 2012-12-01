@@ -13,10 +13,12 @@ import javax.inject.Singleton;
 import java.io.IOException;
 
 /**
- * Routes requests to handlers for processing.
+ * Routes requests to controllers for processing.
+ *
  * / - GET server status
- * /$namespace/queues
- * /$namespace/queues/queue_path
+ * /dbs
+ * /dbs/$db/queues
+ * /dbs/$db/queues/queue_path
  */
 @Singleton
 public class Router implements Container {
@@ -24,12 +26,17 @@ public class Router implements Container {
     private static final Logger log = LoggerFactory.getLogger(Router.class);
 
     private final AuthService authService;
+    private final Renderer renderer;
     private final ServerStatusController serverStatusController;
+    private final DatabaseController databaseController;
 
     @Inject
-    public Router(AuthService authService, ServerStatusController serverStatusController) {
+    public Router(AuthService authService, Renderer renderer, ServerStatusController serverStatusController,
+                  DatabaseController databaseController) {
         this.authService = authService;
+        this.renderer = renderer;
         this.serverStatusController = serverStatusController;
+        this.databaseController = databaseController;
     }
 
     @Override
@@ -39,26 +46,32 @@ public class Router implements Container {
             if (auth == null) {
                 authService.sendChallenge(resp);
             } else {
-                Call call = new Call(req, resp, auth);
-                if (log.isDebugEnabled()) log.debug(call.toString());
-
-                String[] segments = req.getPath().getSegments();
-                if (segments.length == 0) {
-                    serverStatusController.index(call);
+                Call call = new Call(req, resp, auth, renderer);
+                String seg = call.nextSegment();
+                if (seg == null) {
+                    if (call.isGet()) serverStatusController.show(call);
+                    else call.setCode(400);
                 } else if (call.getAuth().isAnonymous()) {
                     authService.sendChallenge(resp);
+                } else if ("dbs".equals(seg)) {
+                    databaseController.handle(call);
                 } else {
-                    resp.setCode(404);
+                    if (call.isGet()) call.setCode(404);
+                    else call.setCode(400);
                 }
             }
         } catch (Exception e) {
-            log.error(e.getMessage(), e);
-            resp.setCode(500);
+            log.error(req.getPath() + " " + e.getMessage(), e);
+            try {
+                renderer.setCode(resp, 500, null);
+            } catch (IOException x) {
+                if (log.isDebugEnabled()) log.debug(req.getPath() + " " + e.getMessage(), e);
+            }
         }
         try {
             resp.close();
         } catch (IOException x) {
-            log.debug("Error closing response: " + x, x);
+            if (log.isDebugEnabled()) log.debug("Error closing response: " + x, x);
         }
     }
 }

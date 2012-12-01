@@ -20,12 +20,36 @@ public class Renderer {
         this.jsonService = jsonService;
     }
 
-    public void renderJson(Call call, Object o) throws IOException {
+    public void json(Response resp, Object o) throws IOException {
         byte[] bytes = jsonService.toJson(o);
-        Response resp = call.getResponse();
         resp.set("Content-Type", "application/json;charset=utf-8");
         resp.setContentLength(bytes.length);
         resp.getOutputStream().write(bytes);
     }
 
+    public void setCode(Response resp, int code, String message) throws IOException {
+        resp.setCode(code);
+        json(resp, new StatusMsg(code, message == null ? toMessage(code) : message));
+    }
+
+    private String toMessage(int code) {
+        switch (code) {
+            case 200:   return "OK";
+            case 400:   return "Bad request";
+            case 403:   return "Forbidden";
+            case 404:   return "Not found";
+        }
+        return null;
+    }
+
+    private static class StatusMsg {
+
+        public int responseCode;
+        public String message;
+
+        private StatusMsg(int responseCode, String message) {
+            this.responseCode = responseCode;
+            this.message = message;
+        }
+    }
 }

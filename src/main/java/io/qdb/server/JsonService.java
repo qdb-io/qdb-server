@@ -3,9 +3,11 @@ package io.qdb.server;
 import org.codehaus.jackson.map.DeserializationConfig;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.SerializationConfig;
+import org.codehaus.jackson.type.TypeReference;
 
 import javax.inject.Singleton;
 import java.io.IOException;
+import java.io.InputStream;
 
 /**
  * Marshaling of objects to/from JSON using Jackson.
@@ -35,6 +37,13 @@ public class JsonService {
      */
     public <T> T fromJson(byte[] content, Class<T> klass) throws IOException {
         return mapper.readValue(content, klass);
+    }
+
+    /**
+     * Converts content to an instance of a particular type.
+     */
+    public <T> T fromJson(InputStream content, TypeReference typeRef) throws IOException {
+        return mapper.readValue(content, typeRef);
     }
 
 }

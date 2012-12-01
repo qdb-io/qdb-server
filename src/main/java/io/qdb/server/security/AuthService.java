@@ -1,5 +1,7 @@
 package io.qdb.server.security;
 
+import io.qdb.server.model.Repository;
+import io.qdb.server.model.User;
 import org.simpleframework.http.Request;
 import org.simpleframework.http.Response;
 
@@ -14,10 +16,10 @@ import java.io.IOException;
 @Singleton
 public class AuthService {
 
-    private final UserRepository userRepository;
+    private final Repository userRepository;
 
     @Inject
-    public AuthService(UserRepository userRepository) {
+    public AuthService(Repository userRepository) {
         this.userRepository = userRepository;
     }
 
@@ -36,7 +38,7 @@ public class AuthService {
                 if (i > 0) {
                     String username = s.substring(0, i);
                     String password = s.substring(i + 1);
-                    User user = userRepository.findByEmail(username);
+                    User user = userRepository.findUser(username);
                     if (user != null && user.doesPasswordMatch(password)) {
                         return new Auth(user, "Basic");
                     }
