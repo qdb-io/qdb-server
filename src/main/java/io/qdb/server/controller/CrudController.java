@@ -5,7 +5,7 @@ import java.io.IOException;
 /**
  * Base class for controllers that provide CRUD for some resource.
  */
-public abstract class CrudController {
+public abstract class CrudController implements Controller {
 
     protected CrudController() {
     }
@@ -17,13 +17,14 @@ public abstract class CrudController {
             else if (call.isPost()) create(call);
             else call.setCode(400);
         } else {
-            String seg = call.nextSegment();
-            if (seg == null) {
+            String resource = call.nextSegment();
+            if (resource == null) {
                 if (call.isGet()) show(call, id);
                 else if (call.isPut()) update(call, id);
                 else if (call.isDelete()) delete(call, id);
                 else call.setCode(400);
-                // todo handle sub-resources
+            } else {
+                getController(call, id, resource).handle(call);
             }
         }
     }
@@ -46,6 +47,10 @@ public abstract class CrudController {
 
     protected void delete(Call call, String id) throws IOException {
         call.setCode(400);
+    }
+
+    protected Controller getController(Call call, String id, String resource) throws IOException {
+        return StatusCodeController.SC_404;
     }
 
 }

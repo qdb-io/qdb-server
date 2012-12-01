@@ -10,13 +10,14 @@ import java.util.Map;
  * Status of the server.
  */
 @Singleton
-public class ServerStatusController {
+public class ServerStatusController implements Controller {
 
     @Inject
     public ServerStatusController() {
     }
 
-    public void show(Call call) throws IOException {
+    @Override
+    public void handle(Call call) throws IOException {
         if (!call.isGet()) {
             call.setCode(400);
             return;

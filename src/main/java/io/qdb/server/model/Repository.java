@@ -12,4 +12,8 @@ public interface Repository {
 
     public List<Database> findDatabasesVisibleTo(User user);
 
+    public Database findDatabase(String id);
+
+    public List<Queue> findQueues(Database db);
+
 }

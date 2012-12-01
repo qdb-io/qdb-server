@@ -49,8 +49,7 @@ public class Router implements Container {
                 Call call = new Call(req, resp, auth, renderer);
                 String seg = call.nextSegment();
                 if (seg == null) {
-                    if (call.isGet()) serverStatusController.show(call);
-                    else call.setCode(400);
+                    serverStatusController.handle(call);
                 } else if (call.getAuth().isAnonymous()) {
                     authService.sendChallenge(resp);
                 } else if ("dbs".equals(seg)) {

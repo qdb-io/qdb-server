@@ -1,8 +1,6 @@
 package io.qdb.server;
 
-import io.qdb.server.model.Database;
-import io.qdb.server.model.Repository;
-import io.qdb.server.model.User;
+import io.qdb.server.model.*;
 import org.codehaus.jackson.type.TypeReference;
 
 import javax.inject.Inject;
@@ -20,12 +18,14 @@ public class SimpleRepository implements Repository {
     private final JsonService jsonService;
     private final List<User> users;
     private final List<Database> databases;
+    private final List<Queue> queues;
 
     @Inject
     public SimpleRepository(JsonService jsonService) throws IOException {
         this.jsonService = jsonService;
         users = load("users", new TypeReference<List<User>>(){});
         databases = load("databases", new TypeReference<List<Database>>(){});
+        queues = load("queues", new TypeReference<List<Queue>>(){});
     }
 
     private <T> T load(String filename, TypeReference typeRef) throws IOException {
@@ -37,12 +37,16 @@ public class SimpleRepository implements Repository {
         }
     }
 
-    @Override
-    public User findUser(String id) {
-        for (User user : users) {
-            if (user.getId().equals(id)) return user;
+    private <T extends ModelObject> T find(String id, List<T> list) {
+        for (T o : list) {
+            if (o.getId().equals(id)) return o;
         }
         return null;
+    }
+
+    @Override
+    public User findUser(String id) {
+        return find(id, users);
     }
 
     @Override
@@ -50,6 +54,20 @@ public class SimpleRepository implements Repository {
         List<Database> ans = new ArrayList<Database>();
         for (Database db : databases) {
             if (db.isVisibleTo(user)) ans.add(db);
+        }
+        return ans;
+    }
+
+    @Override
+    public Database findDatabase(String id) {
+        return find(id, databases);
+    }
+
+    @Override
+    public List<Queue> findQueues(Database db) {
+        ArrayList<Queue> ans = new ArrayList<Queue>();
+        for (Queue q : queues) {
+            if (q.getDatabaseId().equals(db.getId())) ans.add(q);
         }
         return ans;
     }
