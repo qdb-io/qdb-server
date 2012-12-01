@@ -71,4 +71,12 @@ public class SimpleRepository implements Repository {
         }
         return ans;
     }
+
+    @Override
+    public Queue findQueue(Database db, String nameOrId) {
+        for (Queue q : findQueues(db)) {
+            if (nameOrId.equals(q.getName()) || nameOrId.equals(q.getId())) return q;
+        }
+        return null;
+    }
 }

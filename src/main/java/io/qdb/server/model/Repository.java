@@ -16,4 +16,6 @@ public interface Repository {
 
     public List<Queue> findQueues(Database db);
 
+    public Queue findQueue(Database db, String nameOrId);
+
 }
