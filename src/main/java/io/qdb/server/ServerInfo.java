@@ -1,5 +1,6 @@
 package io.qdb.server;
 
+import io.qdb.server.zoo.Zoo;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooDefs;
@@ -20,6 +21,7 @@ import java.util.UUID;
  */
 public class ServerInfo {
 
+/*
     private static final Logger log = LoggerFactory.getLogger(ServerInfo.class);
 
     private final JsonService jsonService;
@@ -64,17 +66,21 @@ public class ServerInfo {
         log.info("This server " + ourInfo + " clusterName [" + clusterName + "]");
     }
 
-    /**
+    */
+/**
      * Publish information about this server to ZooKeeper.
-     */
+     *//*
+
     public void publish() throws IOException, InterruptedException, KeeperException {
         zoo.ensure("/nodes", new byte[0], ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
         zoo.create("/nodes/" + ourInfo.getId(), jsonService.toJson(ourInfo), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
     }
 
-    /**
+    */
+/**
      * From http://stackoverflow.com/questions/901755/how-to-get-the-ip-of-the-computer-on-linux-through-java
-     */
+     *//*
+
     private static InetAddress getFirstNonLoopbackAddress(boolean preferIpv4, boolean preferIPv6) throws SocketException {
         Enumeration en = NetworkInterface.getNetworkInterfaces();
         while (en.hasMoreElements()) {
@@ -96,9 +102,11 @@ public class ServerInfo {
         return null;
     }
 
-    /**
+    */
+/**
      * Info on a server in our cluster.
-     */
+     *//*
+
     public static class Info {
 
         @JsonIgnore
@@ -138,4 +146,5 @@ public class ServerInfo {
             return id + "," + ipAddress + ",region=" + region;
         }
     }
+*/
 }

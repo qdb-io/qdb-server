@@ -1,4 +1,4 @@
-package io.qdb.server;
+package io.qdb.server.zoo;
 
 import org.apache.zookeeper.*;
 import org.apache.zookeeper.data.ACL;
@@ -11,7 +11,7 @@ import java.io.IOException;
 import java.util.List;
 
 /**
- * Holds our connection to ZooKeeper. Proxies methods on ZooKeeper to prepend our root path to all paths.
+ * Holds our connection to ZooKeeper and ensures that our root node already exists. This is /qdb/[clusterName].
  */
 @Singleton
 public class Zoo implements Closeable {
@@ -25,25 +25,11 @@ public class Zoo implements Closeable {
         rootPath = "/qdb/" + clusterName;
     }
 
-    public String create(String path, byte data[], List<ACL> acl, CreateMode createMode)
-            throws InterruptedException, KeeperException {
-        return getZooKeeper().create(rootPath + path, data, acl, createMode);
-    }
-
     /**
-     * Like {@link ZooKeeper#create(String, byte[], java.util.List, org.apache.zookeeper.CreateMode)} but
-     * does not throw an exception if the node exists.
+     * ZooKeeper nodes should only be created under this path.
      */
-    public void ensure(String path, byte data[], List<ACL> acl, CreateMode createMode)
-            throws InterruptedException, KeeperException {
-        try {
-            create(path, data, acl, createMode);
-        } catch (KeeperException.NodeExistsException ignore) {
-        }
-    }
-
-    public List<String> getChildren(final String path, Watcher watcher) throws InterruptedException, KeeperException {
-        return getZooKeeper().getChildren(rootPath + path, watcher);
+    public String getRootPath() {
+        return rootPath;
     }
 
     public synchronized ZooKeeper getZooKeeper() {

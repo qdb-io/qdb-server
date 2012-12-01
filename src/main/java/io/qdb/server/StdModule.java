@@ -5,6 +5,7 @@ import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import io.qdb.server.controller.Router;
 import io.qdb.server.model.Repository;
+import io.qdb.server.zoo.ZooRepository;
 import org.simpleframework.http.core.Container;
 
 /**
@@ -19,6 +20,6 @@ public class StdModule extends AbstractModule {
 
         bind(Config.class).toInstance(cfg);
         bind(Container.class).to(Router.class);
-        bind(Repository.class).to(SimpleRepository.class);
+        bind(Repository.class).to(ZooRepository.class);
     }
 }

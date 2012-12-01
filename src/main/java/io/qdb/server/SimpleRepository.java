@@ -45,6 +45,11 @@ public class SimpleRepository implements Repository {
     }
 
     @Override
+    public Status getStatus() throws IOException {
+        return Status.CONNECTED;
+    }
+
+    @Override
     public User findUser(String id) {
         return find(id, users);
     }
