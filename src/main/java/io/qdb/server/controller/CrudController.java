@@ -1,6 +1,7 @@
 package io.qdb.server.controller;
 
 import java.io.IOException;
+import java.util.List;
 
 /**
  * Base class for controllers that provide CRUD for some resource.
@@ -13,9 +14,13 @@ public abstract class CrudController implements Controller {
     public void handle(Call call) throws IOException {
         String id = call.nextSegment();
         if (id == null) {
-            if (call.isGet()) list(call);
-            else if (call.isPost()) create(call);
-            else call.setCode(400);
+            if (call.isGet()) {
+                list(call, call.getInt("offset", 0), call.getInt("limit", 30));
+            } else if (call.isPost()) {
+                create(call);
+            } else {
+                call.setCode(400);
+            }
         } else {
             String resource = call.nextSegment();
             if (resource == null) {
@@ -29,7 +34,7 @@ public abstract class CrudController implements Controller {
         }
     }
 
-    protected void list(Call call) throws IOException {
+    protected void list(Call call, int offset, int limit) throws IOException {
         call.setCode(404);
     }
 
@@ -51,6 +56,21 @@ public abstract class CrudController implements Controller {
 
     protected Controller getController(Call call, String id, String resource) throws IOException {
         return StatusCodeController.SC_404;
+    }
+
+    public static class ListResult {
+
+        public int offset;
+        public int limit;
+        public int total;
+        public List data;
+
+        public ListResult(int offset, int limit, int total, List data) {
+            this.offset = offset;
+            this.limit = limit;
+            this.total = total;
+            this.data = data;
+        }
     }
 
 }

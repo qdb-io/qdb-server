@@ -1,7 +1,94 @@
 qdb-server
 ==========
 
-HTTP interface to qdb message queues.
+HTTP interface to qdb message queues with easy clustering.
+
+
+Usage
+-----
+
+The server follows REST principles and speaks JSON. It is easy to control using curl. These examples use jq
+(http://stedolan.github.com/jq/) to pretty print and filter the JSON returned. The following example will list all
+users:
+
+    curl -s --user admin:admin http://127.0.0.1:9554/users | jq '.'
+
+HTTP Basic authentication is used. The only endpoint that does not require authentication is the root of the server:
+
+    curl -s http://127.0.0.1:9554/ | jq '.'
+
+This outputs:
+
+    {
+      "startTime": "2012-12-02T10:49:21.872+0000",
+      "upSince": "2012-12-02T10:49:21.908+0000",
+      "status": "UP"
+    }
+
+Authenticated users using this endpoint receive a lot more information about the server.
+
+
+Endpoints
+---------
+
+List endpoints (e.g. /users) accept optional offset and limit parameters to page the returned data. PUT requests
+only update fields included in the JSON i.e. you don't have to send a complete representation of the object. POST
+and PUT request return a complete representation of the new/updated object.
+
+### Users ###
+
+`GET /users` List users
+`POST /users` Create a user
+`GET /users/abc` Get the user with id 'abc'
+`PUT /users/abc` Update the user with id 'abc'
+`GET /users/me` Get the authenticated user
+
+### Databases ###
+
+Databases form a namespace for queues and control access. TODO figure out access levels and so on.
+
+`GET /dbs` List databases that the authenticated user can see
+`POST /dbs` Create a database
+`GET /dbs/foo` Get the database 'foo'
+`PUT /dbs/foo` Update the database 'foo'
+
+### Queues ###
+
+`GET /dbs/foo/queues` List queues in database 'foo'
+`POST /dbs/foo/queues` Create a new queue in database 'foo'
+`GET /dbs/foo/queues/tweets` Get the queue 'tweets'
+`PUT /dbs/foo/queues/tweets` Update the queue 'tweets'
+
+### Appending Messages ###
+
+`POST /dbs/foo/queues/tweets/messages?routingKey=abc:def` Append a message to the queue 'tweets' with an (optional)
+routing key. The body of the POST is the message.
+
+Note that the queue being appended to might not exist on this node. The message will be forwarded to the owning
+node in that case and the 'Location' header will be set to the URL to post to on that node. You can ignore this or
+POST to the suggested URL instead for better performance.
+
+By default messages are posted synchronously and the ID of the message is returned. If async=true is specified in
+the URL then the POST returns a 200 before the message has been written to the queue (and hence no ID is returned).
+This results in better performance but it is possible (though unlikely) that something will go wrong and the message
+will be lost.
+
+TODO what about posting more than one message at once?
+
+### Streaming Messages ###
+
+`GET /dbs/foo/queues/tweets/messages` Stream new messages from the queue 'tweets' as they are appended.
+TODO figure out how to separate messages etc.
+
+Specify `id=123456` to get messages from id onwards. Specify `timestamp=1354457617` (millisecond since 1/1/1970) or
+`timestamp=2012-12-02T10:49:21.908+0000` (ISO 8601 format) to get messages from the given time onwards.
+
+
+### Queue Timelines ###
+
+`GET /dbs/foo/queues/tweets/timeline` Get the high level timeline for the queue with id 'tweets'
+`GET /dbs/foo/queues/tweets/timeline/123456` Get the detailed timeline around the message with id 123456
+
 
 License
 -------

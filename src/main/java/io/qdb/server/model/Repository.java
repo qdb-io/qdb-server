@@ -33,6 +33,10 @@ public interface Repository {
 
     public void createUser(User user) throws IOException;
 
+    public List<User> findUsers(int offset, int limit) throws IOException;
+
+    public int countUsers() throws IOException;
+
     public List<Database> findDatabasesVisibleTo(User user) throws IOException;
 
     public Database findDatabase(String id) throws IOException;

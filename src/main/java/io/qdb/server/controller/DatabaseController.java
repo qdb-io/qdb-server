@@ -7,9 +7,6 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.io.IOException;
 
-/**
- * Database operations.
- */
 @Singleton
 public class DatabaseController extends CrudController {
 
@@ -21,7 +18,7 @@ public class DatabaseController extends CrudController {
     }
 
     @Override
-    protected void list(Call call) throws IOException {
+    protected void list(Call call, int offset, int limit) throws IOException {
         call.setJson(repo.findDatabasesVisibleTo(call.getUser()));
     }
 

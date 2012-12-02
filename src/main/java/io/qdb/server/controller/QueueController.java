@@ -6,9 +6,6 @@ import io.qdb.server.model.Repository;
 
 import java.io.IOException;
 
-/**
- * Queue operations.
- */
 public class QueueController extends CrudController {
 
     private final Repository repo;
@@ -20,7 +17,7 @@ public class QueueController extends CrudController {
     }
 
     @Override
-    protected void list(Call call) throws IOException {
+    protected void list(Call call, int offset, int limit) throws IOException {
         call.setJson(repo.findQueues(db));
     }
 

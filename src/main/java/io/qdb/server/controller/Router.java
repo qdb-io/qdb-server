@@ -29,14 +29,16 @@ public class Router implements Container {
     private final Renderer renderer;
     private final ServerStatusController serverStatusController;
     private final DatabaseController databaseController;
+    private final UserController userController;
 
     @Inject
     public Router(AuthService authService, Renderer renderer, ServerStatusController serverStatusController,
-                  DatabaseController databaseController) {
+                  DatabaseController databaseController, UserController userController) {
         this.authService = authService;
         this.renderer = renderer;
         this.serverStatusController = serverStatusController;
         this.databaseController = databaseController;
+        this.userController = userController;
     }
 
     @Override
@@ -52,6 +54,8 @@ public class Router implements Container {
                     serverStatusController.handle(call);
                 } else if (call.getAuth().isAnonymous()) {
                     authService.sendChallenge(resp);
+                } else if ("users".equals(seg)) {
+                    userController.handle(call);
                 } else if ("dbs".equals(seg)) {
                     databaseController.handle(call);
                 } else {

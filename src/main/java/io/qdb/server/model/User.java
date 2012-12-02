@@ -23,7 +23,7 @@ public class User extends ModelObject {
         return admin;
     }
 
-    public void setAdmin(boolean admin) {
+    public void setAdmin(Boolean admin) {
         this.admin = admin;
     }
 

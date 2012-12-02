@@ -70,6 +70,16 @@ public class Call {
         return "DELETE".equals(request.getMethod());
     }
 
+    public int getInt(String param, int def) throws IOException {
+        String s = request.getParameter(param);
+        if (s == null || s.length() == 0) return def;
+        try {
+            return Integer.parseInt(s);
+        } catch (NumberFormatException e) {
+            return def;
+        }
+    }
+
     public void setCode(int code) throws IOException {
         setCode(code, null);
     }

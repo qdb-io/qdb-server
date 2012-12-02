@@ -12,6 +12,7 @@ import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -131,6 +132,34 @@ public class ZooRepository implements Repository, Watcher {
         try {
             zk.create(root + "/users/" + user.getId(), jsonService.toJson(user),
                     ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+        } catch (KeeperException e) {
+            throw new IOException(e.toString(), e);
+        } catch (InterruptedException e) {
+            throw new IOException(e.toString(), e);
+        }
+    }
+
+    @Override
+    public List<User> findUsers(int offset, int limit) throws IOException {
+        try {
+            List<User> ans = new ArrayList<User>();
+            for (String id : zk.getChildren(root + "/users", false)) {
+                User u = new User();
+                u.setId(id);
+                ans.add(u);
+            }
+            return ans;
+        } catch (KeeperException e) {
+            throw new IOException(e.toString(), e);
+        } catch (InterruptedException e) {
+            throw new IOException(e.toString(), e);
+        }
+    }
+
+    @Override
+    public int countUsers() throws IOException {
+        try {
+            return zk.exists(root + "/users", false).getNumChildren();
         } catch (KeeperException e) {
             throw new IOException(e.toString(), e);
         } catch (InterruptedException e) {
