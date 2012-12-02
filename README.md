@@ -38,9 +38,13 @@ and PUT request return a complete representation of the new/updated object.
 ### Users ###
 
 `GET /users` List users
+
 `POST /users` Create a user
+
 `GET /users/abc` Get the user with id 'abc'
+
 `PUT /users/abc` Update the user with id 'abc'
+
 `GET /users/me` Get the authenticated user
 
 ### Databases ###
@@ -48,15 +52,21 @@ and PUT request return a complete representation of the new/updated object.
 Databases form a namespace for queues and control access. TODO figure out access levels and so on.
 
 `GET /dbs` List databases that the authenticated user can see
+
 `POST /dbs` Create a database
+
 `GET /dbs/foo` Get the database 'foo'
+
 `PUT /dbs/foo` Update the database 'foo'
 
 ### Queues ###
 
 `GET /dbs/foo/queues` List queues in database 'foo'
+
 `POST /dbs/foo/queues` Create a new queue in database 'foo'
+
 `GET /dbs/foo/queues/tweets` Get the queue 'tweets'
+
 `PUT /dbs/foo/queues/tweets` Update the queue 'tweets'
 
 ### Appending Messages ###
@@ -87,6 +97,7 @@ Specify `id=123456` to get messages from id onwards. Specify `timestamp=13544576
 ### Queue Timelines ###
 
 `GET /dbs/foo/queues/tweets/timeline` Get the high level timeline for the queue with id 'tweets'
+
 `GET /dbs/foo/queues/tweets/timeline/123456` Get the detailed timeline around the message with id 123456
 
 
