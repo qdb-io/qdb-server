@@ -1,19 +1,25 @@
 package io.qdb.server.controller;
 
+import io.qdb.server.model.Repository;
+
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Date;
 
 /**
- * Status of the server.
+ * Basic status of the server.
  */
 @Singleton
 public class ServerStatusController implements Controller {
 
+    private final Repository repo;
+    private final Date startTime;
+
     @Inject
-    public ServerStatusController() {
+    public ServerStatusController(Repository repo) {
+        this.repo = repo;
+        startTime = new Date();
     }
 
     @Override
@@ -22,10 +28,18 @@ public class ServerStatusController implements Controller {
             call.setCode(400);
             return;
         }
+        Repository.Status rs = repo.getStatus();
+        Status s = new Status();
+        s.startTime = startTime;
+        s.status = rs.state;
+        s.upSince = rs.upSince;
+        call.setJson(s);
+    }
 
-        Map map = new HashMap();
-        map.put("wibble", "wobble");
-        call.setJson(map);
+    private static class Status {
+        public Repository.State status;
+        public Date upSince;
+        public Date startTime;
     }
 
 }

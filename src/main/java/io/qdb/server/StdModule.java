@@ -1,5 +1,6 @@
 package io.qdb.server;
 
+import com.google.common.eventbus.EventBus;
 import com.google.inject.AbstractModule;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
@@ -21,5 +22,6 @@ public class StdModule extends AbstractModule {
         bind(Config.class).toInstance(cfg);
         bind(Container.class).to(Router.class);
         bind(Repository.class).to(ZooRepository.class);
+        bind(EventBus.class).toInstance(new EventBus());
     }
 }

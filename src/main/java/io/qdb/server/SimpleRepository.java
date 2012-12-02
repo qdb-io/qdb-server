@@ -7,18 +7,20 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.io.*;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 /**
  * Simple repo for development using data from json files in etc. Later this info will be stored in ZooKeeper.
  */
 @Singleton
-public class SimpleRepository implements Repository {
+public abstract class SimpleRepository implements Repository {
 
     private final JsonService jsonService;
     private final List<User> users;
     private final List<Database> databases;
     private final List<Queue> queues;
+    private final Date upSince;
 
     @Inject
     public SimpleRepository(JsonService jsonService) throws IOException {
@@ -26,6 +28,7 @@ public class SimpleRepository implements Repository {
         users = load("users", new TypeReference<List<User>>(){});
         databases = load("databases", new TypeReference<List<Database>>(){});
         queues = load("queues", new TypeReference<List<Queue>>(){});
+        upSince = new Date();
     }
 
     private <T> T load(String filename, TypeReference typeRef) throws IOException {
@@ -45,8 +48,10 @@ public class SimpleRepository implements Repository {
     }
 
     @Override
-    public Status getStatus() throws IOException {
-        return Status.CONNECTED;
+    public Status getStatus() {
+        Status s = new Status();
+        s.upSince = upSince;
+        return s;
     }
 
     @Override

@@ -1,23 +1,14 @@
 package io.qdb.server.model;
 
 /**
- * A user with permissions.
+ * A user with permissions. The user's id is used as its username.
  */
 public class User extends ModelObject {
 
-    private String email;
     private String passwordHash;
     private boolean admin;
 
     public User() {
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
     }
 
     public String getPasswordHash() {
@@ -43,6 +34,6 @@ public class User extends ModelObject {
 
     @Override
     public String toString() {
-        return super.toString() + ":" + email + ":" + (admin ? "ADMIN" : "");
+        return super.toString() + ":" + (admin ? "ADMIN" : "");
     }
 }
