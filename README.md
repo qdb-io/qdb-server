@@ -27,6 +27,19 @@ This outputs:
 
 Authenticated users using this endpoint receive a lot more information about the server.
 
+You can also POST and PUT json data to the server using curl. This example creates a new user:
+
+    curl -s -X POST -H "Content-Type: application/json" --user admin:admin http://127.0.0.1:9554/users -d @user.json | jq '.'
+
+It is important to specify the content type.
+
+The file user.json should contain the user data. The new user is returned:
+
+    {
+      "admin": true,
+      "id": "david"
+    }
+
 
 Endpoints
 ---------

@@ -42,6 +42,13 @@ public class JsonService {
     /**
      * Converts content to an instance of a particular type.
      */
+    public <T> T fromJson(InputStream ins, Class<T> klass) throws IOException {
+        return mapper.readValue(ins, klass);
+    }
+
+    /**
+     * Converts content to an instance of a particular type.
+     */
     public <T> T fromJson(InputStream content, TypeReference typeRef) throws IOException {
         return mapper.readValue(content, typeRef);
     }

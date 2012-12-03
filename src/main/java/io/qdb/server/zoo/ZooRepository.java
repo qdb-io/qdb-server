@@ -130,8 +130,12 @@ public class ZooRepository implements Repository, Watcher {
     public void createUser(User user) throws IOException {
         assert user.getId() != null;
         try {
-            zk.create(root + "/users/" + user.getId(), jsonService.toJson(user),
+            User u = (User)user.clone();
+            u.setId(null);
+            zk.create(root + "/users/" + user.getId(), jsonService.toJson(u),
                     ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+        } catch (KeeperException.NodeExistsException e) {
+            throw new ModelException("User [" + user.getId() + "] already exists");
         } catch (KeeperException e) {
             throw new IOException(e.toString(), e);
         } catch (InterruptedException e) {

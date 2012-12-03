@@ -1,5 +1,8 @@
 package io.qdb.server.controller;
 
+import com.sun.tools.internal.ws.processor.modeler.ModelerException;
+import io.qdb.server.model.ModelException;
+
 import java.io.IOException;
 import java.util.List;
 
@@ -12,25 +15,25 @@ public abstract class CrudController implements Controller {
     }
 
     public void handle(Call call) throws IOException {
-        String id = call.nextSegment();
-        if (id == null) {
-            if (call.isGet()) {
-                list(call, call.getInt("offset", 0), call.getInt("limit", 30));
-            } else if (call.isPost()) {
-                create(call);
-            } else {
-                call.setCode(400);
-            }
-        } else {
-            String resource = call.nextSegment();
-            if (resource == null) {
-                if (call.isGet()) show(call, id);
-                else if (call.isPut()) update(call, id);
-                else if (call.isDelete()) delete(call, id);
+        try {
+            String id = call.nextSegment();
+            if (id == null) {
+                if (call.isGet()) list(call, call.getInt("offset", 0), call.getInt("limit", 30));
+                else if (call.isPost()) create(call);
                 else call.setCode(400);
             } else {
-                getController(call, id, resource).handle(call);
+                String resource = call.nextSegment();
+                if (resource == null) {
+                    if (call.isGet()) show(call, id);
+                    else if (call.isPut()) update(call, id);
+                    else if (call.isDelete()) delete(call, id);
+                    else call.setCode(400);
+                } else {
+                    getController(call, id, resource).handle(call);
+                }
             }
+        } catch (ModelException e) {
+            call.setCode(400, e.getMessage());
         }
     }
 
