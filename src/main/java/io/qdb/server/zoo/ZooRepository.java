@@ -30,7 +30,7 @@ public class ZooRepository implements Repository, Watcher {
     private final ZooKeeper zk;
     private final String initialAdminPassword;
 
-    private Status status = new Status();
+    private Date upSince;
 
     @Inject
     public ZooRepository(EventBus eventBus, JsonService jsonService,
@@ -52,23 +52,14 @@ public class ZooRepository implements Repository, Watcher {
         try {
             synchronized (this) {
                 log.debug(event.toString());
-                Status ns = new Status();
                 Event.KeeperState state = event.getState();
-                if (state == Event.KeeperState.Disconnected) {
-                    log.info("Disconnected from ZooKeeper");
-                    ns.state = State.DOWN;
-                } else if (state == Event.KeeperState.SyncConnected) {
+                if (state == Event.KeeperState.SyncConnected) {
                     log.info("Connected to ZooKeeper");
-                    ns.state = State.UP;
-                    ns.upSince = new Date();
                     populateZoo();
-                } else if (state == Event.KeeperState.ConnectedReadOnly) {
-                    log.info("Connected to ZooKeeper in read-only mode");
-                    ns.state = State.READ_ONLY;
+                    upSince = new Date(); // only set this after zoo has been populated so we know if that failed
                 }
-                status = ns;
             }
-            eventBus.post(status);
+            eventBus.post(getStatus());
         } catch (Exception e) {
             log.error(e.toString(), e);
         }
@@ -102,7 +93,23 @@ public class ZooRepository implements Repository, Watcher {
 
     @Override
     public synchronized Status getStatus() {
-        return status;
+        Status ans = new Status();
+        ZooKeeper.States state = zk.getState();
+        ans.status = state.name();
+        switch (state) {
+            case CONNECTED:
+                if (upSince == null) {  // failed to init our schema in ZK
+                    ans.status = "Failed to created initial nodes in ZooKeeper";
+                } else {
+                    ans.up = true;
+                    ans.upSince = upSince;
+                }
+                break;
+            case CONNECTEDREADONLY:
+                ans.readOnly = true;
+                break;
+        }
+        return ans;
     }
 
     @Override

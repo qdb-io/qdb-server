@@ -10,10 +10,10 @@ import java.util.List;
  */
 public interface Repository {
 
-    enum State { DOWN, UP, READ_ONLY }
-
     public static class Status {
-        public State state;
+        public boolean up;
+        public boolean readOnly;
+        public String status;
         public Date upSince;
     }
 

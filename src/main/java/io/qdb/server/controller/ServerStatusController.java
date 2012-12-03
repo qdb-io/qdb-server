@@ -14,12 +14,10 @@ import java.util.Date;
 public class ServerStatusController implements Controller {
 
     private final Repository repo;
-    private final Date startTime;
 
     @Inject
     public ServerStatusController(Repository repo) {
         this.repo = repo;
-        startTime = new Date();
     }
 
     @Override
@@ -28,18 +26,6 @@ public class ServerStatusController implements Controller {
             call.setCode(400);
             return;
         }
-        Repository.Status rs = repo.getStatus();
-        Status s = new Status();
-        s.startTime = startTime;
-        s.status = rs.state;
-        s.upSince = rs.upSince;
-        call.setJson(s);
+        call.setJson(repo.getStatus());
     }
-
-    private static class Status {
-        public Repository.State status;
-        public Date upSince;
-        public Date startTime;
-    }
-
 }
