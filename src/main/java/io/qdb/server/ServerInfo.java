@@ -1,6 +1,5 @@
 package io.qdb.server;
 
-import io.qdb.server.zoo.Zoo;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooDefs;

@@ -25,7 +25,9 @@ public class UserController extends CrudController {
     @Override
     protected void list(Call call, int offset, int limit) throws IOException {
         if (call.getUser().isAdmin()) {
-            call.setJson(new ListResult(offset, limit, repo.countUsers(), repo.findUsers(offset, limit)));
+            ListResult res = new ListResult(offset, limit, repo.findUsers(offset, limit));
+            if (res.total < 0) res.total = repo.countUsers();
+            call.setJson(res);
         } else {
             call.setCode(403);
         }

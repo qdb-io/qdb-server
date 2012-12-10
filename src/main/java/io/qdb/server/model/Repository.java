@@ -11,10 +11,8 @@ import java.util.List;
 public interface Repository {
 
     public static class Status {
-        public boolean up;
-        public boolean readOnly;
-        public String status;
         public Date upSince;
+        public boolean isUp() { return upSince != null; }
     }
 
     public Status getStatus();
@@ -22,12 +20,12 @@ public interface Repository {
     /**
      * Publish information about node to the cluster.
      */
-    public void create(Node node) throws IOException;
+    public void createQdbNode(QdbNode node) throws IOException;
 
     /**
      * Find all nodes in our cluster that are up.
      */
-    public List<Node> findNodes() throws IOException;
+    public List<QdbNode> findQdbNodes() throws IOException;
 
     public User findUser(String id) throws IOException;
 

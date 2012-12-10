@@ -68,11 +68,12 @@ public abstract class CrudController implements Controller {
         public int total;
         public List data;
 
-        public ListResult(int offset, int limit, int total, List data) {
+        public ListResult(int offset, int limit, List data) {
             this.offset = offset;
             this.limit = limit;
-            this.total = total;
             this.data = data;
+            int sz = data.size();
+            total = sz < limit && (sz > 0 || offset == 0) ? offset + sz : -1;
         }
     }
 

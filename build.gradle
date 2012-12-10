@@ -23,7 +23,7 @@ dependencies {
     compile 'com.typesafe:config:1.0.0'
     compile 'org.codehaus.jackson:jackson-mapper-asl:1.9.7'
     compile 'com.google.guava:guava:13.0.1'
-    compile('org.apache.zookeeper:zookeeper:3.4.4') {
+    compile('com.netflix.curator:curator-recipes:1.2.3') {
         exclude group: 'org.slf4j'
         exclude group: 'com.sun.jmx', module: 'jmxri'
         exclude group: 'com.sun.jdmk', module: 'jmxtools'

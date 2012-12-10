@@ -3,13 +3,13 @@ package io.qdb.server.model;
 /**
  * A qdb instance in our cluster.
  */
-public class Node extends ModelObject {
+public class QdbNode extends ModelObject {
 
     private String url;
     private String tag1;
     private String tag2;
 
-    public Node() {
+    public QdbNode() {
     }
 
     public String getUrl() {

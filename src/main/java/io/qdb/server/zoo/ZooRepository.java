@@ -1,16 +1,27 @@
 package io.qdb.server.zoo;
 
 import com.google.common.eventbus.EventBus;
+import com.netflix.curator.CuratorZookeeperClient;
+import com.netflix.curator.framework.CuratorFramework;
+import com.netflix.curator.framework.CuratorFrameworkFactory;
+import com.netflix.curator.framework.recipes.cache.ChildData;
+import com.netflix.curator.framework.recipes.cache.PathChildrenCache;
+import com.netflix.curator.framework.state.ConnectionState;
+import com.netflix.curator.framework.state.ConnectionStateListener;
+import com.netflix.curator.retry.ExponentialBackoffRetry;
+import com.netflix.curator.utils.EnsurePath;
+import com.netflix.curator.utils.ZKPaths;
 import io.qdb.server.JsonService;
 import io.qdb.server.model.*;
 import org.apache.zookeeper.*;
-import org.apache.zookeeper.data.Stat;
+import org.apache.zookeeper.common.PathUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
@@ -20,17 +31,18 @@ import java.util.List;
  * Keeps our meta data in ZooKeeper.
  */
 @Singleton
-public class ZooRepository implements Repository, Watcher {
+public class ZooRepository implements Repository, Closeable, ConnectionStateListener {
 
     private static final Logger log = LoggerFactory.getLogger(ZooRepository.class);
 
     private final EventBus eventBus;
     private final JsonService jsonService;
     private final String root;
-    private final ZooKeeper zk;
+    private final CuratorFramework client;
     private final String initialAdminPassword;
 
     private Date upSince;
+    private PathChildrenCache usersCache;
 
     @Inject
     public ZooRepository(EventBus eventBus, JsonService jsonService,
@@ -43,35 +55,58 @@ public class ZooRepository implements Repository, Watcher {
         this.jsonService = jsonService;
         this.root = "/qdb/" + clusterName;
         this.initialAdminPassword = initialAdminPassword;
+
         log.info("Connecting to ZooKeeper(s) [" + connectString + "] sessionTimeout " + sessionTimeout);
-        zk = new ZooKeeper(connectString, sessionTimeout, this);
+        CuratorFramework cf = CuratorFrameworkFactory.newClient(connectString, new ExponentialBackoffRetry(1000, 3));
+        cf.getConnectionStateListenable().addListener(this);
+        cf.start();
+        client = cf.usingNamespace(root);
     }
 
     @Override
-    public void process(WatchedEvent event) {
-        try {
-            synchronized (this) {
-                log.debug(event.toString());
-                Event.KeeperState state = event.getState();
-                if (state == Event.KeeperState.SyncConnected) {
-                    log.info("Connected to ZooKeeper");
-                    populateZoo();
-                    upSince = new Date(); // only set this after zoo has been populated so we know if that failed
-                }
-            }
-            eventBus.post(getStatus());
-        } catch (Exception e) {
-            log.error(e.toString(), e);
-        }
+    public void close() throws IOException {
+        client.close();
     }
 
-    private void populateZoo() throws KeeperException, InterruptedException, IOException {
-        ensureNodeExists("/qdb");
-        ensureNodeExists(root);
-        ensureNodeExists(root + "/nodes");
-        ensureNodeExists(root + "/databases");
-        ensureNodeExists(root + "/queues");
-        ensureNodeExists(root + "/users");
+    @Override
+    public void stateChanged(CuratorFramework client, ConnectionState newState) {
+        switch (newState) {
+            case CONNECTED:
+                try {
+                    synchronized (this) {
+                        CuratorZookeeperClient zk = client.getZookeeperClient();
+                        new EnsurePath(root).ensure(zk);
+                        new EnsurePath(root + "/nodes").ensure(zk);
+                        new EnsurePath(root + "/databases").ensure(zk);
+                        new EnsurePath(root + "/queues").ensure(zk);
+                        new EnsurePath(root + "/users").ensure(zk);
+
+                        usersCache = new PathChildrenCache(this.client, "/users", true);
+                        usersCache.start(true);
+
+                        ensureAdminUser();
+
+                        upSince = new Date(); // only set this after zoo has been populated so we know if that failed
+                    }
+                } catch (Exception e) {
+                    log.error("Error initializing ZooKeeper: " + e, e);
+                }
+                break;
+            case RECONNECTED:
+                synchronized (this) {
+                    upSince = new Date();
+                }
+                break;
+            default:
+                synchronized (this) {
+                    upSince = null;
+                }
+                break;
+        }
+        eventBus.post(getStatus());
+    }
+
+    private void ensureAdminUser() throws Exception {
         if (findUser("admin") == null) {
             User admin = new User();
             admin.setId("admin");
@@ -82,53 +117,29 @@ public class ZooRepository implements Repository, Watcher {
         }
     }
 
-    private boolean ensureNodeExists(String path) throws KeeperException, InterruptedException {
-        try {
-            zk.create(path, new byte[0], ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
-            return true;
-        } catch (KeeperException.NodeExistsException ignore) {
-            return false;
-        }
-    }
-
     @Override
     public synchronized Status getStatus() {
         Status ans = new Status();
-        ZooKeeper.States state = zk.getState();
-        ans.status = state.name();
-        switch (state) {
-            case CONNECTED:
-                if (upSince == null) {  // failed to init our schema in ZK
-                    ans.status = "Failed to created initial nodes in ZooKeeper";
-                } else {
-                    ans.up = true;
-                    ans.upSince = upSince;
-                }
-                break;
-            case CONNECTEDREADONLY:
-                ans.readOnly = true;
-                break;
-        }
+        ans.upSince = upSince;
         return ans;
     }
 
     @Override
-    public void create(Node node) throws IOException {
+    public void createQdbNode(QdbNode node) throws IOException {
     }
 
     @Override
-    public List<Node> findNodes() throws IOException {
+    public List<QdbNode> findQdbNodes() throws IOException {
         return null;
     }
 
     @Override
     public User findUser(String id) throws IOException {
         try {
-            return jsonService.fromJson(zk.getData(root + "/users/" + id, false, new Stat()), User.class);
-        } catch (KeeperException e) {
-            if (e.code() == KeeperException.Code.NONODE) return null;
-            throw new IOException(e.toString(), e);
-        } catch (InterruptedException e) {
+            return jsonService.fromJson(client.getData().forPath("/users/" + id), User.class);
+        } catch (KeeperException.NoNodeException ignore) {
+            return null;
+        } catch (Exception e) {
             throw new IOException(e.toString(), e);
         }
     }
@@ -139,43 +150,30 @@ public class ZooRepository implements Repository, Watcher {
         try {
             User u = (User)user.clone();
             u.setId(null);
-            zk.create(root + "/users/" + user.getId(), jsonService.toJson(u),
-                    ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+            client.create().forPath("/users/" + user.getId(), jsonService.toJson(u));
         } catch (KeeperException.NodeExistsException e) {
             throw new ModelException("User [" + user.getId() + "] already exists");
-        } catch (KeeperException e) {
-            throw new IOException(e.toString(), e);
-        } catch (InterruptedException e) {
+        } catch (Exception e) {
             throw new IOException(e.toString(), e);
         }
     }
 
     @Override
     public List<User> findUsers(int offset, int limit) throws IOException {
-        try {
-            List<User> ans = new ArrayList<User>();
-            for (String id : zk.getChildren(root + "/users", false)) {
-                User u = new User();
-                u.setId(id);
-                ans.add(u);
-            }
-            return ans;
-        } catch (KeeperException e) {
-            throw new IOException(e.toString(), e);
-        } catch (InterruptedException e) {
-            throw new IOException(e.toString(), e);
+        List<User> ans = new ArrayList<User>();
+        List<ChildData> data = usersCache.getCurrentData();
+        for (int i = offset, n = Math.min(offset + limit, data.size()); i < n; i++) {
+            ChildData cd = data.get(i);
+            User u = jsonService.fromJson(cd.getData(), User.class);
+            u.setId(getLastPart(cd.getPath()));
+            ans.add(u);
         }
+        return ans;
     }
 
     @Override
     public int countUsers() throws IOException {
-        try {
-            return zk.exists(root + "/users", false).getNumChildren();
-        } catch (KeeperException e) {
-            throw new IOException(e.toString(), e);
-        } catch (InterruptedException e) {
-            throw new IOException(e.toString(), e);
-        }
+        return usersCache.getCurrentData().size();
     }
 
     private String getLastPart(String path) {
