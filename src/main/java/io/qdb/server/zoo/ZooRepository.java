@@ -136,7 +136,12 @@ public class ZooRepository implements Repository, Closeable, ConnectionStateList
     @Override
     public User findUser(String id) throws IOException {
         try {
-            return jsonService.fromJson(client.getData().forPath("/users/" + id), User.class);
+            String path = "/users/" + id;
+            ChildData cd = usersCache.getCurrentData(path);
+            if (cd != null) return toUser(cd);
+            User ans = jsonService.fromJson(client.getData().forPath(path), User.class);
+            usersCache.clearAndRefresh(); // cache is out of sync
+            return ans;
         } catch (KeeperException.NoNodeException ignore) {
             return null;
         } catch (Exception e) {
@@ -162,13 +167,14 @@ public class ZooRepository implements Repository, Closeable, ConnectionStateList
     public List<User> findUsers(int offset, int limit) throws IOException {
         List<User> ans = new ArrayList<User>();
         List<ChildData> data = usersCache.getCurrentData();
-        for (int i = offset, n = Math.min(offset + limit, data.size()); i < n; i++) {
-            ChildData cd = data.get(i);
-            User u = jsonService.fromJson(cd.getData(), User.class);
-            u.setId(getLastPart(cd.getPath()));
-            ans.add(u);
-        }
+        for (int i = offset, n = Math.min(offset + limit, data.size()); i < n; i++) ans.add(toUser(data.get(i)));
         return ans;
+    }
+
+    private User toUser(ChildData cd) throws IOException {
+        User u = jsonService.fromJson(cd.getData(), User.class);
+        u.setId(getLastPart(cd.getPath()));
+        return u;
     }
 
     @Override

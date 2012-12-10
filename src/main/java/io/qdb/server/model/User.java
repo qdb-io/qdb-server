@@ -7,6 +7,7 @@ public class User extends ModelObject {
 
     private String passwordHash;
     private boolean admin;
+    private String[] databases;
 
     public User() {
     }
@@ -30,6 +31,14 @@ public class User extends ModelObject {
     public boolean doesPasswordMatch(String password) {
         // todo hash password
         return password.equals(passwordHash);
+    }
+
+    public String[] getDatabases() {
+        return databases;
+    }
+
+    public void setDatabases(String[] databases) {
+        this.databases = databases;
     }
 
     @Override
