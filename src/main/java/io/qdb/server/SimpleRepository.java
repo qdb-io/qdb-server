@@ -60,7 +60,7 @@ public abstract class SimpleRepository implements Repository {
     }
 
     @Override
-    public List<Database> findDatabasesVisibleTo(User user) {
+    public List<Database> findDatabasesVisibleTo(User user, int offset, int limit) {
         List<Database> ans = new ArrayList<Database>();
         for (Database db : databases) {
             if (db.isVisibleTo(user)) ans.add(db);

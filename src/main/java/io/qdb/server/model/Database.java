@@ -19,6 +19,6 @@ public class Database extends ModelObject {
     }
 
     public boolean isVisibleTo(User user) {
-        return user.getId().equals(ownerUserId);
+        return user.getId().equals(ownerUserId) || user.isAdmin() || user.canReadDatabase(getId());
     }
 }

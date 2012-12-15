@@ -27,17 +27,24 @@ public interface Repository {
      */
     public List<QdbNode> findQdbNodes() throws IOException;
 
+
     public User findUser(String id) throws IOException;
 
-    public void createUser(User user) throws IOException;
+    public User createUser(User user) throws IOException;
 
     public List<User> findUsers(int offset, int limit) throws IOException;
 
     public int countUsers() throws IOException;
 
-    public List<Database> findDatabasesVisibleTo(User user) throws IOException;
 
     public Database findDatabase(String id) throws IOException;
+
+    public Database createDatabase(Database db) throws IOException;
+
+    public List<Database> findDatabasesVisibleTo(User user, int offset, int limit) throws IOException;
+
+    public int countDatabasesVisibleTo(User user);
+
 
     public List<Queue> findQueues(Database db) throws IOException;
 

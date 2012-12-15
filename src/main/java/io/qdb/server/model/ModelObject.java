@@ -7,6 +7,7 @@ package io.qdb.server.model;
 public abstract class ModelObject implements Cloneable {
 
     private String id;
+    private int version;
 
     protected ModelObject() {
     }
@@ -17,6 +18,14 @@ public abstract class ModelObject implements Cloneable {
 
     public void setId(String id) {
         this.id = id;
+    }
+
+    public int getVersion() {
+        return version;
+    }
+
+    public void setVersion(int version) {
+        this.version = version;
     }
 
     @Override

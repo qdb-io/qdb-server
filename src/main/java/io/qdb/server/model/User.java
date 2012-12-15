@@ -41,6 +41,15 @@ public class User extends ModelObject {
         this.databases = databases;
     }
 
+    public boolean canReadDatabase(String database) {
+        if (databases != null) {
+            for (int i = 0; i < databases.length; i++) {
+                if (databases[i].equals(database)) return true;
+            }
+        }
+        return false;
+    }
+
     @Override
     public String toString() {
         return super.toString() + ":" + (admin ? "ADMIN" : "");

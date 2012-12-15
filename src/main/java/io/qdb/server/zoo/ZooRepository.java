@@ -4,17 +4,12 @@ import com.google.common.eventbus.EventBus;
 import com.netflix.curator.CuratorZookeeperClient;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.CuratorFrameworkFactory;
-import com.netflix.curator.framework.recipes.cache.ChildData;
-import com.netflix.curator.framework.recipes.cache.PathChildrenCache;
 import com.netflix.curator.framework.state.ConnectionState;
 import com.netflix.curator.framework.state.ConnectionStateListener;
 import com.netflix.curator.retry.ExponentialBackoffRetry;
 import com.netflix.curator.utils.EnsurePath;
-import com.netflix.curator.utils.ZKPaths;
 import io.qdb.server.JsonService;
 import io.qdb.server.model.*;
-import org.apache.zookeeper.*;
-import org.apache.zookeeper.common.PathUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,7 +37,8 @@ public class ZooRepository implements Repository, Closeable, ConnectionStateList
     private final String initialAdminPassword;
 
     private Date upSince;
-    private PathChildrenCache usersCache;
+    private ZooModelCache<User> usersCache;
+    private ZooModelCache<Database> databasesCache;
 
     @Inject
     public ZooRepository(EventBus eventBus, JsonService jsonService,
@@ -65,6 +61,8 @@ public class ZooRepository implements Repository, Closeable, ConnectionStateList
 
     @Override
     public void close() throws IOException {
+        usersCache.close();
+        databasesCache.close();
         client.close();
     }
 
@@ -81,8 +79,8 @@ public class ZooRepository implements Repository, Closeable, ConnectionStateList
                         new EnsurePath(root + "/queues").ensure(zk);
                         new EnsurePath(root + "/users").ensure(zk);
 
-                        usersCache = new PathChildrenCache(this.client, "/users", true);
-                        usersCache.start(true);
+                        usersCache = new ZooModelCache<User>(User.class, jsonService, this.client, "/users");
+                        databasesCache = new ZooModelCache<Database>(Database.class, jsonService, this.client, "/databases");
 
                         ensureAdminUser();
 
@@ -135,65 +133,59 @@ public class ZooRepository implements Repository, Closeable, ConnectionStateList
 
     @Override
     public User findUser(String id) throws IOException {
-        try {
-            String path = "/users/" + id;
-            ChildData cd = usersCache.getCurrentData(path);
-            if (cd != null) return toUser(cd);
-            User ans = jsonService.fromJson(client.getData().forPath(path), User.class);
-            usersCache.clearAndRefresh(); // cache is out of sync
-            return ans;
-        } catch (KeeperException.NoNodeException ignore) {
-            return null;
-        } catch (Exception e) {
-            throw new IOException(e.toString(), e);
-        }
+        return usersCache.find(id);
     }
 
     @Override
-    public void createUser(User user) throws IOException {
-        assert user.getId() != null;
-        try {
-            User u = (User)user.clone();
-            u.setId(null);
-            client.create().forPath("/users/" + user.getId(), jsonService.toJson(u));
-        } catch (KeeperException.NodeExistsException e) {
-            throw new ModelException("User [" + user.getId() + "] already exists");
-        } catch (Exception e) {
-            throw new IOException(e.toString(), e);
-        }
+    public User createUser(User user) throws IOException {
+        return usersCache.create(user);
     }
 
     @Override
     public List<User> findUsers(int offset, int limit) throws IOException {
-        List<User> ans = new ArrayList<User>();
-        List<ChildData> data = usersCache.getCurrentData();
-        for (int i = offset, n = Math.min(offset + limit, data.size()); i < n; i++) ans.add(toUser(data.get(i)));
-        return ans;
-    }
-
-    private User toUser(ChildData cd) throws IOException {
-        User u = jsonService.fromJson(cd.getData(), User.class);
-        u.setId(getLastPart(cd.getPath()));
-        return u;
+        return usersCache.list(offset, limit);
     }
 
     @Override
     public int countUsers() throws IOException {
-        return usersCache.getCurrentData().size();
-    }
-
-    private String getLastPart(String path) {
-        return path.substring(path.lastIndexOf('/') + 1);
+        return usersCache.size();
     }
 
     @Override
-    public List<Database> findDatabasesVisibleTo(User user) {
-        return null;
+    public List<Database> findDatabasesVisibleTo(User user, int offset, int limit) throws IOException {
+        if (user.isAdmin()) {
+            return databasesCache.list(offset, limit);
+        } else {
+            ArrayList<Database> ans = new ArrayList<Database>();
+            String[] databases = user.getDatabases();
+            if (databases != null) {
+                for (int i = 0, n = Math.min(offset + limit, databases.length); i < n; i++) {
+                    Database db = findDatabase(databases[i]);
+                    if (db != null) ans.add(db);
+                }
+            }
+            return ans;
+        }
     }
 
     @Override
-    public Database findDatabase(String id) {
-        return null;
+    public Database findDatabase(String id) throws IOException {
+        return databasesCache.find(id);
+    }
+
+    @Override
+    public Database createDatabase(Database database) throws IOException {
+        return databasesCache.create(database);
+    }
+
+    @Override
+    public int countDatabasesVisibleTo(User user) {
+        if (user.isAdmin()) {
+            return databasesCache.size();
+        } else {
+            String[] databases = user.getDatabases();
+            return databases == null ? 0 : databases.length;
+        }
     }
 
     @Override

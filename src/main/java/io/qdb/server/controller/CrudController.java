@@ -1,9 +1,14 @@
 package io.qdb.server.controller;
 
 import com.sun.tools.internal.ws.processor.modeler.ModelerException;
+import io.qdb.server.JsonService;
+import io.qdb.server.model.Database;
 import io.qdb.server.model.ModelException;
+import io.qdb.server.model.ModelObject;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.channels.Channels;
 import java.util.List;
 
 /**
@@ -11,7 +16,10 @@ import java.util.List;
  */
 public abstract class CrudController implements Controller {
 
-    protected CrudController() {
+    protected final JsonService jsonService;
+
+    protected CrudController(JsonService jsonService) {
+        this.jsonService = jsonService;
     }
 
     public void handle(Call call) throws IOException {
@@ -59,6 +67,15 @@ public abstract class CrudController implements Controller {
 
     protected Controller getController(Call call, String id, String resource) throws IOException {
         return StatusCodeController.SC_404;
+    }
+
+    protected <T extends ModelObject> T getBodyObject(Call call, Class<T> cls) throws IOException {
+        InputStream ins = Channels.newInputStream(call.getRequest().getByteChannel());
+        try {
+            return jsonService.fromJson(ins, cls);
+        } finally {
+            ins.close();
+        }
     }
 
     public static class ListResult {

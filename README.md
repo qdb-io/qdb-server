@@ -48,6 +48,7 @@ List endpoints (e.g. /users) accept optional offset and limit parameters to page
 only update fields included in the JSON i.e. you don't have to send a complete representation of the object. POST
 and PUT request return a complete representation of the new/updated object.
 
+
 ### Users ###
 
 `GET /users` List users
@@ -60,31 +61,36 @@ and PUT request return a complete representation of the new/updated object.
 
 `GET /users/me` Get the authenticated user
 
+
 ### Databases ###
 
 Databases form a namespace for queues and control access. TODO figure out access levels and so on.
 
-`GET /dbs` List databases that the authenticated user can see
+`GET /databases` List databases that the authenticated user can see
 
-`POST /dbs` Create a database
+`POST /databases` Create a database
 
-`GET /dbs/foo` Get the database 'foo'
+    curl -s -X POST -H "Content-Type: application/json" --user admin:admin http://127.0.0.1:9554/databases -d @database.json
 
-`PUT /dbs/foo` Update the database 'foo'
+`GET /databases/foo` Get the database 'foo'
+
+`PUT /databases/foo` Update the database 'foo'
+
 
 ### Queues ###
 
-`GET /dbs/foo/queues` List queues in database 'foo'
+`GET /databases/foo/queues` List queues in database 'foo'
 
-`POST /dbs/foo/queues` Create a new queue in database 'foo'
+`POST /databases/foo/queues` Create a new queue in database 'foo'
 
-`GET /dbs/foo/queues/tweets` Get the queue 'tweets'
+`GET /databases/foo/queues/tweets` Get the queue 'tweets'
 
-`PUT /dbs/foo/queues/tweets` Update the queue 'tweets'
+`PUT /databases/foo/queues/tweets` Update the queue 'tweets'
+
 
 ### Appending Messages ###
 
-`POST /dbs/foo/queues/tweets/messages?routingKey=abc:def` Append a message to the queue 'tweets' with an (optional)
+`POST /databases/foo/queues/tweets/messages?routingKey=abc:def` Append a message to the queue 'tweets' with an (optional)
 routing key. The body of the POST is the message.
 
 Note that the queue being appended to might not exist on this node. The message will be forwarded to the owning
@@ -98,9 +104,10 @@ will be lost.
 
 TODO what about posting more than one message at once?
 
+
 ### Streaming Messages ###
 
-`GET /dbs/foo/queues/tweets/messages` Stream new messages from the queue 'tweets' as they are appended.
+`GET /databases/foo/queues/tweets/messages` Stream new messages from the queue 'tweets' as they are appended.
 TODO figure out how to separate messages etc.
 
 Specify `id=123456` to get messages from id onwards. Specify `timestamp=1354457617` (millisecond since 1/1/1970) or
@@ -109,9 +116,9 @@ Specify `id=123456` to get messages from id onwards. Specify `timestamp=13544576
 
 ### Queue Timelines ###
 
-`GET /dbs/foo/queues/tweets/timeline` Get the high level timeline for the queue with id 'tweets'
+`GET /databases/foo/queues/tweets/timeline` Get the high level timeline for the queue with id 'tweets'
 
-`GET /dbs/foo/queues/tweets/timeline/123456` Get the detailed timeline around the message with id 123456
+`GET /databases/foo/queues/tweets/timeline/123456` Get the detailed timeline around the message with id 123456
 
 
 License

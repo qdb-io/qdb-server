@@ -1,5 +1,6 @@
 package io.qdb.server.controller;
 
+import io.qdb.server.JsonService;
 import io.qdb.server.model.Database;
 import io.qdb.server.model.Queue;
 import io.qdb.server.model.Repository;
@@ -11,7 +12,8 @@ public class QueueController extends CrudController {
     private final Repository repo;
     private final Database db;
 
-    public QueueController(Repository repo, Database db) {
+    public QueueController(JsonService jsonService, Repository repo, Database db) {
+        super(jsonService);
         this.repo = repo;
         this.db = db;
     }

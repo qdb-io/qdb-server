@@ -14,12 +14,11 @@ import java.nio.channels.Channels;
 public class UserController extends CrudController {
 
     private final Repository repo;
-    private final JsonService jsonService;
 
     @Inject
     public UserController(Repository repo, JsonService jsonService) {
+        super(jsonService);
         this.repo = repo;
-        this.jsonService = jsonService;
     }
 
     @Override
@@ -53,14 +52,7 @@ public class UserController extends CrudController {
     @Override
     protected void create(Call call) throws IOException {
         if (call.getUser().isAdmin()) {
-            InputStream ins = Channels.newInputStream(call.getRequest().getByteChannel());
-            try {
-                User user = jsonService.fromJson(ins, User.class);
-                repo.createUser(user);
-                call.setJson(user);
-            } finally {
-                ins.close();
-            }
+            call.setJson(repo.createUser(getBodyObject(call, User.class)));
         } else {
             call.setCode(403);
         }
