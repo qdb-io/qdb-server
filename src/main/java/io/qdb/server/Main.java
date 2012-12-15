@@ -21,13 +21,6 @@ public class Main {
     public static void main(String[] args) {
         try {
             Injector injector = Guice.createInjector(new StdModule());
-//            ZooKeeperConnector zoo = injector.getInstance(ZooKeeperConnector.class);
-//            zoo.ensureConnected();
-//
-//            for (;;) {
-//                Thread.sleep(1000);
-//            }
-
             Config cfg = injector.getInstance(Config.class);
             Container container = injector.getInstance(Container.class);
             Connection connection = new SocketConnection(container);
