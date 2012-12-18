@@ -80,6 +80,10 @@ public class Call {
         }
     }
 
+    public boolean getBoolean(String param) throws IOException {
+        return "true".equals(request.getParameter(param));
+    }
+
     public void setCode(int code) throws IOException {
         setCode(code, null);
     }

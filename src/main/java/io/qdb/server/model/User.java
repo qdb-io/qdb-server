@@ -1,5 +1,7 @@
 package io.qdb.server.model;
 
+import io.qdb.server.security.PasswordTools;
+
 /**
  * A user with permissions. The user's id is used as its username.
  */
@@ -20,17 +22,20 @@ public class User extends ModelObject {
         this.passwordHash = passwordHash;
     }
 
+    public void setPassword(String password) {
+        passwordHash = PasswordTools.hashPassword(password);
+    }
+
     public boolean isAdmin() {
         return admin;
     }
 
-    public void setAdmin(Boolean admin) {
+    public void setAdmin(boolean admin) {
         this.admin = admin;
     }
 
     public boolean doesPasswordMatch(String password) {
-        // todo hash password
-        return password.equals(passwordHash);
+        return PasswordTools.checkPassword(password, passwordHash);
     }
 
     public String[] getDatabases() {
@@ -43,8 +48,8 @@ public class User extends ModelObject {
 
     public boolean canReadDatabase(String database) {
         if (databases != null) {
-            for (int i = 0; i < databases.length; i++) {
-                if (databases[i].equals(database)) return true;
+            for (String db : databases) {
+                if (db.equals(database)) return true;
             }
         }
         return false;

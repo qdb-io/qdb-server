@@ -3,15 +3,15 @@ package io.qdb.server
 class ServerSpec extends BaseSpec {
 
     def "Unauthenticated user can get basic status"() {
-        def ans = GET("/")
+        def ans = GET("/", null, null)
+
         expect:
         ans.up == true
         ans.upSince != null
     }
 
     def "Authentication required for non-root urls"() {
-        URL url = new URL(SERVER_URL + "/users")
-        HttpURLConnection con = url.openConnection() as HttpURLConnection
+        HttpURLConnection con = new URL(SERVER_URL + "/users").openConnection() as HttpURLConnection
 
         expect:
         con.responseCode == 401

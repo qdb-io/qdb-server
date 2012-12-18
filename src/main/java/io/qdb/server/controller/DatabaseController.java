@@ -24,10 +24,12 @@ public class DatabaseController extends CrudController {
 
     @Override
     protected void list(Call call, int offset, int limit) throws IOException {
-        User cu = call.getUser();
-        ListResult res = new ListResult(offset, limit, repo.findDatabasesVisibleTo(cu, offset, limit));
-        if (res.total < 0) res.total = repo.countDatabasesVisibleTo(cu);
-        call.setJson(res);
+        call.setJson(repo.findDatabasesVisibleTo(call.getUser(), offset, limit));
+    }
+
+    @Override
+    protected void count(Call call) throws IOException {
+        call.setJson(new Count(repo.countDatabasesVisibleTo(call.getUser())));
     }
 
     @Override

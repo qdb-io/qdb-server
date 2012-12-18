@@ -26,9 +26,17 @@ public abstract class CrudController implements Controller {
         try {
             String id = call.nextSegment();
             if (id == null) {
-                if (call.isGet()) list(call, call.getInt("offset", 0), call.getInt("limit", 30));
-                else if (call.isPost()) create(call);
-                else call.setCode(400);
+                if (call.isGet()) {
+                    if (call.getBoolean("count")) {
+                        count(call);
+                    } else {
+                        list(call, call.getInt("offset", 0), call.getInt("limit", 30));
+                    }
+                } else if (call.isPost()) {
+                    create(call);
+                } else {
+                    call.setCode(400);
+                }
             } else {
                 String resource = call.nextSegment();
                 if (resource == null) {
@@ -47,6 +55,10 @@ public abstract class CrudController implements Controller {
 
     protected void list(Call call, int offset, int limit) throws IOException {
         call.setCode(404);
+    }
+
+    protected void count(Call call) throws IOException {
+        call.setCode(400);
     }
 
     protected void show(Call call, String id) throws IOException {
@@ -69,7 +81,7 @@ public abstract class CrudController implements Controller {
         return StatusCodeController.SC_404;
     }
 
-    protected <T extends ModelObject> T getBodyObject(Call call, Class<T> cls) throws IOException {
+    protected <T> T getBodyObject(Call call, Class<T> cls) throws IOException {
         InputStream ins = Channels.newInputStream(call.getRequest().getByteChannel());
         try {
             return jsonService.fromJson(ins, cls);
@@ -78,20 +90,12 @@ public abstract class CrudController implements Controller {
         }
     }
 
-    public static class ListResult {
+    public static class Count {
 
-        public int offset;
-        public int limit;
-        public int total;
-        public List data;
+        public int count;
 
-        public ListResult(int offset, int limit, List data) {
-            this.offset = offset;
-            this.limit = limit;
-            this.data = data;
-            int sz = data.size();
-            total = sz < limit && (sz > 0 || offset == 0) ? offset + sz : -1;
+        public Count(int count) {
+            this.count = count;
         }
     }
-
 }

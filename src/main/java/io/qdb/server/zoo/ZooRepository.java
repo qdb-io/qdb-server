@@ -108,7 +108,7 @@ public class ZooRepository implements Repository, Closeable, ConnectionStateList
         if (findUser("admin") == null) {
             User admin = new User();
             admin.setId("admin");
-            admin.setPasswordHash(initialAdminPassword);
+            admin.setPassword(initialAdminPassword);
             admin.setAdmin(true);
             createUser(admin);
             log.info("Created initial admin user");
@@ -139,6 +139,11 @@ public class ZooRepository implements Repository, Closeable, ConnectionStateList
     @Override
     public User createUser(User user) throws IOException {
         return usersCache.create(user);
+    }
+
+    @Override
+    public User updateUser(User user) throws IOException {
+        return usersCache.update(user);
     }
 
     @Override

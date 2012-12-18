@@ -32,6 +32,8 @@ public interface Repository {
 
     public User createUser(User user) throws IOException;
 
+    public User updateUser(User user) throws IOException;
+
     public List<User> findUsers(int offset, int limit) throws IOException;
 
     public int countUsers() throws IOException;

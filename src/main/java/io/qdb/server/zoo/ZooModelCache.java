@@ -85,6 +85,20 @@ class ZooModelCache<T extends ModelObject> implements Closeable {
         }
     }
 
+    @SuppressWarnings("unchecked")
+    public T update(T modelObject) throws IOException {
+        assert modelObject.getId() != null;
+        String path = this.path + "/" + modelObject.getId();
+        try {
+            T o = (T)modelObject.clone();
+            o.setId(null);
+            client.setData().forPath(path, jsonService.toJson(o));
+            return modelObject;
+        } catch (Exception e) {
+            throw new IOException(e.toString(), e);
+        }
+    }
+
     private T toModelObject(ChildData cd) throws IOException {
         T ans = jsonService.fromJson(cd.getData(), modelCls);
         ans.setId(getLastPart(cd.getPath()));
