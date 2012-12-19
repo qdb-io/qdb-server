@@ -47,4 +47,12 @@ class UsersSpec extends BaseSpec {
         b.admin == false
     }
 
+    def "List databases for non-admin user"() {
+        def ans = GET("/databases", "david", "secret")
+
+        expect:
+        ans.size() == 1
+        ans[0].id == "foo"
+    }
+
 }
