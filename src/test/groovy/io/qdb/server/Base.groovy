@@ -3,7 +3,6 @@ package io.qdb.server
 import spock.lang.Specification
 import groovy.json.JsonSlurper
 import groovy.json.JsonBuilder
-import com.netflix.curator.test.TestingServer
 import org.simpleframework.transport.connect.Connection
 import com.google.inject.Injector
 import com.google.inject.Guice

@@ -1,5 +1,8 @@
 package io.qdb.server
 
+import spock.lang.Stepwise
+
+@Stepwise
 class UsersSpec extends Base {
 
     def "List users"() {
