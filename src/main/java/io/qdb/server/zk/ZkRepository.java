@@ -33,9 +33,9 @@ public class ZkRepository implements Repository, Closeable, ConnectionStateListe
     private final EventBus eventBus;
     private final JsonService jsonService;
     private final String root;
-    private final CuratorFramework client;
     private final String initialAdminPassword;
 
+    private CuratorFramework client;
     private Date upSince;
     private ZkModelCache<User> usersCache;
     private ZkModelCache<Database> databasesCache;
@@ -56,31 +56,27 @@ public class ZkRepository implements Repository, Closeable, ConnectionStateListe
         CuratorFramework cf = CuratorFrameworkFactory.newClient(connectString, new ExponentialBackoffRetry(1000, 3));
         cf.getConnectionStateListenable().addListener(this);
         cf.start();
-        client = cf.usingNamespace(root);
     }
 
     @Override
     public void close() throws IOException {
         usersCache.close();
         databasesCache.close();
-        client.close();
+        if (client != null) client.close();
     }
 
     @Override
-    public void stateChanged(CuratorFramework client, ConnectionState newState) {
+    public void stateChanged(CuratorFramework cf, ConnectionState newState) {
         switch (newState) {
             case CONNECTED:
                 try {
                     synchronized (this) {
-                        CuratorZookeeperClient zk = client.getZookeeperClient();
-                        new EnsurePath(root).ensure(zk);
-                        new EnsurePath(root + "/nodes").ensure(zk);
-                        new EnsurePath(root + "/databases").ensure(zk);
-                        new EnsurePath(root + "/queues").ensure(zk);
-                        new EnsurePath(root + "/users").ensure(zk);
+                        client = cf.usingNamespace(root);
 
-                        usersCache = new ZkModelCache<User>(User.class, jsonService, this.client, "/users");
-                        databasesCache = new ZkModelCache<Database>(Database.class, jsonService, this.client, "/databases");
+                        client.newNamespaceAwareEnsurePath("/nodes").ensure(client.getZookeeperClient());
+
+                        usersCache = new ZkModelCache<User>(User.class, jsonService, client, "/users");
+                        databasesCache = new ZkModelCache<Database>(Database.class, jsonService, client, "/databases");
 
                         ensureAdminUser();
 

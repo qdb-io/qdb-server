@@ -1,5 +1,6 @@
 package io.qdb.server;
 
+import com.google.common.io.Files;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -7,7 +8,9 @@ import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import java.io.*;
-import java.util.UUID;
+import java.math.BigInteger;
+import java.nio.charset.Charset;
+import java.security.SecureRandom;
 
 /**
  * Reads/generates the unique ID for a qdb server from its data dir.
@@ -23,24 +26,18 @@ public class ServerId {
     public ServerId(@Named("data.dir") String dataDir) throws IOException {
         File f = new File(dataDir, "server-id.txt");
         if (f.exists()) {
-            BufferedReader r = new BufferedReader(new FileReader(f));
-            try {
-                id = r.readLine();
-            } finally {
-                r.close();
-            }
+            id = Files.readFirstLine(f, Charset.forName("UTF8"));
             if (id == null || id.trim().length() == 0) {
                 throw new IOException("Server ID from [" + f.getAbsolutePath() + "] is empty");
             }
+            if (log.isDebugEnabled()) log.debug("Server ID is [" + id + "] from [" + f.getAbsolutePath() + "]");
         } else {
-            id = UUID.randomUUID().toString();
-            FileWriter w = new FileWriter(f);
-            try {
-                w.write(id);
-            } finally {
-                w.close();
-            }
-            log.info("Generated new server ID: " + id);
+            byte[] data = new byte[8];
+            new SecureRandom().nextBytes(data);
+            id = new BigInteger(data).abs().toString(36);
+            Files.createParentDirs(f);
+            Files.write(id.getBytes("UTF8"), f);
+            log.info("New server ID [" + id + "] stored in [" + f.getAbsolutePath() + "]");
         }
     }
 
