@@ -30,7 +30,7 @@ class ZkModelCache<T extends ModelObject> implements Closeable {
         this.path = path;
         this.client = client;
         cache = new PathChildrenCache(client, path, true);
-        cache.start();
+        cache.start(true);
     }
 
     @Override
@@ -106,5 +106,9 @@ class ZkModelCache<T extends ModelObject> implements Closeable {
 
     private String getLastPart(String path) {
         return path.substring(path.lastIndexOf('/') + 1);
+    }
+
+    public String getPath() {
+        return path;
     }
 }

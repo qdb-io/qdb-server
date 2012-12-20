@@ -25,7 +25,7 @@ public class EmbeddedZooKeeper implements Closeable {
 
     private static final Logger log = LoggerFactory.getLogger(EmbeddedZooKeeper.class);
 
-    private ZooKeeperServer zkServer;
+    private ServerCnxnFactory cnxnFactory;
 
     @Inject
     public EmbeddedZooKeeper(ServerId serverId,
@@ -90,14 +90,15 @@ public class EmbeddedZooKeeper implements Closeable {
         }
 
         // cut and paste from org.apache.zookeeper.server.ZooKeeperServerMain
-        zkServer = new ZooKeeperServer();
+        ZooKeeperServer zkServer = new ZooKeeperServer();
 
         FileTxnSnapLog ftxn = new FileTxnSnapLog(new File(config.getDataLogDir()), new File(config.getDataDir()));
         zkServer.setTxnLogFactory(ftxn);
         zkServer.setTickTime(config.getTickTime());
         zkServer.setMinSessionTimeout(config.getMinSessionTimeout());
         zkServer.setMaxSessionTimeout(config.getMaxSessionTimeout());
-        ServerCnxnFactory cnxnFactory = ServerCnxnFactory.createFactory();
+
+        cnxnFactory = ServerCnxnFactory.createFactory();
         cnxnFactory.configure(config.getClientPortAddress(), config.getMaxClientCnxns());
         try {
             cnxnFactory.startup(zkServer);
@@ -108,8 +109,9 @@ public class EmbeddedZooKeeper implements Closeable {
 
     @Override
     public void close() throws IOException {
-        if (zkServer != null && zkServer.isRunning()) {
-            zkServer.shutdown();
+        if (cnxnFactory != null) {
+            cnxnFactory.shutdown();
+            cnxnFactory = null;
         }
     }
 }

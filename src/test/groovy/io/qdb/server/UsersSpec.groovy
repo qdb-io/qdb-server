@@ -1,6 +1,6 @@
 package io.qdb.server
 
-class UsersSpec extends BaseSpec {
+class UsersSpec extends Base {
 
     def "List users"() {
         def ans = GET("/users")

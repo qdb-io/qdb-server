@@ -1,6 +1,6 @@
 package io.qdb.server
 
-class DatabasesSpec extends BaseSpec {
+class DatabasesSpec extends Base {
 
     def "Create database"() {
         def ans = POST("/databases", [id: "foo"])

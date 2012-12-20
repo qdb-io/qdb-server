@@ -8,20 +8,24 @@ import org.simpleframework.transport.connect.Connection
 import com.google.inject.Injector
 import com.google.inject.Guice
 import spock.lang.Shared
+import io.qdb.server.zk.EmbeddedZooKeeper
+import io.qdb.server.model.Repository
 
-class BaseSpec extends Specification {
+class Base extends Specification {
 
-    @Shared private TestingServer zookeeper;
+    @Shared private EmbeddedZooKeeper zookeeper;
     @Shared private Connection qdb;
 
     protected static final String SERVER_URL = "http://127.0.0.1:9554"
 
     def setupSpec() {
-        zookeeper = new TestingServer(2181)
-        Thread.sleep(2000)
-        Injector injector = Guice.createInjector(new QdbServerModuleForTests(zookeeper.connectString))
+        Injector injector = Guice.createInjector(new QdbServerModuleForTests(""))
+        zookeeper = injector.getInstance(EmbeddedZooKeeper.class)
+        Repository repo = injector.getInstance(Repository.class)
+        synchronized (repo) {
+            for (int i = 0; i < 3 && !repo.getStatus().up; i++) repo.wait(1000);
+        }
         qdb = injector.getInstance(Connection.class)
-        Thread.sleep(2000)
     }
 
     def cleanupSpec() {

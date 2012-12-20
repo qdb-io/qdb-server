@@ -1,13 +1,11 @@
 package io.qdb.server.zk;
 
 import com.google.common.eventbus.EventBus;
-import com.netflix.curator.CuratorZookeeperClient;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.CuratorFrameworkFactory;
 import com.netflix.curator.framework.state.ConnectionState;
 import com.netflix.curator.framework.state.ConnectionStateListener;
 import com.netflix.curator.retry.ExponentialBackoffRetry;
-import com.netflix.curator.utils.EnsurePath;
 import io.qdb.server.JsonService;
 import io.qdb.server.model.*;
 import org.slf4j.Logger;
@@ -69,6 +67,7 @@ public class ZkRepository implements Repository, Closeable, ConnectionStateListe
     public void stateChanged(CuratorFramework cf, ConnectionState newState) {
         switch (newState) {
             case CONNECTED:
+            case RECONNECTED:
                 try {
                     synchronized (this) {
                         client = cf.usingNamespace(root);
@@ -81,19 +80,20 @@ public class ZkRepository implements Repository, Closeable, ConnectionStateListe
                         ensureAdminUser();
 
                         upSince = new Date(); // only set this after zoo has been populated so we know if that failed
+
+                        notifyAll();
                     }
                 } catch (Exception e) {
                     log.error("Error initializing ZooKeeper: " + e, e);
                 }
                 break;
-            case RECONNECTED:
-                synchronized (this) {
-                    upSince = new Date();
-                }
-                break;
             default:
                 synchronized (this) {
-                    upSince = null;
+                    if (upSince != null) {
+                        closeQuietly(usersCache);
+                        closeQuietly(databasesCache);
+                        upSince = null;
+                    }
                 }
                 break;
         }
@@ -108,6 +108,14 @@ public class ZkRepository implements Repository, Closeable, ConnectionStateListe
             admin.setAdmin(true);
             usersCache.create(admin);
             log.info("Created initial admin user");
+        }
+    }
+
+    private void closeQuietly(ZkModelCache cache) {
+        try {
+            cache.close();
+        } catch (IOException e) {
+            if (log.isDebugEnabled()) log.debug("Error closing cache " + cache.getPath() + ": " + e, e);
         }
     }
 

@@ -8,11 +8,7 @@ import com.google.inject.name.Names;
  */
 public class QdbServerModuleForTests extends QdbServerModule {
 
-    private final String zkConnectString;
-
-    public QdbServerModuleForTests(String zkConnectString) {
-        this.zkConnectString = zkConnectString;
-        System.out.println("zkConnectString = [" + zkConnectString + "]");
+    public QdbServerModuleForTests(String dataDir) {
     }
 
     @Override
