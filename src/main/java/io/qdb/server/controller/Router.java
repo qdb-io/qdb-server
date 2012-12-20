@@ -1,5 +1,6 @@
 package io.qdb.server.controller;
 
+import io.qdb.server.model.Repository;
 import io.qdb.server.security.Auth;
 import io.qdb.server.security.AuthService;
 import org.simpleframework.http.Request;
@@ -14,11 +15,6 @@ import java.io.IOException;
 
 /**
  * Routes requests to controllers for processing.
- *
- * / - GET server status
- * /dbs
- * /dbs/$db/queues
- * /dbs/$db/queues/queue_path
  */
 @Singleton
 public class Router implements Container {
@@ -63,18 +59,25 @@ public class Router implements Container {
                     else call.setCode(400);
                 }
             }
+        } catch (Repository.UnavailableException e) {
+            if (log.isDebugEnabled()) log.debug("503: " + req.getPath() + " " + e.getMessage());
+            quietRenderCode(req, resp, 503, e.getMessage());
         } catch (Exception e) {
-            log.error(req.getPath() + " " + e.getMessage(), e);
-            try {
-                renderer.setCode(resp, 500, null);
-            } catch (IOException x) {
-                if (log.isDebugEnabled()) log.debug(req.getPath() + " " + e.getMessage(), e);
-            }
+            log.error("500: " + req.getPath() + " " + e, e);
+            quietRenderCode(req, resp, 500, null);
         }
         try {
             resp.close();
         } catch (IOException x) {
             if (log.isDebugEnabled()) log.debug("Error closing response: " + x, x);
+        }
+    }
+
+    private void quietRenderCode(Request req, Response resp, int code, String msg) {
+        try {
+            renderer.setCode(resp, code, msg);
+        } catch (IOException x) {
+            if (log.isDebugEnabled()) log.debug(req.getPath() + " " + x.getMessage(), x);
         }
     }
 }

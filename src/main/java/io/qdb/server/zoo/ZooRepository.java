@@ -122,42 +122,54 @@ public class ZooRepository implements Repository, Closeable, ConnectionStateList
         return ans;
     }
 
+    private void checkUp() throws IOException {
+        if (upSince == null) throw new UnavailableException("Not connected to ZooKeeper");
+    }
+
     @Override
     public void createQdbNode(QdbNode node) throws IOException {
+        checkUp();
     }
 
     @Override
     public List<QdbNode> findQdbNodes() throws IOException {
+        checkUp();
         return null;
     }
 
     @Override
     public User findUser(String id) throws IOException {
+        checkUp();
         return usersCache.find(id);
     }
 
     @Override
     public User createUser(User user) throws IOException {
+        checkUp();
         return usersCache.create(user);
     }
 
     @Override
     public User updateUser(User user) throws IOException {
+        checkUp();
         return usersCache.update(user);
     }
 
     @Override
     public List<User> findUsers(int offset, int limit) throws IOException {
+        checkUp();
         return usersCache.list(offset, limit);
     }
 
     @Override
     public int countUsers() throws IOException {
+        checkUp();
         return usersCache.size();
     }
 
     @Override
     public List<Database> findDatabasesVisibleTo(User user, int offset, int limit) throws IOException {
+        checkUp();
         if (user.isAdmin()) {
             return databasesCache.list(offset, limit);
         } else {
@@ -175,16 +187,19 @@ public class ZooRepository implements Repository, Closeable, ConnectionStateList
 
     @Override
     public Database findDatabase(String id) throws IOException {
+        checkUp();
         return databasesCache.find(id);
     }
 
     @Override
     public Database createDatabase(Database database) throws IOException {
+        checkUp();
         return databasesCache.create(database);
     }
 
     @Override
-    public int countDatabasesVisibleTo(User user) {
+    public int countDatabasesVisibleTo(User user) throws IOException {
+        checkUp();
         if (user.isAdmin()) {
             return databasesCache.size();
         } else {
@@ -194,12 +209,14 @@ public class ZooRepository implements Repository, Closeable, ConnectionStateList
     }
 
     @Override
-    public List<Queue> findQueues(Database db) {
+    public List<Queue> findQueues(Database db) throws IOException {
+        checkUp();
         return null;
     }
 
     @Override
-    public Queue findQueue(Database db, String nameOrId) {
+    public Queue findQueue(Database db, String nameOrId) throws IOException {
+        checkUp();
         return null;
     }
 }

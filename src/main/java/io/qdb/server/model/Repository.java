@@ -10,6 +10,15 @@ import java.util.List;
  */
 public interface Repository {
 
+    /**
+     * Thrown on all repository operations except getStatus if the repo is down.
+     */
+    public static class UnavailableException extends IOException {
+        public UnavailableException(String msg) {
+            super(msg);
+        }
+    }
+
     public static class Status {
         public Date upSince;
         public boolean isUp() { return upSince != null; }
@@ -45,7 +54,7 @@ public interface Repository {
 
     public List<Database> findDatabasesVisibleTo(User user, int offset, int limit) throws IOException;
 
-    public int countDatabasesVisibleTo(User user);
+    public int countDatabasesVisibleTo(User user) throws IOException;
 
 
     public List<Queue> findQueues(Database db) throws IOException;
