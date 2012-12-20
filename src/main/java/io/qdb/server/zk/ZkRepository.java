@@ -105,12 +105,12 @@ public class ZkRepository implements Repository, Closeable, ConnectionStateListe
     }
 
     private void ensureAdminUser() throws Exception {
-        if (findUser("admin") == null) {
+        if (usersCache.find("admin") == null) {
             User admin = new User();
             admin.setId("admin");
             admin.setPassword(initialAdminPassword);
             admin.setAdmin(true);
-            createUser(admin);
+            usersCache.create(admin);
             log.info("Created initial admin user");
         }
     }

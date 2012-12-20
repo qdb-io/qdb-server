@@ -1,6 +1,7 @@
 package io.qdb.server;
 
 import com.google.inject.*;
+import io.qdb.server.zk.EmbeddedZooKeeper;
 import org.simpleframework.transport.connect.Connection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,6 +16,7 @@ public class Main {
     public static void main(String[] args) {
         try {
             Injector injector = Guice.createInjector(new QdbServerModule());
+            injector.getInstance(EmbeddedZooKeeper.class);
             injector.getInstance(Connection.class);
         } catch (Exception e) {
             log.error(e.getMessage(), e);
