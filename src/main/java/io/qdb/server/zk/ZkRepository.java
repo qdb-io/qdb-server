@@ -1,4 +1,4 @@
-package io.qdb.server.zoo;
+package io.qdb.server.zk;
 
 import com.google.common.eventbus.EventBus;
 import com.netflix.curator.CuratorZookeeperClient;
@@ -26,9 +26,9 @@ import java.util.List;
  * Keeps our meta data in ZooKeeper.
  */
 @Singleton
-public class ZooRepository implements Repository, Closeable, ConnectionStateListener {
+public class ZkRepository implements Repository, Closeable, ConnectionStateListener {
 
-    private static final Logger log = LoggerFactory.getLogger(ZooRepository.class);
+    private static final Logger log = LoggerFactory.getLogger(ZkRepository.class);
 
     private final EventBus eventBus;
     private final JsonService jsonService;
@@ -37,15 +37,15 @@ public class ZooRepository implements Repository, Closeable, ConnectionStateList
     private final String initialAdminPassword;
 
     private Date upSince;
-    private ZooModelCache<User> usersCache;
-    private ZooModelCache<Database> databasesCache;
+    private ZkModelCache<User> usersCache;
+    private ZkModelCache<Database> databasesCache;
 
     @Inject
-    public ZooRepository(EventBus eventBus, JsonService jsonService,
-                         @Named("zookeeper.connectString") String connectString,
-                         @Named("zookeeper.sessionTimeout") int sessionTimeout,
-                         @Named("clusterName") String clusterName,
-                         @Named("initialAdminPassword") String initialAdminPassword)
+    public ZkRepository(EventBus eventBus, JsonService jsonService,
+                        @Named("zookeeper.connectString") String connectString,
+                        @Named("zookeeper.sessionTimeout") int sessionTimeout,
+                        @Named("clusterName") String clusterName,
+                        @Named("initialAdminPassword") String initialAdminPassword)
             throws IOException {
         this.eventBus = eventBus;
         this.jsonService = jsonService;
@@ -79,8 +79,8 @@ public class ZooRepository implements Repository, Closeable, ConnectionStateList
                         new EnsurePath(root + "/queues").ensure(zk);
                         new EnsurePath(root + "/users").ensure(zk);
 
-                        usersCache = new ZooModelCache<User>(User.class, jsonService, this.client, "/users");
-                        databasesCache = new ZooModelCache<Database>(Database.class, jsonService, this.client, "/databases");
+                        usersCache = new ZkModelCache<User>(User.class, jsonService, this.client, "/users");
+                        databasesCache = new ZkModelCache<Database>(Database.class, jsonService, this.client, "/databases");
 
                         ensureAdminUser();
 

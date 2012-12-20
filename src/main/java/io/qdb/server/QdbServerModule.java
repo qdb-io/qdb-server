@@ -10,7 +10,7 @@ import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigValue;
 import io.qdb.server.controller.Router;
 import io.qdb.server.model.Repository;
-import io.qdb.server.zoo.ZooRepository;
+import io.qdb.server.zk.ZkRepository;
 import org.simpleframework.http.core.Container;
 import org.simpleframework.transport.connect.Connection;
 
@@ -25,7 +25,7 @@ public class QdbServerModule extends AbstractModule {
     protected void configure() {
         bindProperties();
         bind(Container.class).to(Router.class);
-        bind(Repository.class).to(ZooRepository.class);
+        bind(Repository.class).to(ZkRepository.class);
         bind(EventBus.class).toInstance(new EventBus());
         bind(Connection.class).toProvider(ConnectionProvider.class);
     }

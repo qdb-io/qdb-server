@@ -1,13 +1,11 @@
-package io.qdb.server.zoo;
+package io.qdb.server.zk;
 
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.recipes.cache.ChildData;
 import com.netflix.curator.framework.recipes.cache.PathChildrenCache;
 import io.qdb.server.JsonService;
-import io.qdb.server.model.Database;
 import io.qdb.server.model.ModelException;
 import io.qdb.server.model.ModelObject;
-import io.qdb.server.model.User;
 import org.apache.zookeeper.KeeperException;
 
 import java.io.Closeable;
@@ -18,7 +16,7 @@ import java.util.List;
 /**
  * Caches users, databases etc.
  */
-class ZooModelCache<T extends ModelObject> implements Closeable {
+class ZkModelCache<T extends ModelObject> implements Closeable {
 
     private final Class<T> modelCls;
     private final JsonService jsonService;
@@ -26,7 +24,7 @@ class ZooModelCache<T extends ModelObject> implements Closeable {
     private final CuratorFramework client;
     private final PathChildrenCache cache;
 
-    ZooModelCache(Class<T> modelCls, JsonService jsonService, CuratorFramework client, String path) throws Exception {
+    ZkModelCache(Class<T> modelCls, JsonService jsonService, CuratorFramework client, String path) throws Exception {
         this.modelCls = modelCls;
         this.jsonService = jsonService;
         this.path = path;
