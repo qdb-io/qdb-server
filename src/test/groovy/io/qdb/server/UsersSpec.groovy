@@ -71,8 +71,9 @@ class UsersSpec extends Base {
         PUT("/users/david", [admin: true, version: 0])
 
         then:
-        IOException e = thrown()
-        e.message.contains("409")
+        BadResponseCodeException e = thrown()
+        e.responseCode == 409
+        e.json.id == "david"
     }
 
     def "List databases for non-admin user"() {

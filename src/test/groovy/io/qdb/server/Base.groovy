@@ -69,7 +69,9 @@ class Base extends Specification {
         con.outputStream.write(json.getBytes("UTF8"))
         if (con.responseCode != 200) {
             def text = con.errorStream?.getText("UTF8")
-            throw new IOException("Got ${con.responseCode} for ${method} ${url} ${text ? ':\n' + text : ''}")
+            throw new BadResponseCodeException(
+                    "Got ${con.responseCode} for ${method} ${url}",
+                    con.responseCode, text ? new JsonSlurper().parseText(text) : null)
         } else {
             return new JsonSlurper().parseText(con.inputStream.text)
         }
