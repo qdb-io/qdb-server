@@ -5,6 +5,10 @@ import spock.lang.Stepwise
 @Stepwise
 class UsersSpec extends Base {
 
+    def setupSpec() {
+        POST("/databases", [id: "foo"])
+    }
+
     def "List users"() {
         def ans = GET("/users")
 

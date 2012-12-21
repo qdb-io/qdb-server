@@ -32,10 +32,11 @@ dependencies {
         exclude group: 'log4j'
         exclude group: 'jline'
     }
+
     groovy "org.codehaus.groovy:groovy-all:1.8.6"
     testCompile "org.spockframework:spock-core:0.6-groovy-1.8"
     testCompile 'junit:junit:4.10'
-    testCompile 'com.netflix.curator:curator-test:1.2.5'
+    testCompile 'commons-io:commons-io:2.4'
 }
 
 task sourceJar(type: Jar) {

@@ -9,6 +9,8 @@ import com.google.inject.Guice
 import spock.lang.Shared
 import io.qdb.server.zk.EmbeddedZooKeeper
 import io.qdb.server.model.Repository
+import org.apache.commons.io.FileUtils
+import com.google.inject.util.Modules
 
 class Base extends Specification {
 
@@ -18,7 +20,11 @@ class Base extends Specification {
     protected static final String SERVER_URL = "http://127.0.0.1:9554"
 
     def setupSpec() {
-        Injector injector = Guice.createInjector(new QdbServerModuleForTests(""))
+        File dataDir = new File("build/test-data")
+        if (dataDir.exists() && dataDir.isDirectory()) FileUtils.deleteDirectory(dataDir)
+        if (!dataDir.mkdirs()) throw new IOException("Unable to create [" + dataDir.absolutePath + "]")
+
+        Injector injector = Guice.createInjector(Modules.override(new QdbServerModule()).with(new ModuleForTests(dataDir)))
         zookeeper = injector.getInstance(EmbeddedZooKeeper.class)
         Repository repo = injector.getInstance(Repository.class)
         synchronized (repo) {
@@ -28,8 +34,8 @@ class Base extends Specification {
     }
 
     def cleanupSpec() {
-        qdb.close()
-        zookeeper.close()
+        qdb?.close()
+        zookeeper?.close()
     }
 
     protected GET(String path, String user = "admin", String password = "admin") {
