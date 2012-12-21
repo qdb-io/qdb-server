@@ -86,7 +86,7 @@ public class DatabaseController extends CrudController {
 
     private void update(Database db, DatabaseDTO dto, Call call) throws IOException {
         if (dto.version != null && !dto.version.equals(db.getVersion())) {
-            call.setCode(409, db);
+            call.setCode(409, new DatabaseDTO(db));
             return;
         }
         if (dto.owner != null) {
@@ -96,7 +96,7 @@ public class DatabaseController extends CrudController {
             }
             db.setOwner(dto.owner);
         }
-        call.setJson(repo.updateDatabase(db));
+        call.setJson(new DatabaseDTO(repo.updateDatabase(db)));
     }
 
     @Override

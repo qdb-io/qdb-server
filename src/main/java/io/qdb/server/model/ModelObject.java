@@ -28,6 +28,10 @@ public abstract class ModelObject implements Cloneable {
         this.version = version;
     }
 
+    public void incVersion() {
+        ++version;
+    }
+
     @Override
     public int hashCode() {
         return id.hashCode();

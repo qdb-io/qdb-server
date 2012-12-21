@@ -1,6 +1,7 @@
 package io.qdb.server.controller;
 
 import io.qdb.server.JsonService;
+import io.qdb.server.model.Database;
 import io.qdb.server.model.Repository;
 import io.qdb.server.model.User;
 
@@ -97,21 +98,30 @@ public class UserController extends CrudController {
     protected void update(Call call, String id) throws IOException {
         if (call.getUser().isAdmin()) {
             User u = repo.findUser(id);
-            if (u == null) {
-                call.setCode(404);
-            } else {
-                UserDTO dto = getBodyObject(call, UserDTO.class);
-                if (dto.version != null && !dto.version.equals(u.getVersion())) {
-                    call.setCode(409, "Version mismatch");
-                } else {
-                    if (dto.admin != null) u.setAdmin(dto.admin);
-                    if (dto.databases != null) u.setDatabases(dto.databases);
-                    u = repo.updateUser(u);
-                }
-                call.setJson(new UserDTO(u));
-            }
+            if (u == null) call.setCode(404);
+            else update(u, getBodyObject(call, UserDTO.class), call);
         } else {
             call.setCode(403);
         }
     }
+
+    private void update(User u, UserDTO dto, Call call) throws IOException {
+        if (dto.version != null && !dto.version.equals(u.getVersion())) {
+            call.setCode(409, new UserDTO(u));
+            return;
+        }
+        if (dto.admin != null) u.setAdmin(dto.admin);
+        if (dto.databases != null) {
+            for (int i = 0; i < dto.databases.length; i++) {
+                String db = dto.databases[i];
+                if (repo.findDatabase(db) == null) {
+                    call.setCode(400, "database [" + db + "] does not exist");
+                    return;
+                }
+            }
+            u.setDatabases(dto.databases);
+        }
+        call.setJson(new UserDTO(repo.updateUser(u)));
+    }
+
 }

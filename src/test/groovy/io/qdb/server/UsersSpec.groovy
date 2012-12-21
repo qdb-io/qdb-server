@@ -54,6 +54,27 @@ class UsersSpec extends Base {
         b.admin == false
     }
 
+    def "Update user with correct version"() {
+        def ver = GET("/users/david").version
+        def a = PUT("/users/david", [admin: true, version: ver])
+        def b = PUT("/users/david", [admin: false, version: ver + 1])
+
+        expect:
+        a.id == "david"
+        a.admin == true
+        a.version == ver + 1
+        b.admin == false
+    }
+
+    def "Update user with old version"() {
+        when:
+        PUT("/users/david", [admin: true, version: 0])
+
+        then:
+        IOException e = thrown()
+        e.message.contains("409")
+    }
+
     def "List databases for non-admin user"() {
         def ans = GET("/databases", "david", "secret")
 

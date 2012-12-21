@@ -38,6 +38,10 @@ class ZkModelCache<T extends ModelObject> implements Closeable {
         cache.close();
     }
 
+    public String getPath() {
+        return path;
+    }
+
     /**
      * Find the object with id or null if none.
      */
@@ -91,6 +95,7 @@ class ZkModelCache<T extends ModelObject> implements Closeable {
             T o = (T)modelObject.clone();
             o.setId(null);
             client.setData().forPath(path, jsonService.toJson(o));
+            modelObject.incVersion();
             return modelObject;
         } catch (Exception e) {
             throw new IOException(e.toString(), e);
@@ -108,7 +113,5 @@ class ZkModelCache<T extends ModelObject> implements Closeable {
         return path.substring(path.lastIndexOf('/') + 1);
     }
 
-    public String getPath() {
-        return path;
-    }
+
 }
