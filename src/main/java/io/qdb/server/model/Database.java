@@ -5,20 +5,20 @@ package io.qdb.server.model;
  */
 public class Database extends ModelObject {
 
-    private String ownerUserId;
+    private String owner;
 
     public Database() {
     }
 
-    public String getOwnerUserId() {
-        return ownerUserId;
+    public String getOwner() {
+        return owner;
     }
 
-    public void setOwnerUserId(String ownerUserId) {
-        this.ownerUserId = ownerUserId;
+    public void setOwner(String owner) {
+        this.owner = owner;
     }
 
     public boolean isVisibleTo(User user) {
-        return user.getId().equals(ownerUserId) || user.isAdmin() || user.canReadDatabase(getId());
+        return user.getId().equals(owner) || user.isAdmin() || user.canReadDatabase(getId());
     }
 }

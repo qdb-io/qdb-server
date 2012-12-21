@@ -3,18 +3,31 @@ package io.qdb.server.controller;
 import io.qdb.server.JsonService;
 import io.qdb.server.model.Database;
 import io.qdb.server.model.Repository;
-import io.qdb.server.model.User;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.channels.Channels;
+import java.util.List;
 
 @Singleton
 public class DatabaseController extends CrudController {
 
     private final Repository repo;
+
+    public static class DatabaseDTO {
+
+        public String id;
+        public Integer version;
+        public String owner;
+
+        public DatabaseDTO() { }
+
+        public DatabaseDTO(Database db) {
+            id = db.getId();
+            version = db.getVersion();
+            owner = db.getOwner();
+        }
+    }
 
     @Inject
     public DatabaseController(Repository repo, JsonService jsonService) {
@@ -24,7 +37,10 @@ public class DatabaseController extends CrudController {
 
     @Override
     protected void list(Call call, int offset, int limit) throws IOException {
-        call.setJson(repo.findDatabasesVisibleTo(call.getUser(), offset, limit));
+        List<Database> list = repo.findDatabasesVisibleTo(call.getUser(), offset, limit);
+        DatabaseDTO[] ans = new DatabaseDTO[list.size()];
+        for (int i = 0; i < ans.length; i++) ans[i] = new DatabaseDTO(list.get(i));
+        call.setJson(ans);
     }
 
     @Override
@@ -38,7 +54,7 @@ public class DatabaseController extends CrudController {
         if (db == null) {
             call.setCode(404);
         } else if (db.isVisibleTo(call.getUser())) {
-            call.setJson(db);
+            call.setJson(new DatabaseDTO(db));
         } else {
             call.setCode(403);
         }
@@ -47,10 +63,40 @@ public class DatabaseController extends CrudController {
     @Override
     protected void create(Call call) throws IOException {
         if (call.getUser().isAdmin()) {
-            call.setJson(repo.createDatabase(getBodyObject(call, Database.class)));
+            DatabaseDTO dto = getBodyObject(call, DatabaseDTO.class);
+            Database db = new Database();
+            db.setId(dto.id);
+            db.setOwner(dto.owner);
+            call.setJson(new DatabaseDTO(repo.createDatabase(db)));
         } else {
             call.setCode(403);
         }
+    }
+
+    @Override
+    protected void update(Call call, String id) throws IOException {
+        Database db = repo.findDatabase(id);
+        if (call.getUser().isAdmin() || db != null && call.getUser().getId().equals(db.getOwner())) {
+            if (db == null) call.setCode(404);
+            else update(db, getBodyObject(call, DatabaseDTO.class), call);
+        } else {
+            call.setCode(403);
+        }
+    }
+
+    private void update(Database db, DatabaseDTO dto, Call call) throws IOException {
+        if (dto.version != null && !dto.version.equals(db.getVersion())) {
+            call.setCode(409, db);
+            return;
+        }
+        if (dto.owner != null) {
+            if (repo.findUser(dto.owner) == null) {
+                call.setCode(400, "owner [" + dto.owner + "] does not exist");
+                return;
+            }
+            db.setOwner(dto.owner);
+        }
+        call.setJson(repo.updateDatabase(db));
     }
 
     @Override

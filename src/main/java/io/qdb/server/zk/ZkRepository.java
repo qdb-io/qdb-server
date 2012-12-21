@@ -202,6 +202,12 @@ public class ZkRepository implements Repository, Closeable, ConnectionStateListe
     }
 
     @Override
+    public Database updateDatabase(Database db) throws IOException {
+        checkUp();
+        return databasesCache.update(db);
+    }
+
+    @Override
     public int countDatabasesVisibleTo(User user) throws IOException {
         checkUp();
         if (user.isAdmin()) {

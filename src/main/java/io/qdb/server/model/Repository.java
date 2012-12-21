@@ -52,6 +52,8 @@ public interface Repository {
 
     public Database createDatabase(Database db) throws IOException;
 
+    public Database updateDatabase(Database db) throws IOException;
+
     public List<Database> findDatabasesVisibleTo(User user, int offset, int limit) throws IOException;
 
     public int countDatabasesVisibleTo(User user) throws IOException;

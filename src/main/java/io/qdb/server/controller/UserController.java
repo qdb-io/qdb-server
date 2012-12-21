@@ -85,7 +85,7 @@ public class UserController extends CrudController {
             User u = new User();
             u.setId(dto.id);
             u.setPassword(dto.password);
-            u.setAdmin(dto.admin);
+            if (dto.admin != null) u.setAdmin(dto.admin);
             u.setDatabases(dto.databases);
             call.setJson(new UserDTO(repo.createUser(u)));
         } else {
@@ -102,7 +102,7 @@ public class UserController extends CrudController {
             } else {
                 UserDTO dto = getBodyObject(call, UserDTO.class);
                 if (dto.version != null && !dto.version.equals(u.getVersion())) {
-                    call.setCode(409);
+                    call.setCode(409, "Version mismatch");
                 } else {
                     if (dto.admin != null) u.setAdmin(dto.admin);
                     if (dto.databases != null) u.setDatabases(dto.databases);

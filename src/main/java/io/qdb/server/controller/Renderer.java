@@ -32,12 +32,18 @@ public class Renderer {
         json(resp, new StatusMsg(code, message == null ? toMessage(code) : message));
     }
 
+    public void setCode(Response resp, int code, Object data) throws IOException {
+        resp.setCode(code);
+        json(resp, data);
+    }
+
     private String toMessage(int code) {
         switch (code) {
             case 200:   return "OK";
             case 400:   return "Bad request";
             case 403:   return "Forbidden";
             case 404:   return "Not found";
+            case 409:   return "Version mismatch";
         }
         return null;
     }

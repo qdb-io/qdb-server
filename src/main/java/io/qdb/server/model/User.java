@@ -23,7 +23,7 @@ public class User extends ModelObject {
     }
 
     public void setPassword(String password) {
-        passwordHash = PasswordTools.hashPassword(password);
+        passwordHash = password == null ? null : PasswordTools.hashPassword(password);
     }
 
     public boolean isAdmin() {

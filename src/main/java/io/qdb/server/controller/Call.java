@@ -20,6 +20,7 @@ public class Call {
     private final Renderer renderer;
 
     private int currentSegment;
+    private int code = 200;
 
     public Call(Request request, Response response, Auth auth, Renderer renderer) {
         this.request = request;
@@ -89,7 +90,17 @@ public class Call {
     }
 
     public void setCode(int code, String message) throws IOException {
+        this.code = code;
         renderer.setCode(response, code, message);
+    }
+
+    public void setCode(int code, Object data) throws IOException {
+        this.code = code;
+        renderer.setCode(response, code, data);
+    }
+
+    public int getCode() {
+        return code;
     }
 
     /**

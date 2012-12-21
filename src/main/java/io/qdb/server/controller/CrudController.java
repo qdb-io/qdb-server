@@ -58,7 +58,7 @@ public abstract class CrudController implements Controller {
     }
 
     protected void count(Call call) throws IOException {
-        call.setCode(400);
+        call.setCode(400, "Count not supported");
     }
 
     protected void show(Call call, String id) throws IOException {
@@ -66,15 +66,15 @@ public abstract class CrudController implements Controller {
     }
 
     protected void create(Call call) throws IOException {
-        call.setCode(400);
+        call.setCode(400, "Create not supported");
     }
 
     protected void update(Call call, String id) throws IOException {
-        call.setCode(400);
+        call.setCode(400, "Update not supported");
     }
 
     protected void delete(Call call, String id) throws IOException {
-        call.setCode(400);
+        call.setCode(400, "Delete not supported");
     }
 
     protected Controller getController(Call call, String id, String resource) throws IOException {
