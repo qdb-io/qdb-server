@@ -18,6 +18,24 @@ class QueuesSpec extends Base {
         ans.qid.length() > 0
     }
 
+    def "Duplicate queue not allowed"() {
+        when:
+        POST("/databases/foo/queues", [id: "bar"], "david", "secret")
+
+        then:
+        BadResponseCodeException e = thrown()
+        e.responseCode == 400
+    }
+
+    def "Queue id validation"() {
+        when:
+        POST("/databases/foo/queues", [id: "a?b"], "david", "secret")
+
+        then:
+        BadResponseCodeException e = thrown()
+        e.responseCode == 400
+    }
+
     def "List queues"() {
         def ans = GET("/databases/foo/queues", "david", "secret")
 
