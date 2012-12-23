@@ -7,7 +7,9 @@ import io.qdb.server.JsonService;
 import io.qdb.server.model.DuplicateIdException;
 import io.qdb.server.model.ModelException;
 import io.qdb.server.model.ModelObject;
+import io.qdb.server.model.OptLockException;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.data.Stat;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -95,9 +97,11 @@ class ZkModelCache<T extends ModelObject> implements Closeable {
         try {
             T o = (T)modelObject.clone();
             o.setId(null);
-            client.setData().forPath(path, jsonService.toJson(o));
-            modelObject.incVersion();
+            Stat stat = client.setData().withVersion(modelObject.getVersion()).forPath(path, jsonService.toJson(o));
+            modelObject.setVersion(stat.getVersion());
             return modelObject;
+        } catch (KeeperException.BadVersionException e) {
+            throw new OptLockException(e.getMessage());
         } catch (Exception e) {
             throw new IOException(e.toString(), e);
         }

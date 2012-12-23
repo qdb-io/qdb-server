@@ -1,5 +1,7 @@
 package io.qdb.server.model;
 
+import org.codehaus.jackson.annotate.JsonIgnore;
+
 /**
  * Base class for objects in our model. Supports equals (class and id must match) and hashcode (on id).
  * Serializable to/from JSON with Jackson.
@@ -7,6 +9,7 @@ package io.qdb.server.model;
 public abstract class ModelObject implements Cloneable {
 
     private String id;
+    @JsonIgnore
     private int version;
 
     protected ModelObject() {

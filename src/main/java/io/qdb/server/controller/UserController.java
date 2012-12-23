@@ -2,8 +2,10 @@ package io.qdb.server.controller;
 
 import io.qdb.server.JsonService;
 import io.qdb.server.model.Database;
+import io.qdb.server.model.OptLockException;
 import io.qdb.server.model.Repository;
 import io.qdb.server.model.User;
+import org.apache.zookeeper.KeeperException;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -121,7 +123,13 @@ public class UserController extends CrudController {
             }
             u.setDatabases(dto.databases);
         }
-        call.setJson(new UserDTO(repo.updateUser(u)));
+        try {
+            call.setJson(new UserDTO(repo.updateUser(u)));
+        } catch (OptLockException e) {
+            u = repo.findUser(u.getId());
+            if (u == null) call.setCode(410);
+            else call.setCode(409, new UserDTO(u));
+        }
     }
 
 }

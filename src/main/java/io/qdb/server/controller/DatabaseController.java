@@ -2,6 +2,7 @@ package io.qdb.server.controller;
 
 import io.qdb.server.JsonService;
 import io.qdb.server.model.Database;
+import io.qdb.server.model.OptLockException;
 import io.qdb.server.model.Repository;
 
 import javax.inject.Inject;
@@ -96,7 +97,13 @@ public class DatabaseController extends CrudController {
             }
             db.setOwner(dto.owner);
         }
-        call.setJson(new DatabaseDTO(repo.updateDatabase(db)));
+        try {
+            call.setJson(new DatabaseDTO(repo.updateDatabase(db)));
+        } catch (OptLockException e) {
+            db = repo.findDatabase(db.getId());
+            if (db == null) call.setCode(410);
+            else call.setCode(409, new DatabaseDTO(db));
+        }
     }
 
     @Override
