@@ -68,7 +68,7 @@ public class DatabaseController extends CrudController {
             Database db = new Database();
             db.setId(dto.id);
             db.setOwner(dto.owner);
-            call.setJson(new DatabaseDTO(repo.createDatabase(db)));
+            call.setCode(201, new DatabaseDTO(repo.createDatabase(db)));
         } else {
             call.setCode(403);
         }

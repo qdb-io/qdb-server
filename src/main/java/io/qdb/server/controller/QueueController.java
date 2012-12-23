@@ -12,7 +12,7 @@ import java.util.regex.Pattern;
 public class QueueController extends CrudController {
 
     private final Repository repo;
-    private final Database db;
+    private Database db;
 
     private static final SecureRandom RND = new SecureRandom();
 
@@ -107,21 +107,33 @@ public class QueueController extends CrudController {
 
         Queue queue = new Queue();
         queue.setDatabase(db.getId());
-        for (int i = 0; i < 20; i++) {
+        for (int attempt = 0; ; ) {
             queue.setId(generateQueueId());
             try {
                 repo.createQueue(queue);
                 break;
             } catch (DuplicateIdException ignore) {
+                if (++attempt == 20) throw new IOException("Got " + attempt + " dup id's attempting to create queue?");
             }
         }
 
-        queues.put(dto.id, queue.getId());
+        for (int attempt = 0; ; ) {
+            queues.put(dto.id, queue.getId());
+            try {
+                repo.updateDatabase(db);
+                break;
+            } catch (OptLockException e) {
+                if (++attempt == 20) throw new IOException("Got " + attempt + " opt lock errors attempting to update db?");
+                db = repo.findDatabase(db.getId());
+                if (db == null) {
+                    call.setCode(410);
+                    return;
+                }
+                queues = db.getQueues();
+            }
+        }
 
-        // todo do this in a loop checking for opt lock failures
-        repo.updateDatabase(db);
-
-        call.setJson(new QueueDTO(dto.id, queue));
+        call.setCode(201, new QueueDTO(dto.id, queue));
     }
 
     private String generateQueueId() {

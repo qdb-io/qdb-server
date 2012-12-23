@@ -90,7 +90,7 @@ public class UserController extends CrudController {
             u.setPassword(dto.password);
             if (dto.admin != null) u.setAdmin(dto.admin);
             u.setDatabases(dto.databases);
-            call.setJson(new UserDTO(repo.createUser(u)));
+            call.setCode(201, new UserDTO(repo.createUser(u)));
         } else {
             call.setCode(403);
         }

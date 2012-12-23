@@ -67,11 +67,12 @@ class Base extends Specification {
         if (user) con.setRequestProperty("Authorization", toBasicAuth(user, password))
         con.setRequestProperty("Content-Type", "application/json")
         con.outputStream.write(json.getBytes("UTF8"))
-        if (con.responseCode != 200) {
+        def rc = con.responseCode
+        if (method == "PUT" && rc != 200 || method == "POST" && rc != 201) {
             def text = con.errorStream?.getText("UTF8")
             throw new BadResponseCodeException(
-                    "Got ${con.responseCode} for ${method} ${url}",
-                    con.responseCode, text, text ? new JsonSlurper().parseText(text) : null)
+                    "Got ${rc} for ${method} ${url}",
+                    rc, text, text ? new JsonSlurper().parseText(text) : null)
         } else {
             return new JsonSlurper().parseText(con.inputStream.text)
         }
