@@ -6,7 +6,8 @@ import spock.lang.Stepwise
 class DatabasesSpec extends Base {
 
     def setupSpec() {
-        POST("/users", [id: "david"])
+        POST("/users", [id: "david", password: "secret"])
+        POST("/users", [id: "gimp", password: "secret"])
     }
 
     def "Create database"() {
@@ -44,6 +45,22 @@ class DatabasesSpec extends Base {
         expect:
         a.id == "foo"
         a.owner == "david"
+    }
+
+    def "Get database as owner"() {
+        def ans = GET("/databases/foo", "david", "secret")
+
+        expect:
+        ans.id == "foo"
+    }
+
+    def "Get database as arb user"() {
+        when:
+        GET("/databases/foo", "gimp", "secret")
+
+        then:
+        BadResponseCodeException e = thrown()
+        e.responseCode == 403
     }
 
 }

@@ -39,11 +39,18 @@ class Base extends Specification {
     }
 
     protected GET(String path, String user = "admin", String password = "admin") {
-        def headers = [:]
-        if (user) {
-            headers.Authorization = toBasicAuth(user, password)
+        def url = new URL(SERVER_URL + path)
+        HttpURLConnection con = url.openConnection() as HttpURLConnection
+        if (user) con.setRequestProperty("Authorization", toBasicAuth(user, password))
+        def rc = con.responseCode
+        if (rc != 200) {
+            def text = con.errorStream?.getText("UTF8")
+            throw new BadResponseCodeException(
+                    "Got ${rc} for GET ${url}",
+                    rc, text, text ? new JsonSlurper().parseText(text) : null)
+        } else {
+            return new JsonSlurper().parseText(con.inputStream.text)
         }
-        return new JsonSlurper().parseText(new URL(SERVER_URL + path).getText([requestProperties: headers]))
     }
 
     private String toBasicAuth(String user, String password) {
