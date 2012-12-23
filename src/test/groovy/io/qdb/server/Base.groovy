@@ -71,7 +71,7 @@ class Base extends Specification {
             def text = con.errorStream?.getText("UTF8")
             throw new BadResponseCodeException(
                     "Got ${con.responseCode} for ${method} ${url}",
-                    con.responseCode, text ? new JsonSlurper().parseText(text) : null)
+                    con.responseCode, text, text ? new JsonSlurper().parseText(text) : null)
         } else {
             return new JsonSlurper().parseText(con.inputStream.text)
         }

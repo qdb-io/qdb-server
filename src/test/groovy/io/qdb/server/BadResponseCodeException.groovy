@@ -7,11 +7,13 @@ class BadResponseCodeException extends IOException {
 
     int responseCode
     Object json
+    String text
 
-    BadResponseCodeException(String msg, int responseCode, Object json) {
+    BadResponseCodeException(String msg, int responseCode, String text, Object json) {
         super(msg)
         this.responseCode = responseCode
         this.json = json
+        this.text = text;
     }
 
     @Override

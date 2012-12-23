@@ -4,6 +4,7 @@ import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.recipes.cache.ChildData;
 import com.netflix.curator.framework.recipes.cache.PathChildrenCache;
 import io.qdb.server.JsonService;
+import io.qdb.server.model.DuplicateIdException;
 import io.qdb.server.model.ModelException;
 import io.qdb.server.model.ModelObject;
 import org.apache.zookeeper.KeeperException;
@@ -81,7 +82,7 @@ class ZkModelCache<T extends ModelObject> implements Closeable {
             client.create().forPath(path, jsonService.toJson(o));
             return modelObject;
         } catch (KeeperException.NodeExistsException e) {
-            throw new ModelException("[" + path + "] already exists");
+            throw new DuplicateIdException("[" + path + "] already exists");
         } catch (Exception e) {
             throw new IOException(e.toString(), e);
         }

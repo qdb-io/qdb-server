@@ -59,8 +59,15 @@ public interface Repository {
     public int countDatabasesVisibleTo(User user) throws IOException;
 
 
-    public List<Queue> findQueues(Database db) throws IOException;
+    public Queue findQueue(String id) throws IOException;
 
-    public Queue findQueue(Database db, String nameOrId) throws IOException;
+    public Queue createQueue(Queue queue) throws IOException;
+
+    public Queue updateQueue(Queue queue) throws IOException;
+
+    public List<Queue> findQueues(int offset, int limit) throws IOException;
+
+    public int countQueues() throws IOException;
+
 
 }

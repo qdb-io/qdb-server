@@ -73,20 +73,4 @@ public abstract class SimpleRepository implements Repository {
         return find(id, databases);
     }
 
-    @Override
-    public List<Queue> findQueues(Database db) {
-        ArrayList<Queue> ans = new ArrayList<Queue>();
-        for (Queue q : queues) {
-            if (q.getDatabaseId().equals(db.getId())) ans.add(q);
-        }
-        return ans;
-    }
-
-    @Override
-    public Queue findQueue(Database db, String nameOrId) {
-        for (Queue q : findQueues(db)) {
-            if (nameOrId.equals(q.getName()) || nameOrId.equals(q.getId())) return q;
-        }
-        return null;
-    }
 }

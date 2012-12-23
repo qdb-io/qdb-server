@@ -37,6 +37,7 @@ public class ZkRepository implements Repository, Closeable, ConnectionStateListe
     private Date upSince;
     private ZkModelCache<User> usersCache;
     private ZkModelCache<Database> databasesCache;
+    private ZkModelCache<Queue> queueCache;
 
     @Inject
     public ZkRepository(EventBus eventBus, JsonService jsonService,
@@ -60,6 +61,7 @@ public class ZkRepository implements Repository, Closeable, ConnectionStateListe
     public void close() throws IOException {
         usersCache.close();
         databasesCache.close();
+        queueCache.close();
         if (client != null) client.close();
     }
 
@@ -76,6 +78,7 @@ public class ZkRepository implements Repository, Closeable, ConnectionStateListe
 
                         usersCache = new ZkModelCache<User>(User.class, jsonService, client, "/users");
                         databasesCache = new ZkModelCache<Database>(Database.class, jsonService, client, "/databases");
+                        queueCache = new ZkModelCache<Queue>(Queue.class, jsonService, client, "/queues");
 
                         ensureAdminUser();
 
@@ -92,6 +95,7 @@ public class ZkRepository implements Repository, Closeable, ConnectionStateListe
                     if (upSince != null) {
                         closeQuietly(usersCache);
                         closeQuietly(databasesCache);
+                        closeQuietly(queueCache);
                         upSince = null;
                     }
                 }
@@ -219,14 +223,33 @@ public class ZkRepository implements Repository, Closeable, ConnectionStateListe
     }
 
     @Override
-    public List<Queue> findQueues(Database db) throws IOException {
+    public Queue findQueue(String id) throws IOException {
         checkUp();
-        return null;
+        return queueCache.find(id);
     }
 
     @Override
-    public Queue findQueue(Database db, String nameOrId) throws IOException {
+    public Queue createQueue(Queue queue) throws IOException {
         checkUp();
-        return null;
+        return queueCache.create(queue);
     }
+
+    @Override
+    public Queue updateQueue(Queue queue) throws IOException {
+        checkUp();
+        return queueCache.update(queue);
+    }
+
+    @Override
+    public List<Queue> findQueues(int offset, int limit) throws IOException {
+        checkUp();
+        return queueCache.list(offset, limit);
+    }
+
+    @Override
+    public int countQueues() throws IOException {
+        checkUp();
+        return queueCache.size();
+    }
+
 }

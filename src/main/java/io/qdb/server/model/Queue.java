@@ -5,25 +5,21 @@ package io.qdb.server.model;
  */
 public class Queue extends ModelObject {
 
-    private String databaseId;
-    private String name;
+    private String database;
 
     public Queue() {
     }
 
-    public String getDatabaseId() {
-        return databaseId;
+    public String getDatabase() {
+        return database;
     }
 
-    public void setDatabaseId(String databaseId) {
-        this.databaseId = databaseId;
+    public void setDatabase(String database) {
+        this.database = database;
     }
 
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
+    @Override
+    public String toString() {
+        return super.toString() + ":" + database;
     }
 }

@@ -45,16 +45,6 @@ class UsersSpec extends Base {
     }
 
     def "Update user"() {
-        def a = PUT("/users/david", [admin: true])
-        def b = PUT("/users/david", [admin: false])
-
-        expect:
-        a.id == "david"
-        a.admin == true
-        b.admin == false
-    }
-
-    def "Update user with correct version"() {
         def ver = GET("/users/david").version
         def a = PUT("/users/david", [admin: true, version: ver])
         def b = PUT("/users/david", [admin: false, version: ver + 1])
