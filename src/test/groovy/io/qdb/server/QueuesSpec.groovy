@@ -11,11 +11,12 @@ class QueuesSpec extends Base {
     }
 
     def "Create queue"() {
-        def ans = POST("/databases/foo/queues", [id: "bar"], "david", "secret")
+        def ans = POST("/databases/foo/queues", [id: "bar", maxSize: 10000000], "david", "secret")
 
         expect:
         ans.id == "bar"
         ans.qid.length() > 0
+        ans.maxSize == 10000000
     }
 
     def "Duplicate queue not allowed"() {
@@ -58,5 +59,33 @@ class QueuesSpec extends Base {
         expect:
         ans.id == "bar"
         ans.qid.length() > 0
+    }
+
+    def "Update queue"() {
+        def ans = PUT("/databases/foo/queues/bar", [maxSize: 20000000, maxPayloadSize: 100000], "david", "secret")
+
+        expect:
+        ans.id == "bar"
+        ans.qid.length() > 0
+        ans.maxSize == 20000000
+        ans.maxPayloadSize == 100000
+    }
+
+    def "Queue maxSize validation"() {
+        when:
+        PUT("/databases/foo/queues/bar", [maxSize: 100000], "david", "secret")
+
+        then:
+        BadResponseCodeException e = thrown()
+        e.responseCode == 400
+    }
+
+    def "Queue maxPayloadSize validation"() {
+        when:
+        PUT("/databases/foo/queues/bar", [maxPayloadSize: 20000000 / 3 + 1], "david", "secret")
+
+        then:
+        BadResponseCodeException e = thrown()
+        e.responseCode == 400
     }
 }

@@ -22,6 +22,8 @@ public class QueueController extends CrudController {
         public String qid;
         public Integer version;
         public String database;
+        public Long maxSize;
+        public Integer maxPayloadSize;
         public String contentType;
 
         public QueueDTO() { }
@@ -30,6 +32,8 @@ public class QueueController extends CrudController {
             this.id = id;
             this.qid = queue.getId();
             this.version = queue.getVersion();
+            this.maxSize = queue.getMaxSize();
+            this.maxPayloadSize = queue.getMaxPayloadSize();
             this.contentType = queue.getContentType();
         }
 
@@ -108,12 +112,19 @@ public class QueueController extends CrudController {
             return;
         }
 
-        Queue queue = new Queue();
-        queue.setDatabase(db.getId());
+        if (dto.maxSize == null) {
+            call.setCode(400, "maxSize is required");
+            return;
+        }
+
+        Queue q = new Queue();
+        if (!updateAttributes(q, dto, call)) return;
+        q.setDatabase(db.getId());
+
         for (int attempt = 0; ; ) {
-            queue.setId(generateQueueId());
+            q.setId(generateQueueId());
             try {
-                repo.createQueue(queue);
+                repo.createQueue(q);
                 break;
             } catch (DuplicateIdException ignore) {
                 if (++attempt == 20) throw new IOException("Got " + attempt + " dup id's attempting to create queue?");
@@ -121,7 +132,7 @@ public class QueueController extends CrudController {
         }
 
         for (int attempt = 0; ; ) {
-            queues.put(dto.id, queue.getId());
+            queues.put(dto.id, q.getId());
             try {
                 repo.updateDatabase(db);
                 break;
@@ -136,7 +147,7 @@ public class QueueController extends CrudController {
             }
         }
 
-        call.setCode(201, new QueueDTO(dto.id, queue));
+        call.setCode(201, new QueueDTO(dto.id, q));
     }
 
     private String generateQueueId() {
@@ -145,15 +156,11 @@ public class QueueController extends CrudController {
 
     @Override
     protected void update(Call call, String id) throws IOException {
-        if (call.getUser().isAdmin()) {
-            Map<String, String> queues = db.getQueues();
-            String qid = queues == null ? null : queues.get(id);
-            Queue q;
-            if (qid == null || (q = repo.findQueue(qid)) == null) call.setCode(404);
-            else update(q, id, getBodyObject(call, QueueDTO.class), call);
-        } else {
-            call.setCode(403);
-        }
+        Map<String, String> queues = db.getQueues();
+        String qid = queues == null ? null : queues.get(id);
+        Queue q;
+        if (qid == null || (q = repo.findQueue(qid)) == null) call.setCode(404);
+        else update(q, id, getBodyObject(call, QueueDTO.class), call);
     }
 
     private void update(Queue q, String id, QueueDTO dto, Call call) throws IOException {
@@ -162,7 +169,7 @@ public class QueueController extends CrudController {
             return;
         }
 
-        if (dto.contentType != null) q.setContentType(dto.contentType.length() > 0 ? dto.contentType : null);
+        if (!updateAttributes(q, dto, call)) return;
 
         boolean databaseChanged = dto.database != null && !dto.database.equals(db.getId());
         if (databaseChanged) {
@@ -182,6 +189,44 @@ public class QueueController extends CrudController {
             if (q == null) call.setCode(410);
             else call.setCode(409, new QueueDTO(id, q));
         }
+    }
+
+    private boolean updateAttributes(Queue q, QueueDTO dto, Call call) throws IOException {
+        if (dto.contentType != null) q.setContentType(dto.contentType.length() > 0 ? dto.contentType : null);
+
+        if (dto.maxSize != null || dto.maxPayloadSize != null) {
+            long maxSize = q.getMaxSize();
+            int maxPayloadSize = q.getMaxPayloadSize();
+
+            if (dto.maxSize != null) {
+                maxSize = dto.maxSize;
+                if (maxSize < 1000000L) {
+                    call.setCode(400, "maxSize must be at least 1000000 bytes");
+                    return false;
+                }
+            }
+
+            if (dto.maxPayloadSize != null) {
+                maxPayloadSize = dto.maxPayloadSize;
+                if (maxPayloadSize != 0) {
+                    if (maxPayloadSize > maxSize / 3) {
+                        call.setCode(400, "maxPayloadSize may not exceed 1/3 of maxSize (" + maxSize / 3 + ") bytes");
+                        return false;
+                    }
+                    if (maxPayloadSize < 1000) {
+                        call.setCode(400, "maxPayloadSize must be at least 1000 bytes");
+                        return false;
+                    }
+                }
+            } else if (maxPayloadSize != 0 && maxPayloadSize > maxSize / 3) {
+                maxPayloadSize = (int)(maxSize / 3);
+            }
+
+            q.setMaxSize(maxSize);
+            q.setMaxPayloadSize(maxPayloadSize);
+        }
+
+        return true;
     }
 
 }

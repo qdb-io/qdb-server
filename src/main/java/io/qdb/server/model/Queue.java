@@ -6,6 +6,8 @@ package io.qdb.server.model;
 public class Queue extends ModelObject {
 
     private String database;
+    private long maxSize;
+    private int maxPayloadSize;
     private String contentType;
 
     public Queue() {
@@ -17,6 +19,22 @@ public class Queue extends ModelObject {
 
     public void setDatabase(String database) {
         this.database = database;
+    }
+
+    public long getMaxSize() {
+        return maxSize;
+    }
+
+    public void setMaxSize(long maxSize) {
+        this.maxSize = maxSize;
+    }
+
+    public int getMaxPayloadSize() {
+        return maxPayloadSize;
+    }
+
+    public void setMaxPayloadSize(int maxPayloadSize) {
+        this.maxPayloadSize = maxPayloadSize;
     }
 
     public String getContentType() {
