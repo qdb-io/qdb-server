@@ -21,6 +21,8 @@ public class QueueController extends CrudController {
         public String id;
         public String qid;
         public Integer version;
+        public String database;
+        public String contentType;
 
         public QueueDTO() { }
 
@@ -28,6 +30,7 @@ public class QueueController extends CrudController {
             this.id = id;
             this.qid = queue.getId();
             this.version = queue.getVersion();
+            this.contentType = queue.getContentType();
         }
 
         @Override
@@ -139,4 +142,46 @@ public class QueueController extends CrudController {
     private String generateQueueId() {
         return Integer.toString(Math.abs(RND.nextInt()), 36);
     }
+
+    @Override
+    protected void update(Call call, String id) throws IOException {
+        if (call.getUser().isAdmin()) {
+            Map<String, String> queues = db.getQueues();
+            String qid = queues == null ? null : queues.get(id);
+            Queue q;
+            if (qid == null || (q = repo.findQueue(qid)) == null) call.setCode(404);
+            else update(q, id, getBodyObject(call, QueueDTO.class), call);
+        } else {
+            call.setCode(403);
+        }
+    }
+
+    private void update(Queue q, String id, QueueDTO dto, Call call) throws IOException {
+        if (dto.version != null && !dto.version.equals(q.getVersion())) {
+            call.setCode(409, new QueueDTO(id, q));
+            return;
+        }
+
+        if (dto.contentType != null) q.setContentType(dto.contentType.length() > 0 ? dto.contentType : null);
+
+        boolean databaseChanged = dto.database != null && !dto.database.equals(db.getId());
+        if (databaseChanged) {
+            Database newdb = repo.findDatabase(dto.database);
+            if (newdb == null || !newdb.isVisibleTo(call.getUser())) {
+                call.setCode(400, "database [" + dto.database + "] does not exist or you do not have access to it");
+                return;
+            }
+            call.setCode(400, "update queue database not supported");
+            return;
+        }
+
+        try {
+            call.setJson(new QueueDTO(id, repo.updateQueue(q)));
+        } catch (OptLockException e) {
+            q = repo.findQueue(q.getId());
+            if (q == null) call.setCode(410);
+            else call.setCode(409, new QueueDTO(id, q));
+        }
+    }
+
 }
