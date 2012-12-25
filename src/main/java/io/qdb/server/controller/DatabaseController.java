@@ -1,6 +1,8 @@
 package io.qdb.server.controller;
 
 import io.qdb.server.JsonService;
+import io.qdb.server.QueueManager;
+import io.qdb.server.ServerId;
 import io.qdb.server.model.Database;
 import io.qdb.server.model.OptLockException;
 import io.qdb.server.model.Repository;
@@ -14,6 +16,8 @@ import java.util.List;
 public class DatabaseController extends CrudController {
 
     private final Repository repo;
+    private final QueueManager queueManager;
+    private final ServerId serverId;
 
     public static class DatabaseDTO {
 
@@ -31,9 +35,11 @@ public class DatabaseController extends CrudController {
     }
 
     @Inject
-    public DatabaseController(Repository repo, JsonService jsonService) {
+    public DatabaseController(Repository repo, JsonService jsonService, QueueManager queueManager, ServerId serverId) {
         super(jsonService);
         this.repo = repo;
+        this.queueManager = queueManager;
+        this.serverId = serverId;
     }
 
     @Override
@@ -111,7 +117,7 @@ public class DatabaseController extends CrudController {
         Database db = repo.findDatabase(id);
         if (db != null) {
             if (!db.isVisibleTo(call.getUser())) return StatusCodeController.SC_403;
-            if ("queues".equals(resource)) return new QueueController(jsonService, repo, db);
+            if ("queues".equals(resource)) return new QueueController(jsonService, repo, queueManager, serverId, db);
         }
         return StatusCodeController.SC_404;
     }

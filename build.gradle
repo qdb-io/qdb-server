@@ -15,7 +15,7 @@ repositories {
 }
 
 dependencies {
-    compile 'io.qdb:qdb-buffer:0.2.0'
+    compile 'io.qdb:qdb-buffer:0.3.0-SNAPSHOT'
     compile 'org.simpleframework:simple:4.1.21'
     compile 'com.google.inject:guice:3.0'
     compile 'ch.qos.logback:logback-core:1.0.7'

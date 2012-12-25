@@ -1,6 +1,8 @@
 package io.qdb.server.controller;
 
 import io.qdb.server.JsonService;
+import io.qdb.server.QueueManager;
+import io.qdb.server.ServerId;
 import io.qdb.server.model.*;
 import io.qdb.server.model.Queue;
 
@@ -12,6 +14,8 @@ import java.util.regex.Pattern;
 public class QueueController extends CrudController {
 
     private final Repository repo;
+    private final QueueManager queueManager;
+    private final ServerId serverId;
     private Database db;
 
     private static final SecureRandom RND = new SecureRandom();
@@ -22,6 +26,8 @@ public class QueueController extends CrudController {
         public String qid;
         public Integer version;
         public String database;
+        public String master;
+        public String[] slaves;
         public Long maxSize;
         public Integer maxPayloadSize;
         public String contentType;
@@ -32,6 +38,8 @@ public class QueueController extends CrudController {
             this.id = id;
             this.qid = queue.getId();
             this.version = queue.getVersion();
+            this.master = queue.getMaster();
+            this.slaves = queue.getSlaves();
             this.maxSize = queue.getMaxSize();
             this.maxPayloadSize = queue.getMaxPayloadSize();
             this.contentType = queue.getContentType();
@@ -45,9 +53,12 @@ public class QueueController extends CrudController {
 
     private static final Pattern VALID_QUEUE_ID = Pattern.compile("[0-9a-z\\-_]+", Pattern.CASE_INSENSITIVE);
 
-    public QueueController(JsonService jsonService, Repository repo, Database db) {
+    public QueueController(JsonService jsonService, Repository repo, QueueManager queueManager, ServerId serverId,
+            Database db) {
         super(jsonService);
         this.repo = repo;
+        this.queueManager = queueManager;
+        this.serverId = serverId;
         this.db = db;
     }
 
@@ -120,6 +131,8 @@ public class QueueController extends CrudController {
         Queue q = new Queue();
         if (!updateAttributes(q, dto, call)) return;
         q.setDatabase(db.getId());
+        // todo use master from the dto if specified
+        q.setMaster(serverId.get());
 
         for (int attempt = 0; ; ) {
             q.setId(generateQueueId());

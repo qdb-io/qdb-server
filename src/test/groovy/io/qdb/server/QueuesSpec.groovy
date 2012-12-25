@@ -1,11 +1,16 @@
 package io.qdb.server
 
 import spock.lang.Stepwise
+import spock.lang.Shared
 
 @Stepwise
 class QueuesSpec extends Base {
 
+    @Shared
+    private String serverId;
+
     def setupSpec() {
+        serverId = GET("/").id
         POST("/users", [id: "david", password: "secret"])
         POST("/databases", [id: "foo", owner: "david"])
     }
@@ -16,6 +21,7 @@ class QueuesSpec extends Base {
         expect:
         ans.id == "bar"
         ans.qid.length() > 0
+        ans.master == serverId
         ans.maxSize == 10000000
     }
 
@@ -44,6 +50,7 @@ class QueuesSpec extends Base {
         ans.size() == 1
         ans[0].id == "bar"
         ans[0].qid.length() > 0
+        ans[0].master == serverId
     }
 
     def "Count queues"() {
@@ -59,6 +66,7 @@ class QueuesSpec extends Base {
         expect:
         ans.id == "bar"
         ans.qid.length() > 0
+        ans.master == serverId
     }
 
     def "Update queue"() {

@@ -30,7 +30,8 @@ public abstract class CrudController implements Controller {
                     if (call.getBoolean("count")) {
                         count(call);
                     } else {
-                        list(call, call.getInt("offset", 0), call.getInt("limit", 30));
+                        int offset = call.getInt("offset", 0);
+                        list(call, offset, call.getInt("limit", Integer.MAX_VALUE - offset));
                     }
                 } else if (call.isPost()) {
                     create(call);

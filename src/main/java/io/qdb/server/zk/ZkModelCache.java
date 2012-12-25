@@ -1,15 +1,20 @@
 package io.qdb.server.zk;
 
+import com.google.common.eventbus.EventBus;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.recipes.cache.ChildData;
 import com.netflix.curator.framework.recipes.cache.PathChildrenCache;
+import com.netflix.curator.framework.recipes.cache.PathChildrenCacheEvent;
+import com.netflix.curator.framework.recipes.cache.PathChildrenCacheListener;
 import io.qdb.server.JsonService;
 import io.qdb.server.model.DuplicateIdException;
-import io.qdb.server.model.ModelException;
+import io.qdb.server.model.ModelEvent;
 import io.qdb.server.model.ModelObject;
 import io.qdb.server.model.OptLockException;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -17,22 +22,30 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Caches users, databases etc.
+ * Caches users, databases etc.. Broadcasts events when new objects are added/updated.
  */
-class ZkModelCache<T extends ModelObject> implements Closeable {
+class ZkModelCache<T extends ModelObject> implements Closeable, PathChildrenCacheListener {
+
+    private static final Logger log = LoggerFactory.getLogger(ZkModelCache.class);
 
     private final Class<T> modelCls;
     private final JsonService jsonService;
     private final String path;
     private final CuratorFramework client;
     private final PathChildrenCache cache;
+    private final EventBus eventBus;
+    private final ModelEvent.Factory<T> eventFactory;
 
-    ZkModelCache(Class<T> modelCls, JsonService jsonService, CuratorFramework client, String path) throws Exception {
+    ZkModelCache(Class<T> modelCls, JsonService jsonService, CuratorFramework client, String path, EventBus eventBus,
+                 ModelEvent.Factory<T> eventFactory) throws Exception {
         this.modelCls = modelCls;
         this.jsonService = jsonService;
         this.path = path;
         this.client = client;
+        this.eventBus = eventBus;
+        this.eventFactory = eventFactory;
         cache = new PathChildrenCache(client, path, true);
+        if (eventFactory != null) cache.getListenable().addListener(this);
         cache.start(true);
     }
 
@@ -64,6 +77,7 @@ class ZkModelCache<T extends ModelObject> implements Closeable {
     }
 
     public List<T> list(int offset, int limit) throws IOException {
+        if (limit < 0) limit = Integer.MAX_VALUE - offset;
         List<T> ans = new ArrayList<T>();
         List<ChildData> data = cache.getCurrentData();
         for (int i = offset, n = Math.min(offset + limit, data.size()); i < n; i++) ans.add(toModelObject(data.get(i)));
@@ -118,5 +132,15 @@ class ZkModelCache<T extends ModelObject> implements Closeable {
         return path.substring(path.lastIndexOf('/') + 1);
     }
 
-
+    @Override
+    public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception {
+        log.debug("childEvent " + event);
+        ModelEvent.Type type;
+        switch (event.getType()) {
+            case CHILD_ADDED:       type = ModelEvent.Type.ADDED;       break;
+            case CHILD_UPDATED:     type = ModelEvent.Type.UPDATED;     break;
+            default:                return;
+        }
+        eventBus.post(eventFactory.createEvent(type, toModelObject(event.getData())));
+    }
 }

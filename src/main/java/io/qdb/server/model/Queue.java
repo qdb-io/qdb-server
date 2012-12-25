@@ -1,14 +1,32 @@
 package io.qdb.server.model;
 
+import java.util.Arrays;
+
 /**
  * A queue.
  */
 public class Queue extends ModelObject {
 
     private String database;
+    private String master;
+    private String[] slaves;
     private long maxSize;
     private int maxPayloadSize;
     private String contentType;
+
+    public static class Event extends ModelEvent<Queue> {
+
+        public static final ModelEvent.Factory<Queue> FACTORY = new Factory<Queue>() {
+            @Override
+            public ModelEvent<Queue> createEvent(Type type, Queue object) {
+                return new Event(type, object);
+            }
+        };
+
+        public Event(Type type, Queue object) {
+            super(type, object);
+        }
+    }
 
     public Queue() {
     }
@@ -19,6 +37,35 @@ public class Queue extends ModelObject {
 
     public void setDatabase(String database) {
         this.database = database;
+    }
+
+    public String getMaster() {
+        return master;
+    }
+
+    public void setMaster(String master) {
+        this.master = master;
+    }
+
+    public String[] getSlaves() {
+        return slaves;
+    }
+
+    public void setSlaves(String[] slaves) {
+        this.slaves = slaves;
+    }
+
+    public boolean isMaster(String serverId) {
+        return serverId.equals(master);
+    }
+
+    public boolean isSlave(String serverId) {
+        if (slaves != null) {
+            for (String slave : slaves) {
+                if (serverId.equals(slave)) return true;
+            }
+        }
+        return false;
     }
 
     public long getMaxSize() {
@@ -47,6 +94,7 @@ public class Queue extends ModelObject {
 
     @Override
     public String toString() {
-        return super.toString() + ":" + database;
+        return super.toString() + ":database=" + database + ",master=" + master +
+                ",slaves=" + (slaves == null ? "null" : Arrays.asList(slaves).toString());
     }
 }

@@ -6,7 +6,8 @@ import java.util.List;
 
 /**
  * Retrieves and persists our model objects. Find methods that return single objects return null if the object
- * does not exist. Fires Status instances on the shared EventBus on connect/disconnect events.
+ * does not exist. Fires Status instances on the shared EventBus on connect/disconnect events. Use a negative
+ * limit parameter for findXXX(offset,limit) methods to fetch all data.
  */
 public interface Repository {
 

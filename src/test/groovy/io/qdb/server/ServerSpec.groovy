@@ -6,6 +6,7 @@ class ServerSpec extends Base {
         def ans = GET("/", null, null)
 
         expect:
+        ans.id != null
         ans.up == true
         ans.upSince != null
     }
@@ -17,15 +18,4 @@ class ServerSpec extends Base {
         con.responseCode == 401
         con.getHeaderField("WWW-Authenticate") == "basic realm=\"qdb\""
     }
-
-//    def "length of Spock's and his friends' names"() {
-//        expect:
-//        name.size() == length
-//
-//        where:
-//        name     | length
-//        "Spock"  | 5
-//        "Kirk"   | 4
-//        "Scotty" | 6
-//    }
 }

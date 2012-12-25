@@ -76,9 +76,12 @@ public class ZkRepository implements Repository, Closeable, ConnectionStateListe
 
                         client.newNamespaceAwareEnsurePath("/nodes").ensure(client.getZookeeperClient());
 
-                        usersCache = new ZkModelCache<User>(User.class, jsonService, client, "/users");
-                        databasesCache = new ZkModelCache<Database>(Database.class, jsonService, client, "/databases");
-                        queueCache = new ZkModelCache<Queue>(Queue.class, jsonService, client, "/queues");
+                        usersCache = new ZkModelCache<User>(User.class, jsonService, client, "/users",
+                                eventBus, null);
+                        databasesCache = new ZkModelCache<Database>(Database.class, jsonService, client, "/databases",
+                                eventBus, null);
+                        queueCache = new ZkModelCache<Queue>(Queue.class, jsonService, client, "/queues",
+                                eventBus, Queue.Event.FACTORY);
 
                         ensureAdminUser();
 
