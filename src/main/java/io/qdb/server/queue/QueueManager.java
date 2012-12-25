@@ -1,10 +1,11 @@
-package io.qdb.server;
+package io.qdb.server.queue;
 
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.qdb.buffer.MessageBuffer;
 import io.qdb.buffer.PersistentMessageBuffer;
+import io.qdb.server.ServerId;
 import io.qdb.server.model.Queue;
 import io.qdb.server.model.Repository;
 import org.slf4j.Logger;

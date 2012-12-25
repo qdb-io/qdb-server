@@ -1,4 +1,4 @@
-package io.qdb.server;
+package io.qdb.server.queue;
 
 import io.qdb.server.model.Queue;
 
