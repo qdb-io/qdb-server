@@ -72,7 +72,7 @@ public class QueueManager implements Closeable, Thread.UncaughtExceptionHandler 
 
     private void syncQueues() {
         try {
-            for (Queue queue : repo.findQueues(0, 1)) syncQueue(queue);
+            for (Queue queue : repo.findQueues(0, -1)) syncQueue(queue);
         } catch (IOException e) {
             log.error("Error syncing queues: " + e, e);
         }

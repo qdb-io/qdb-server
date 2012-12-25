@@ -1,5 +1,7 @@
 package io.qdb.server.controller;
 
+import io.qdb.server.model.Database;
+import io.qdb.server.model.Queue;
 import io.qdb.server.model.User;
 import io.qdb.server.security.Auth;
 import org.simpleframework.http.Request;
@@ -21,6 +23,9 @@ public class Call {
 
     private int currentSegment;
     private int code = 200;
+
+    private Database database;
+    private Queue queue;
 
     public Call(Request request, Response response, Auth auth, Renderer renderer) {
         this.request = request;
@@ -108,5 +113,21 @@ public class Call {
      */
     public void setJson(Object o) throws IOException {
         renderer.json(response, o);
+    }
+
+    public Database getDatabase() {
+        return database;
+    }
+
+    public void setDatabase(Database database) {
+        this.database = database;
+    }
+
+    public Queue getQueue() {
+        return queue;
+    }
+
+    public void setQueue(Queue queue) {
+        this.queue = queue;
     }
 }

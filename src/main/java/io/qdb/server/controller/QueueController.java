@@ -6,17 +6,19 @@ import io.qdb.server.ServerId;
 import io.qdb.server.model.*;
 import io.qdb.server.model.Queue;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.*;
 import java.util.regex.Pattern;
 
+@Singleton
 public class QueueController extends CrudController {
 
     private final Repository repo;
     private final QueueManager queueManager;
     private final ServerId serverId;
-    private Database db;
 
     private static final SecureRandom RND = new SecureRandom();
 
@@ -53,20 +55,19 @@ public class QueueController extends CrudController {
 
     private static final Pattern VALID_QUEUE_ID = Pattern.compile("[0-9a-z\\-_]+", Pattern.CASE_INSENSITIVE);
 
-    public QueueController(JsonService jsonService, Repository repo, QueueManager queueManager, ServerId serverId,
-            Database db) {
+    @Inject
+    public QueueController(JsonService jsonService, Repository repo, QueueManager queueManager, ServerId serverId) {
         super(jsonService);
         this.repo = repo;
         this.queueManager = queueManager;
         this.serverId = serverId;
-        this.db = db;
     }
 
     @SuppressWarnings("unchecked")
     @Override
     protected void list(Call call, int offset, int limit) throws IOException {
         List<QueueDTO> ans = new ArrayList<QueueDTO>();
-        Map<String, String> queues = db.getQueues();
+        Map<String, String> queues = call.getDatabase().getQueues();
         if (queues != null) {
             for (Map.Entry<String, String> e : queues.entrySet()) {
                 Queue queue = repo.findQueue(e.getValue());
@@ -84,13 +85,13 @@ public class QueueController extends CrudController {
 
     @Override
     protected void count(Call call) throws IOException {
-        Map<String, String> queues = db.getQueues();
+        Map<String, String> queues = call.getDatabase().getQueues();
         call.setJson(new Count(queues == null ? 0 : queues.size()));
     }
 
     @Override
     protected void show(Call call, String id) throws IOException {
-        Map<String, String> queues = db.getQueues();
+        Map<String, String> queues = call.getDatabase().getQueues();
         if (queues != null) {
             String queueId = queues.get(id);
             if (queueId != null) {
@@ -116,6 +117,7 @@ public class QueueController extends CrudController {
             return;
         }
 
+        Database db = call.getDatabase();
         Map<String, String> queues = db.getQueues();
         if (queues == null) db.setQueues(queues = new HashMap<String, String>());
         if (queues.containsKey(dto.id)) {
@@ -169,7 +171,7 @@ public class QueueController extends CrudController {
 
     @Override
     protected void update(Call call, String id) throws IOException {
-        Map<String, String> queues = db.getQueues();
+        Map<String, String> queues = call.getDatabase().getQueues();
         String qid = queues == null ? null : queues.get(id);
         Queue q;
         if (qid == null || (q = repo.findQueue(qid)) == null) call.setCode(404);
@@ -184,7 +186,7 @@ public class QueueController extends CrudController {
 
         if (!updateAttributes(q, dto, call)) return;
 
-        boolean databaseChanged = dto.database != null && !dto.database.equals(db.getId());
+        boolean databaseChanged = dto.database != null && !dto.database.equals(call.getDatabase().getId());
         if (databaseChanged) {
             Database newdb = repo.findDatabase(dto.database);
             if (newdb == null || !newdb.isVisibleTo(call.getUser())) {
