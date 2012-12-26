@@ -14,27 +14,14 @@ import com.google.inject.util.Modules
 
 class Base extends Specification {
 
-    @Shared private EmbeddedZooKeeper zookeeper;
-    @Shared private Connection qdb;
+    @Shared private TestServer testServer = new TestServer("build/test-data")
     @Shared private Client client = new Client("http://127.0.0.1:9554")
 
     def setupSpec() {
-        File dataDir = new File("build/test-data")
-        if (dataDir.exists() && dataDir.isDirectory()) FileUtils.deleteDirectory(dataDir)
-        if (!dataDir.mkdirs()) throw new IOException("Unable to create [" + dataDir.absolutePath + "]")
-
-        Injector injector = Guice.createInjector(Modules.override(new QdbServerModule()).with(new ModuleForTests(dataDir)))
-        zookeeper = injector.getInstance(EmbeddedZooKeeper.class)
-        Repository repo = injector.getInstance(Repository.class)
-        synchronized (repo) {
-            for (int i = 0; i < 3 && !repo.getStatus().up; i++) repo.wait(1000);
-        }
-        qdb = injector.getInstance(Connection.class)
     }
 
     def cleanupSpec() {
-        qdb?.close()
-        zookeeper?.close()
+        testServer?.close()
     }
 
     protected GET(String path, String user = "admin", String password = "admin") {
