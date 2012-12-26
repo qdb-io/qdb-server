@@ -6,61 +6,65 @@ import spock.lang.Stepwise
 class DatabasesSpec extends Base {
 
     def setupSpec() {
-        POST("/users", [id: "david", password: "secret"])
-        POST("/users", [id: "gimp", password: "secret"])
+        assert POST("/users", [id: "david", password: "secret"]).code == 201
+        assert POST("/users", [id: "gimp", password: "secret"]).code == 201
     }
 
     def "Create database"() {
         def ans = POST("/databases", [id: "foo"])
 
         expect:
-        ans.id == "foo"
+        ans.code == 201
+        ans.json.id == "foo"
     }
 
     def "List databases for admin"() {
         def ans = GET("/databases")
 
         expect:
-        ans.size() == 1
-        ans[0].id == "foo"
+        ans.code == 200
+        ans.json.size() == 1
+        ans.json[0].id == "foo"
     }
 
     def "Count databases"() {
         def ans = GET("/databases?count=true")
 
         expect:
-        ans.count == 1
+        ans.code == 200
+        ans.json.count == 1
     }
 
     def "Get database"() {
         def ans = GET("/databases/foo")
 
         expect:
-        ans.id == "foo"
+        ans.code == 200
+        ans.json.id == "foo"
     }
 
     def "Update database"() {
-        def a = PUT("/databases/foo", [owner: "david"])
+        def ans = PUT("/databases/foo", [owner: "david"])
 
         expect:
-        a.id == "foo"
-        a.owner == "david"
+        ans.code == 200
+        ans.json.id == "foo"
+        ans.json.owner == "david"
     }
 
     def "Get database as owner"() {
         def ans = GET("/databases/foo", "david", "secret")
 
         expect:
-        ans.id == "foo"
+        ans.code == 200
+        ans.json.id == "foo"
     }
 
     def "Get database as arb user"() {
-        when:
-        GET("/databases/foo", "gimp", "secret")
+        def ans = GET("/databases/foo", "gimp", "secret")
 
-        then:
-        BadResponseCodeException e = thrown()
-        e.responseCode == 403
+        expect:
+        ans.code == 403
     }
 
 }

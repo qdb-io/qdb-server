@@ -24,15 +24,15 @@ class Base extends Specification {
         testServer?.close()
     }
 
-    protected GET(String path, String user = "admin", String password = "admin") {
+    Client.Response GET(String path, String user = "admin", String password = "admin") {
         return client.GET(path, user, password)
     }
 
-    protected POST(String path, Object data, String user = "admin", String password = "admin") {
+    Client.Response POST(String path, Object data, String user = "admin", String password = "admin") {
         return client.POST(path, data, user, password)
     }
 
-    protected PUT(String path, Object data, String user = "admin", String password = "admin") {
+    Client.Response PUT(String path, Object data, String user = "admin", String password = "admin") {
         return client.PUT(path, data, user, password)
     }
 }

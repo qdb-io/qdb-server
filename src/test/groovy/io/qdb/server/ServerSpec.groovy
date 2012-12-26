@@ -6,9 +6,10 @@ class ServerSpec extends Base {
         def ans = GET("/", null, null)
 
         expect:
-        ans.id != null
-        ans.up == true
-        ans.upSince != null
+        ans.code == 200
+        ans.json.id != null
+        ans.json.up == true
+        ans.json.upSince != null
     }
 
     def "Authentication required for non-root urls"() {

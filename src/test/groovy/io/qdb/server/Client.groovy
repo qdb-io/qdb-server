@@ -10,55 +10,58 @@ class Client {
 
     String serverUrl
 
+    static class Response {
+        int code
+        String text
+        Object json
+    }
+
     Client(String serverUrl) {
         this.serverUrl = serverUrl
     }
 
-    def GET(String path, String user = "admin", String password = "admin") {
+    Response GET(String path, String user = "admin", String password = "admin") {
         def url = new URL(serverUrl + path)
         HttpURLConnection con = url.openConnection() as HttpURLConnection
         if (user) con.setRequestProperty("Authorization", toBasicAuth(user, password))
-        def rc = con.responseCode
-        if (rc != 200) {
-            def text = con.errorStream?.getText("UTF8")
-            throw new BadResponseCodeException(
-                    "Got ${rc} for GET ${url}",
-                    rc, text, text ? new JsonSlurper().parseText(text) : null)
-        } else {
-            return new JsonSlurper().parseText(con.inputStream.text)
-        }
+        Response r = new Response()
+        r.code = con.responseCode
+        r.text = (r.code >= 200 && r.code < 300 ? con.inputStream : con.errorStream)?.getText("UTF8")
+        if (r.text) r.json = new JsonSlurper().parseText(r.text)
+        return r
     }
 
     private String toBasicAuth(String user, String password) {
         return "Basic " + (user + ":" + password).getBytes("UTF8").encodeBase64().toString()
     }
 
-    def POST(String path, Object data, String user = "admin", String password = "admin") {
-        putOrPost("POST", path, data, user, password)
-    }
-
-    def PUT(String path, Object data, String user = "admin", String password = "admin") {
-        putOrPost("PUT", path, data, user, password)
-    }
-
-    private putOrPost(String method, String path, Object data, String user = "admin", String password = "admin") {
+    Response POST(String path, Object data, String user = "admin", String password = "admin") {
         String json = new JsonBuilder(data).toPrettyString()
+        putOrPost("POST", path, "application/json", json.getBytes("UTF8"), user, password)
+    }
+
+    Response POST(String path, String contentType, byte[] data, String user = "admin", String password = "admin") {
+        putOrPost("POST", path, contentType, data, user, password)
+    }
+
+    Response PUT(String path, Object data, String user = "admin", String password = "admin") {
+        String json = new JsonBuilder(data).toPrettyString()
+        putOrPost("PUT", path, "application/json", json.getBytes("UTF8"), user, password)
+    }
+
+    private Response putOrPost(String method, String path, String contentType, byte[] data, String user, String password) {
         def url = new URL(serverUrl + path)
         HttpURLConnection con = url.openConnection() as HttpURLConnection
         con.doOutput = true
         con.requestMethod = method
         if (user) con.setRequestProperty("Authorization", toBasicAuth(user, password))
-        con.setRequestProperty("Content-Type", "application/json")
-        con.outputStream.write(json.getBytes("UTF8"))
-        def rc = con.responseCode
-        if (method == "PUT" && rc != 200 || method == "POST" && rc != 201) {
-            def text = con.errorStream?.getText("UTF8")
-            throw new BadResponseCodeException(
-                    "Got ${rc} for ${method} ${url}",
-                    rc, text, text ? new JsonSlurper().parseText(text) : null)
-        } else {
-            return new JsonSlurper().parseText(con.inputStream.text)
-        }
+        con.setRequestProperty("Content-Type", contentType)
+        con.outputStream.write(data)
+        Response r = new Response()
+        r.code = con.responseCode
+        r.text = (r.code >= 200 && r.code < 300 ? con.inputStream : con.errorStream)?.getText("UTF8")
+        if (r.text) r.json = new JsonSlurper().parseText(r.text)
+        return r
     }
 
 }

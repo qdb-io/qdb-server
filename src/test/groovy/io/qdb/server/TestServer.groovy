@@ -7,6 +7,7 @@ import org.apache.commons.io.FileUtils
 import com.google.inject.Guice
 import com.google.inject.util.Modules
 import io.qdb.server.model.Repository
+import io.qdb.server.queue.QueueManager
 
 /**
  * An in-process QDB server for testing.
@@ -33,7 +34,9 @@ class TestServer implements Closeable {
 
     @Override
     void close() {
+        injector.getInstance(QueueManager)?.close()
         qdb?.close()
         zookeeper?.close()
     }
+
 }
