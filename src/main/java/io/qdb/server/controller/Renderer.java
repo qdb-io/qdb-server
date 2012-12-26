@@ -44,6 +44,7 @@ public class Renderer {
             case 403:   return "Forbidden";
             case 404:   return "Not found";
             case 409:   return "Version mismatch";
+            case 500:   return "Internal server error";
         }
         return null;
     }

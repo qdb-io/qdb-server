@@ -92,9 +92,9 @@ public class QueueManager implements Closeable, Thread.UncaughtExceptionHandler 
                     log.error("Error creating buffer for queue " + q + ": " + e, e);
                     return;
                 }
-                if (log.isDebugEnabled()) log.debug("Opened buffer " + mb + " for queue " + q);
+                if (log.isDebugEnabled()) log.debug("Opened " + mb);
             } else if (log.isDebugEnabled()) {
-                log.debug("Updating buffer " + mb + " for queue " + q);
+                log.debug("Updating " + mb);
             }
             mb.setExecutor(threadPool);
             updateBufferProperties(mb, q);
@@ -105,7 +105,7 @@ public class QueueManager implements Closeable, Thread.UncaughtExceptionHandler 
             try {
                 mb.close();
             } catch (IOException e) {
-                log.error("Error closing queue " + mb + ": " + e, e);
+                log.error("Error closing " + mb + ": " + e, e);
             }
             buffers.remove(q.getId());
         }
@@ -127,5 +127,12 @@ public class QueueManager implements Closeable, Thread.UncaughtExceptionHandler 
     @Override
     public void uncaughtException(Thread t, Throwable e) {
         log.error(e.toString(), e);
+    }
+
+    /**
+     * Get the buffer for q or null if it does not exist.
+     */
+    public MessageBuffer getBuffer(Queue q) {
+        return buffers.get(q.getId());
     }
 }

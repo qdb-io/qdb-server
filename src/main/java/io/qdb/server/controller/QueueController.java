@@ -17,7 +17,7 @@ import java.util.regex.Pattern;
 public class QueueController extends CrudController {
 
     private final Repository repo;
-    private final QueueManager queueManager;
+    private final MessageController messageController;
     private final ServerId serverId;
 
     private static final SecureRandom RND = new SecureRandom();
@@ -56,10 +56,11 @@ public class QueueController extends CrudController {
     private static final Pattern VALID_QUEUE_ID = Pattern.compile("[0-9a-z\\-_]+", Pattern.CASE_INSENSITIVE);
 
     @Inject
-    public QueueController(JsonService jsonService, Repository repo, QueueManager queueManager, ServerId serverId) {
+    public QueueController(JsonService jsonService, Repository repo, MessageController messageController,
+                ServerId serverId) {
         super(jsonService);
         this.repo = repo;
-        this.queueManager = queueManager;
+        this.messageController = messageController;
         this.serverId = serverId;
     }
 
@@ -171,8 +172,7 @@ public class QueueController extends CrudController {
 
     @Override
     protected void update(Call call, String id) throws IOException {
-        Map<String, String> queues = call.getDatabase().getQueues();
-        String qid = queues == null ? null : queues.get(id);
+        String qid = call.getDatabase().getQid(id);
         Queue q;
         if (qid == null || (q = repo.findQueue(qid)) == null) call.setCode(404);
         else update(q, id, getBodyObject(call, QueueDTO.class), call);
@@ -244,4 +244,14 @@ public class QueueController extends CrudController {
         return true;
     }
 
+    @Override
+    protected Controller getController(Call call, String id, String resource) throws IOException {
+        String qid = call.getDatabase().getQid(id);
+        Queue q = qid == null ? null : repo.findQueue(qid);
+        if (q != null) {
+            call.setQueue(q);
+            if ("messages".equals(resource)) return messageController;
+        }
+        return StatusCodeController.SC_404;
+    }
 }

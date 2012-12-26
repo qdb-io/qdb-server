@@ -8,6 +8,8 @@ import org.simpleframework.http.Request;
 import org.simpleframework.http.Response;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.ReadableByteChannel;
 
 /**
  * Encapsulates a call to the server. Includes the request, response and authentication information. Adds

@@ -7,7 +7,7 @@ import spock.lang.Shared
 class QueuesSpec extends Base {
 
     @Shared
-    private String serverId;
+    private String serverId
 
     def setupSpec() {
         serverId = GET("/").id

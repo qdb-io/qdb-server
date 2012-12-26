@@ -32,4 +32,8 @@ public class Database extends ModelObject {
     public void setQueues(Map<String, String> queues) {
         this.queues = queues;
     }
+
+    public String getQid(String id) {
+        return queues == null ? null : queues.get(id);
+    }
 }
