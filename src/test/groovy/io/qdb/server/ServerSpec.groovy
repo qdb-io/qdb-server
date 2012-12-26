@@ -12,7 +12,7 @@ class ServerSpec extends Base {
     }
 
     def "Authentication required for non-root urls"() {
-        HttpURLConnection con = new URL(SERVER_URL + "/users").openConnection() as HttpURLConnection
+        HttpURLConnection con = new URL(client.serverUrl + "/users").openConnection() as HttpURLConnection
 
         expect:
         con.responseCode == 401

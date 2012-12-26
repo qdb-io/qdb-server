@@ -11,7 +11,7 @@ class MessagesSpec extends Base {
         POST("/databases/foo/queues", [id: "bar", maxSize: 10000000], "david", "secret")
     }
 
-    def "Append message with contentLength header"() {
+    def "Append message with ContentLength header"() {
         long now = System.currentTimeMillis()
         def ans = POST("/databases/foo/queues/bar/messages", [hello: "world"], "david", "secret")
         def ans2 = POST("/databases/foo/queues/bar/messages", [hello: "2nd world"], "david", "secret")
@@ -25,4 +25,7 @@ class MessagesSpec extends Base {
         ans2.timestamp < now + 30 * 1000L
     }
 
+//    def "Append message with no ContentLength header"() {
+//
+//    }
 }
