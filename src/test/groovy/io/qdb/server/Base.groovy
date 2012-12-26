@@ -14,8 +14,8 @@ import com.google.inject.util.Modules
 
 class Base extends Specification {
 
-    @Shared private TestServer testServer = new TestServer("build/test-data")
-    @Shared private Client client = new Client("http://127.0.0.1:9554")
+    @Shared TestServer testServer = new TestServer("build/test-data")
+    @Shared Client client = new Client("http://127.0.0.1:9554")
 
     def setupSpec() {
     }
@@ -30,6 +30,10 @@ class Base extends Specification {
 
     Client.Response POST(String path, Object data, String user = "admin", String password = "admin") {
         return client.POST(path, data, user, password)
+    }
+
+    Client.Response POST(String path, String contentType, byte[] data, String user = "admin", String password = "admin") {
+        return client.POST(path, contentType, data, user, password)
     }
 
     Client.Response PUT(String path, Object data, String user = "admin", String password = "admin") {

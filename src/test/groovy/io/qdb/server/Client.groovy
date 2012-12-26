@@ -14,6 +14,12 @@ class Client {
         int code
         String text
         Object json
+
+        Response(HttpURLConnection con) {
+            code = con.responseCode
+            text = (code >= 200 && code < 300 ? con.inputStream : con.errorStream)?.getText("UTF8")
+            if (text) json = new JsonSlurper().parseText(text)
+        }
     }
 
     Client(String serverUrl) {
@@ -24,14 +30,10 @@ class Client {
         def url = new URL(serverUrl + path)
         HttpURLConnection con = url.openConnection() as HttpURLConnection
         if (user) con.setRequestProperty("Authorization", toBasicAuth(user, password))
-        Response r = new Response()
-        r.code = con.responseCode
-        r.text = (r.code >= 200 && r.code < 300 ? con.inputStream : con.errorStream)?.getText("UTF8")
-        if (r.text) r.json = new JsonSlurper().parseText(r.text)
-        return r
+        return new Response(con)
     }
 
-    private String toBasicAuth(String user, String password) {
+    String toBasicAuth(String user, String password) {
         return "Basic " + (user + ":" + password).getBytes("UTF8").encodeBase64().toString()
     }
 
@@ -57,11 +59,7 @@ class Client {
         if (user) con.setRequestProperty("Authorization", toBasicAuth(user, password))
         con.setRequestProperty("Content-Type", contentType)
         con.outputStream.write(data)
-        Response r = new Response()
-        r.code = con.responseCode
-        r.text = (r.code >= 200 && r.code < 300 ? con.inputStream : con.errorStream)?.getText("UTF8")
-        if (r.text) r.json = new JsonSlurper().parseText(r.text)
-        return r
+        return new Response(con)
     }
 
 }
