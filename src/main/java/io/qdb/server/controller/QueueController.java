@@ -133,6 +133,7 @@ public class QueueController extends CrudController {
 
         Queue q = new Queue();
         q.setMaxPayloadSize(128 * 1024);
+        q.setContentType("application/json");
         if (!updateAttributes(q, dto, call)) return;
         q.setDatabase(db.getId());
         // todo use master from the dto if specified

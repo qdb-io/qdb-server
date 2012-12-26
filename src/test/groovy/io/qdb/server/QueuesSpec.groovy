@@ -25,6 +25,7 @@ class QueuesSpec extends Base {
         ans.json.master == serverId
         ans.json.maxSize == 10000000
         ans.json.maxPayloadSize == 128 * 1024
+        ans.json.contentType == "application/json"
     }
 
     def "Duplicate queue not allowed"() {
