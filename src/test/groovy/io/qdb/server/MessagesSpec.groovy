@@ -8,7 +8,7 @@ class MessagesSpec extends Base {
     def setupSpec() {
         assert POST("/users", [id: "david", password: "secret"]).code == 201
         assert POST("/databases", [id: "foo", owner: "david"]).code == 201
-        assert POST("/databases/foo/queues", [id: "bar", maxSize: 100000000], "david", "secret").code == 201
+        assert POST("/databases/foo/queues", [id: "bar", maxSize: 10000000], "david", "secret").code == 201
     }
 
     def "Append message"() {
@@ -37,7 +37,6 @@ class MessagesSpec extends Base {
         con.setChunkedStreamingMode(1024)
         con.outputStream.write(new byte[30000])
         Client.Response ans = new Client.Response(con)
-        println(ans.text)
 
         expect:
         ans.code == 201
