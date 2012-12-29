@@ -100,7 +100,7 @@ public class QueueManager implements Closeable, Thread.UncaughtExceptionHandler 
             updateBufferProperties(mb, q);
             if (newBuffer) buffers.put(q.getId(), mb);
             // todo schedule replication if we are slave
-        } else {
+        } else if (mb != null) {
             if (log.isDebugEnabled()) log.debug("Closing queue " + q + " as we are not master or slave");
             try {
                 mb.close();

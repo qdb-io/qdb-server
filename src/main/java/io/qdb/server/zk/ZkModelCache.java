@@ -96,6 +96,12 @@ class ZkModelCache<T extends ModelObject> implements Closeable, PathChildrenCach
             T o = (T)modelObject.clone();
             o.setId(null);
             client.create().forPath(path, jsonService.toJson(o));
+            if (eventFactory != null) {
+                // fire an event now instead of waiting for the callback from zookeeper so the object will definitely
+                // exist elsewhere (e.g. QueueManager) and be visible to clients - otherwise a call to create a queue
+                // immediately followed by an append to it might fail
+                eventBus.post(eventFactory.createEvent(ModelEvent.Type.ADDED, modelObject));
+            }
             return modelObject;
         } catch (KeeperException.NodeExistsException e) {
             throw new DuplicateIdException("[" + path + "] already exists");

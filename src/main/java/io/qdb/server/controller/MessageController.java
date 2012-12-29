@@ -146,11 +146,15 @@ public class MessageController extends CrudController {
         }
 
         int timeoutMs = call.getInt("timeoutMs", 0);
-        boolean single = call.getBoolean("single");
-        if (single) limit = 1;
         byte[] keepAlive = call.getUTF8Bytes("keepAlive", "\n");
         int keepAliveMs = call.getInt("keepAliveMs", 29000);
         byte[] separator = call.getUTF8Bytes("separator", "\n");
+
+        boolean single = call.getBoolean("single");
+        if (single) {
+            limit = 1;
+            keepAliveMs = Integer.MAX_VALUE;
+        }
 
         long id = call.getLong("id", -1L);
         long timestamp = -1;
@@ -163,41 +167,41 @@ public class MessageController extends CrudController {
         response.set("Content-Type", single ? q.getContentType() : "text/plain");
         OutputStream out = response.getOutputStream();
 
-        int waitMs = Math.min(timeoutMs, keepAliveMs);
-
         MessageCursor c = id < 0 ? mb.cursorByTimestamp(timestamp) : mb.cursor(id);
 
-        for (int sent = 0; limit == 0 || sent < limit; ) {
-            boolean haveNext;
+        for (int sent = 0; limit == 0 || sent < limit; ++sent) {
             try {
-                if (timeoutMs == 0) {
-                    haveNext = c.next(waitMs);
-                } else {
-                    haveNext = false;
-                    for (int ms = timeoutMs; ms > 0; ms -= waitMs) {
-                        if (haveNext = c.next(waitMs)) break;
+                if (timeoutMs <= 0) {
+                    while (!c.next(single ? 0 : keepAliveMs)) {
+                        out.write(keepAlive);
+                        out.flush();
                     }
-                    if (!haveNext) break;
+                } else {
+                    int ms = timeoutMs;
+                    while (true) {
+                        int waitMs = Math.min(ms, keepAliveMs);
+                        if (c.next(waitMs)) break;
+                        if ((ms -= waitMs) <= 0) break;
+                        out.write(keepAlive);
+                        out.flush();
+                    }
+                    if (ms <= 0) break;
                 }
             } catch (InterruptedException e) {
                 break;
             }
-            if (haveNext) {
-                if (single) {
-                    response.setContentLength(c.getPayloadSize());
-                    response.set("X-QDB-Id", Long.toString(c.getId()));
-                    response.set("X-QBD-Timestamp", Long.toString(c.getTimestamp()));
-                    response.set("X-QDB-RoutingKey", c.getRoutingKey());
-                    out.write(c.getPayload());
-                } else {
-                    out.write(jsonService.toJson(new MessageHeader(c)));
-                    out.write(10);
-                    out.write(c.getPayload());
-                    out.write(separator);
-                }
-                ++sent;
+
+            if (single) {
+                response.setContentLength(c.getPayloadSize());
+                response.set("X-QDB-Id", Long.toString(c.getId()));
+                response.set("X-QBD-Timestamp", Long.toString(c.getTimestamp()));
+                response.set("X-QDB-RoutingKey", c.getRoutingKey());
+                out.write(c.getPayload());
             } else {
-                out.write(keepAlive);
+                out.write(jsonService.toJson(new MessageHeader(c)));
+                out.write(10);
+                out.write(c.getPayload());
+                out.write(separator);
             }
         }
     }

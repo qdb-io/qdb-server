@@ -6,6 +6,8 @@ import spock.lang.Shared
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import groovy.json.JsonSlurper
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 @Stepwise
 class MessagesSpec extends Base {
@@ -70,7 +72,6 @@ class MessagesSpec extends Base {
 
     def "Get 2 messages streamed"() {
         def ans = GET("/databases/foo/queues/bar/messages?id=0&limit=2")
-        println(ans.text)
         def r = new StringReader(ans.text)
 
         def h1 = new JsonSlurper().parseText(r.readLine())
@@ -95,5 +96,90 @@ class MessagesSpec extends Base {
         h2.payloadSize == m2line.length()
         h2.routingKey == ""
         m2.hello == "2nd world"
+    }
+
+    def "Get message by timestamp"() {
+        def ans = GET("/databases/foo/queues/bar/messages?timestamp=${startTime}&single=true")
+
+        expect:
+        ans.code == 200
+        ans.json.hello == "world"
+    }
+
+    def "Wait for new message"() {
+        CountDownLatch ready = new CountDownLatch(1)
+        CountDownLatch done = new CountDownLatch(1)
+        def ans = null
+        pool.execute({
+            ready.countDown()
+            ans = GET("/databases/foo/queues/bar/messages?single=true")
+            done.countDown()
+        })
+        ready.await(200, TimeUnit.MILLISECONDS)
+        Thread.sleep(50)    // give background GET time to block waiting for message
+        POST("/databases/foo/queues/bar/messages?routingKey=abc", [hello: "3rd world"])
+        done.await(200, TimeUnit.MILLISECONDS)
+
+        expect:
+        ans.code == 200
+        ans.json.hello == "3rd world"
+    }
+
+    def "Wait for new message with timeout"() {
+        CountDownLatch ready = new CountDownLatch(1)
+        CountDownLatch done = new CountDownLatch(1)
+        def ans = null
+        pool.execute({
+            ready.countDown()
+            ans = GET("/databases/foo/queues/bar/messages?single=true&timeoutMs=1000")
+            done.countDown()
+        })
+        ready.await(200, TimeUnit.MILLISECONDS)
+        Thread.sleep(50)    // give background GET time to block waiting for message
+        POST("/databases/foo/queues/bar/messages", [hello: "4th world"])
+        done.await(200, TimeUnit.MILLISECONDS)
+
+        expect:
+        ans.code == 200
+        ans.json.hello == "4th world"
+    }
+
+    def "Wait for new message with timeout expiry"() {
+        long now = System.currentTimeMillis()
+        def ans = GET("/databases/foo/queues/bar/messages?timeoutMs=50")
+        def ms = System.currentTimeMillis() - now
+
+        expect:
+        ans.code == 200
+        ans.text == ""
+        ms >= 50 && ms <= 200
+    }
+
+    def "Keep-alive chars sent with timeout"() {
+        // time for one keep-alive \n to be sent
+        def ans = GET("/databases/foo/queues/bar/messages?timeoutMs=75&keepAliveMs=50")
+
+        expect:
+        ans.code == 200
+        ans.text == "\n"
+    }
+
+    def "Keep-alive chars sent"() {
+        CountDownLatch ready = new CountDownLatch(1)
+        CountDownLatch done = new CountDownLatch(1)
+        def ans = null
+        pool.execute({
+            ready.countDown()
+            ans = GET("/databases/foo/queues/bar/messages?keepAliveMs=50&limit=1")
+            done.countDown()
+        })
+        ready.await(200, TimeUnit.MILLISECONDS)
+        Thread.sleep(120)    // give background GET time to block waiting for message and 2 keep-alive chars sent
+        assert POST("/databases/foo/queues/bar/messages", [hello: "5th world"]).code == 201
+        done.await(200, TimeUnit.MILLISECONDS)
+
+        expect:
+        ans.code == 200
+        ans.text.substring(0, 3) == "\n\n{"     // 2 keep-alive chars sent
     }
 }
