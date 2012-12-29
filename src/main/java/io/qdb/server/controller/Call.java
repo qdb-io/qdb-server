@@ -88,6 +88,26 @@ public class Call {
         }
     }
 
+    public long getLong(String param, long def) throws IOException {
+        String s = request.getParameter(param);
+        if (s == null || s.length() == 0) return def;
+        try {
+            return Long.parseLong(s);
+        } catch (NumberFormatException e) {
+            return def;
+        }
+    }
+
+    public String getString(String param, String def) throws IOException {
+        String s = request.getParameter(param);
+        return s == null ? def : s;
+    }
+
+    public byte[] getUTF8Bytes(String param, String def) throws IOException {
+        String s = request.getParameter(param);
+        return s == null ? def == null ? null : def.getBytes("UTF8") : s.getBytes("UTF8");
+    }
+
     public boolean getBoolean(String param) throws IOException {
         return "true".equals(request.getParameter(param));
     }

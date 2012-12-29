@@ -14,11 +14,19 @@ class Client {
         int code
         String text
         Object json
+        Map<String, Object> headers = [:]
 
         Response(HttpURLConnection con) {
             code = con.responseCode
+            con.headerFields.each { k,v ->
+                if (v instanceof List && v.size() == 1) headers[k] = v[0]
+                else headers[k] = v
+            }
             text = (code >= 200 && code < 300 ? con.inputStream : con.errorStream)?.getText("UTF8")
-            if (text) json = new JsonSlurper().parseText(text)
+            String contentType = headers["Content-Type"]
+            if (text && contentType && contentType.startsWith("application/json")) {
+                json = new JsonSlurper().parseText(text)
+            }
         }
     }
 
@@ -38,7 +46,7 @@ class Client {
     }
 
     Response POST(String path, Object data, String user = "admin", String password = "admin") {
-        String json = new JsonBuilder(data).toPrettyString()
+        String json = new JsonBuilder(data).toString()
         putOrPost("POST", path, "application/json", json.getBytes("UTF8"), user, password)
     }
 
@@ -47,7 +55,7 @@ class Client {
     }
 
     Response PUT(String path, Object data, String user = "admin", String password = "admin") {
-        String json = new JsonBuilder(data).toPrettyString()
+        String json = new JsonBuilder(data).toString()
         putOrPost("PUT", path, "application/json", json.getBytes("UTF8"), user, password)
     }
 
