@@ -60,9 +60,38 @@ public class TimelineController extends CrudController {
             return;
         }
 
-        Timeline timeline = mb.getTimeline();
+        setTimeline(call, mb.getTimeline());
+    }
+
+    private void setTimeline(Call call, Timeline timeline) throws IOException {
         TimelineEntryDTO[] ans = new TimelineEntryDTO[timeline == null ? 0 : timeline.size()];
         for (int i = 0; i < ans.length; i++) ans[i] = new TimelineEntryDTO(timeline, i);
         call.setJson(ans);
+    }
+
+    @Override
+    protected void show(Call call, String id) throws IOException {
+        long messageId;
+        try {
+            messageId = Long.parseLong(id);
+        } catch (NumberFormatException e) {
+            call.setCode(400, "Invalid message id [" + id + "]");
+            return;
+        }
+
+        Queue q = call.getQueue();
+        if (!q.isMaster(serverId) && !q.isSlave(serverId)) {
+            // todo set Location header and send a 302 or proxy the master
+            call.setCode(500, "Get timeline from non-master non-slave not implemented");
+            return;
+        }
+        MessageBuffer mb = queueManager.getBuffer(q);
+        if (mb == null || !mb.isOpen()) {
+            // probably we are busy starting up and haven't synced this queue yet or are shutting down
+            call.setCode(503, "Queue is not available, please try again later");
+            return;
+        }
+
+        setTimeline(call, mb.getTimeline(messageId));
     }
 }

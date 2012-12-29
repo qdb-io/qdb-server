@@ -27,7 +27,6 @@ class TimelineSpec extends Base {
         long ts2 = json.timestamp
 
         def ans = GET("/databases/foo/queues/bar/timeline")
-        println ans.text
 
         expect:
         ans.code == 200
@@ -42,5 +41,16 @@ class TimelineSpec extends Base {
         ans.json[1].messageId == id2 + id2 /* size of a each message is also id2 */
         ans.json[1].count == 0
         ans.json[1].millis == 0
+    }
+
+    def "Get specific timeline"() {
+        def ans = GET("/databases/foo/queues/bar/timeline/0")
+        println ans.text
+
+        expect:
+        ans.code == 200
+        ans.json.size() == 1
+        ans.json[0].messageId == 0
+        ans.json[0].count == 2
     }
 }
