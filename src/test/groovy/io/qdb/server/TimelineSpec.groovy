@@ -53,4 +53,11 @@ class TimelineSpec extends Base {
         ans.json[0].messageId == 0
         ans.json[0].count == 2
     }
+
+    def "Get specific timeline with dodgy id"() {
+        def ans = GET("/databases/foo/queues/bar/timeline/abc")
+
+        expect:
+        ans.code == 400
+    }
 }
