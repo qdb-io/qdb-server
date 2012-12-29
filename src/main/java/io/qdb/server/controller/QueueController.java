@@ -18,6 +18,7 @@ public class QueueController extends CrudController {
 
     private final Repository repo;
     private final MessageController messageController;
+    private final TimelineController timelineController;
     private final ServerId serverId;
 
     private static final SecureRandom RND = new SecureRandom();
@@ -57,10 +58,11 @@ public class QueueController extends CrudController {
 
     @Inject
     public QueueController(JsonService jsonService, Repository repo, MessageController messageController,
-                ServerId serverId) {
+                           TimelineController timelineController, ServerId serverId) {
         super(jsonService);
         this.repo = repo;
         this.messageController = messageController;
+        this.timelineController = timelineController;
         this.serverId = serverId;
     }
 
@@ -253,6 +255,7 @@ public class QueueController extends CrudController {
         if (q != null) {
             call.setQueue(q);
             if ("messages".equals(resource)) return messageController;
+            if ("timeline".equals(resource)) return timelineController;
         }
         return StatusCodeController.SC_404;
     }
