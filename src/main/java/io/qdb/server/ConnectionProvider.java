@@ -24,6 +24,8 @@ public class ConnectionProvider implements Provider<Connection> {
     private final String host;
     private final int port;
 
+    private Connection connection;
+
     @Inject
     public ConnectionProvider(Container container, @Named("host") String host, @Named("port") int port) {
         this.container = container;
@@ -34,10 +36,12 @@ public class ConnectionProvider implements Provider<Connection> {
     @Override
     public Connection get() {
         try {
-            Connection connection = new SocketConnection(container);
-            SocketAddress address = new InetSocketAddress(host, port);
-            log.info("Listening on " + address);
-            connection.connect(address);
+            if (connection == null) {
+                SocketAddress address = new InetSocketAddress(host, port);
+                log.info("Listening on " + address);
+                connection = new SocketConnection(container);
+                connection.connect(address);
+            }
             return connection;
         } catch (IOException e) {
             throw new RuntimeException(e);
