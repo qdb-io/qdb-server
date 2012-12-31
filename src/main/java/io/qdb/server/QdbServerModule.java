@@ -14,12 +14,20 @@ import io.qdb.server.zk.ZkRepository;
 import org.simpleframework.http.core.Container;
 import org.simpleframework.transport.connect.Connection;
 
+import java.io.File;
 import java.util.Map;
 
 /**
  * Standard server configuration.
  */
 public class QdbServerModule extends AbstractModule {
+
+    private final Config cfg;
+
+    public QdbServerModule() {
+        File local = new File(System.getProperty("qdb.conf", "qdb"));
+        cfg = ConfigFactory.parseFileAnySyntax(local).withFallback(ConfigFactory.load());
+    }
 
     @Override
     protected void configure() {
@@ -34,10 +42,10 @@ public class QdbServerModule extends AbstractModule {
      * Create named bindings for all our configuration properties.
      */
     protected void bindProperties() {
-        Config cfg = ConfigFactory.load();
         for (Map.Entry<String, ConfigValue> entry : cfg.entrySet()) {
             ConfigValue value = entry.getValue();
-            if (value.origin().url() != null) {
+            String key = entry.getKey();
+            if (value.origin().url() != null || key.equals("data.dir") || key.equals("zookeeper.instance")) {
                 Named named = Names.named(entry.getKey());
                 Object v = value.unwrapped();
                 if (v instanceof String) bind(Key.get(String.class, named)).toInstance((String)v);

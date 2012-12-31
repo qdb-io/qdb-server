@@ -121,6 +121,18 @@ Specify `id=123456` to get messages from id onwards. Specify `timestamp=13544576
 `GET /databases/foo/queues/tweets/timeline/123456` Get the detailed timeline around the message with id 123456
 
 
+Building
+--------
+
+
+Running From Source
+-------------------
+
+Use `gradle run` to run a non-clustered instance.
+
+Use `gradle run -Pinstance=1` to run a clustered instance (use 2 and 3 for the other nodes in the cluster).
+
+
 License
 -------
 

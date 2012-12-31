@@ -49,6 +49,10 @@ artifacts {
     archives sourceJar
 }
 
+run {
+    if (project.hasProperty('instance')) jvmArgs = ["-Dqdb.conf=etc/qdb" + project.instance]
+}
+
 task("run-debug", dependsOn: 'classes', type: JavaExec) {
     main = "io.qdb.server.Main"
     classpath = sourceSets.main.runtimeClasspath
