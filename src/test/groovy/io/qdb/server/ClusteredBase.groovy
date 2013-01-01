@@ -10,9 +10,10 @@ class ClusteredBase extends Specification {
 
     def setupSpec() {
 //        for (int i = 0; i < servers.length; i++) {
-//            servers[i] = new TestServer("build/test-data" + i, i + 1)
+//            servers[i] = new TestServer("build/test-data" + (i + 1), i + 1)
 //            clients[i] = new Client("http://127.0.0.1:" + (9554 + i))
 //        }
+//        servers.each { it.waitForRepo() }
     }
 
     def cleanupSpec() {

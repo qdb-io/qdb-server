@@ -23,6 +23,6 @@ public class ClusteredTestModule extends StandaloneTestModule {
         bind(Key.get(String.class, Names.named("zookeeper.connectString"))).toInstance(
                 "127.0.0.1:2181,127.0.0.1:2182,127.0.0.1:2183");
         bind(Key.get(Integer.class, Names.named("zookeeper.instance"))).toInstance(instance);
-        //bind(Key.get(Integer.class, Names.named("port"))).toInstance(instance);
+        bind(Key.get(Integer.class, Names.named("port"))).toInstance(9554 + instance);
     }
 }
