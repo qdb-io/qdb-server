@@ -3,7 +3,7 @@ package io.qdb.server
 import spock.lang.Stepwise
 
 @Stepwise
-class UsersSpec extends Base {
+class UsersSpec extends StandaloneBase {
 
     def setupSpec() {
         assert POST("/databases", [id: "foo"]).code == 201

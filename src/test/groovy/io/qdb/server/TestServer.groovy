@@ -18,18 +18,22 @@ class TestServer implements Closeable {
     private EmbeddedZooKeeper zookeeper
     private Connection qdb
 
-    TestServer(String dir = "build/test-data") {
+    TestServer(String dir = "build/test-data", int instance = 0) {
         File dataDir = new File(dir)
         if (dataDir.exists() && dataDir.isDirectory()) FileUtils.deleteDirectory(dataDir)
         if (!dataDir.mkdirs()) throw new IOException("Unable to create [" + dataDir.absolutePath + "]")
 
-        injector = Guice.createInjector(Modules.override(new QdbServerModule()).with(new ModuleForTests(dataDir)))
+        injector = Guice.createInjector(Modules.override(new QdbServerModule()).with(
+                instance ? new ClusteredTestModule(dataDir, instance) : new StandaloneTestModule(dataDir)))
         zookeeper = injector.getInstance(EmbeddedZooKeeper.class)
+        qdb = injector.getInstance(Connection.class)
+    }
+
+    void waitForRepo() {
         Repository repo = injector.getInstance(Repository.class)
         synchronized (repo) {
             for (int i = 0; i < 3 && !repo.getStatus().up; i++) repo.wait(1000);
         }
-        qdb = injector.getInstance(Connection.class)
     }
 
     @Override

@@ -10,7 +10,7 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
 @Stepwise
-class MessagesSpec extends Base {
+class MessagesSpec extends StandaloneBase {
 
     @Shared ExecutorService pool = Executors.newCachedThreadPool()
     @Shared long startTime = System.currentTimeMillis()

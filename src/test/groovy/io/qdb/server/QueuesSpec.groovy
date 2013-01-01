@@ -4,7 +4,7 @@ import spock.lang.Stepwise
 import spock.lang.Shared
 
 @Stepwise
-class QueuesSpec extends Base {
+class QueuesSpec extends StandaloneBase {
 
     @Shared
     private String serverId

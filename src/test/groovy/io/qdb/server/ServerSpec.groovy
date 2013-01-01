@@ -1,6 +1,6 @@
 package io.qdb.server
 
-class ServerSpec extends Base {
+class ServerSpec extends StandaloneBase {
 
     def "Unauthenticated user can get basic status"() {
         def ans = GET("/", null, null)

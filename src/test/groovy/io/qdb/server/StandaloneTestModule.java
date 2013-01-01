@@ -9,11 +9,11 @@ import java.io.File;
 /**
  * Server configured for testing.
  */
-public class ModuleForTests extends AbstractModule {
+public class StandaloneTestModule extends AbstractModule {
 
     private final File dataDir;
 
-    public ModuleForTests(File dataDir) {
+    public StandaloneTestModule(File dataDir) {
         this.dataDir = dataDir;
     }
 
