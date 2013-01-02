@@ -115,7 +115,7 @@ public class StandaloneRepository implements Repository, Closeable {
             admin.setId("admin");
             admin.setPassword(initialAdminPassword);
             admin.setAdmin(true);
-            exec(new RepoTx(RepoTx.Operation.CREATE, RepoTx.Type.USER, admin));
+            exec(new RepoTx(RepoTx.Operation.CREATE, admin));
             log.info("Created initial admin user");
         }
 
@@ -182,7 +182,7 @@ public class StandaloneRepository implements Repository, Closeable {
      */
     @SuppressWarnings("unchecked")
     private void apply(RepoTx tx) {
-        ModelStore store = getStore(tx.type);
+        ModelStore store = getStore(tx.object);
         switch (tx.op) {
             case CREATE:    store.create(tx.object);    break;
             case UPDATE:    store.update(tx.object);    break;
@@ -191,13 +191,11 @@ public class StandaloneRepository implements Repository, Closeable {
     }
 
     @SuppressWarnings("unchecked")
-    private ModelStore getStore(RepoTx.Type type) {
-        switch (type) {
-            case USER:      return users;
-            case DATABASE:  return databases;
-            case QUEUE:     return queues;
-        }
-        throw new IllegalStateException("Unknown Tx type " + type);
+    private ModelStore getStore(ModelObject o) {
+        if (o instanceof Database) return databases;
+        if (o instanceof Queue) return queues;
+        if (o instanceof User) return users;
+        throw new IllegalStateException("Unknown object type " + o);
     }
 
     @Override
@@ -223,13 +221,13 @@ public class StandaloneRepository implements Repository, Closeable {
 
     @Override
     public User createUser(User user) throws IOException {
-        exec(new RepoTx(RepoTx.Operation.CREATE, RepoTx.Type.USER, user));
+        exec(new RepoTx(RepoTx.Operation.CREATE, user));
         return user;
     }
 
     @Override
     public User updateUser(User user) throws IOException {
-        exec(new RepoTx(RepoTx.Operation.UPDATE, RepoTx.Type.USER, user));
+        exec(new RepoTx(RepoTx.Operation.UPDATE, user));
         return user;
     }
 
@@ -251,13 +249,13 @@ public class StandaloneRepository implements Repository, Closeable {
 
     @Override
     public Database createDatabase(Database db) throws IOException {
-        exec(new RepoTx(RepoTx.Operation.CREATE, RepoTx.Type.DATABASE, db));
+        exec(new RepoTx(RepoTx.Operation.CREATE, db));
         return db;
     }
 
     @Override
     public Database updateDatabase(Database db) throws IOException {
-        exec(new RepoTx(RepoTx.Operation.UPDATE, RepoTx.Type.DATABASE, db));
+        exec(new RepoTx(RepoTx.Operation.UPDATE, db));
         return db;
     }
 
@@ -295,13 +293,13 @@ public class StandaloneRepository implements Repository, Closeable {
 
     @Override
     public Queue createQueue(Queue queue) throws IOException {
-        exec(new RepoTx(RepoTx.Operation.CREATE, RepoTx.Type.QUEUE, queue));
+        exec(new RepoTx(RepoTx.Operation.CREATE, queue));
         return queue;
     }
 
     @Override
     public Queue updateQueue(Queue queue) throws IOException {
-        exec(new RepoTx(RepoTx.Operation.UPDATE, RepoTx.Type.QUEUE, queue));
+        exec(new RepoTx(RepoTx.Operation.UPDATE, queue));
         return queue;
     }
 

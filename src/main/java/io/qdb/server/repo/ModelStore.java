@@ -34,12 +34,7 @@ class ModelStore<T extends ModelObject> {
 
     public T create(T o) {
         if (map.putIfAbsent(o.getId(), o) != null) throw new DuplicateIdException("Duplicate id " + tos(o));
-        if (eventFactory != null) {
-            // fire an event now instead of waiting for the callback from zookeeper so the object will definitely
-            // exist elsewhere (e.g. QueueManager) and be visible to clients - otherwise a call to create a queue
-            // immediately followed by an append to it might fail
-            eventBus.post(eventFactory.createEvent(ModelEvent.Type.ADDED, o));
-        }
+        if (eventFactory != null) eventBus.post(eventFactory.createEvent(ModelEvent.Type.ADDED, o));
         return o;
     }
 

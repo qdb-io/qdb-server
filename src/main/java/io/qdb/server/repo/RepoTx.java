@@ -7,23 +7,20 @@ import io.qdb.server.model.ModelObject;
  */
 class RepoTx {
 
-    enum Operation { CREATE, UPDATE }
-    enum Type { USER, DATABASE, QUEUE }
+    enum Operation { CREATE, UPDATE, DELETE }
 
     public Operation op;
-    public Type type;
     public ModelObject object;
 
     public RepoTx() { }
 
-    public RepoTx(Operation op, Type type, ModelObject object) {
+    public RepoTx(Operation op, ModelObject object) {
         this.op = op;
-        this.type = type;
         this.object = object;
     }
 
     @Override
     public String toString() {
-        return op + " " + type + " " + object;
+        return op + " " + object;
     }
 }
