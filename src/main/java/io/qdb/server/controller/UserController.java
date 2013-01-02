@@ -1,18 +1,13 @@
 package io.qdb.server.controller;
 
 import io.qdb.server.JsonService;
-import io.qdb.server.model.Database;
 import io.qdb.server.model.OptLockException;
 import io.qdb.server.model.Repository;
 import io.qdb.server.model.User;
-import org.apache.zookeeper.KeeperException;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.channels.Channels;
-import java.util.ArrayList;
 import java.util.List;
 
 @Singleton

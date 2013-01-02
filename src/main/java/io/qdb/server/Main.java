@@ -1,7 +1,6 @@
 package io.qdb.server;
 
 import com.google.inject.*;
-import io.qdb.server.zk.EmbeddedZooKeeper;
 import org.simpleframework.transport.connect.Connection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -11,7 +11,6 @@ import com.typesafe.config.ConfigValue;
 import io.qdb.server.controller.Router;
 import io.qdb.server.model.Repository;
 import io.qdb.server.repo.StandaloneRepository;
-import io.qdb.server.zk.ZkRepository;
 import org.simpleframework.http.core.Container;
 import org.simpleframework.transport.connect.Connection;
 
@@ -45,7 +44,6 @@ public class QdbServerModule extends AbstractModule {
     protected void bindProperties() {
         for (Map.Entry<String, ConfigValue> entry : cfg.entrySet()) {
             ConfigValue value = entry.getValue();
-            String key = entry.getKey();
             if (value.origin().url() != null) {
                 Named named = Names.named(entry.getKey());
                 Object v = value.unwrapped();

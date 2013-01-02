@@ -1,7 +1,6 @@
 package io.qdb.server
 
 import com.google.inject.Injector
-import io.qdb.server.zk.EmbeddedZooKeeper
 import org.simpleframework.transport.connect.Connection
 import org.apache.commons.io.FileUtils
 import com.google.inject.Guice
