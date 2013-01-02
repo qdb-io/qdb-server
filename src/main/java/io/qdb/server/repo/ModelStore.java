@@ -56,6 +56,16 @@ class ModelStore<T extends ModelObject> {
         return o;
     }
 
+    public void delete(T o) {
+        ModelObject existing = map.get(o.getId());
+        if (existing == null) return;
+        if (existing.getVersion() != o.getVersion()) {
+            throw new OptLockException(tos(o) + " has incorrect version " + o.getVersion() +
+                    " (expected " + existing.getVersion() + ")");
+        }
+        map.remove(o.getId(), o);
+    }
+
     @SuppressWarnings("unchecked")
     public List<T> find(int offset, int limit) throws IOException {
         if (limit < 0) limit = Integer.MAX_VALUE - offset;

@@ -5,12 +5,10 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.google.common.eventbus.EventBus;
-import com.google.common.io.Files;
 import com.google.common.io.PatternFilenameFilter;
 import io.qdb.buffer.MessageBuffer;
 import io.qdb.buffer.MessageCursor;
 import io.qdb.buffer.PersistentMessageBuffer;
-import io.qdb.server.controller.JsonService;
 import io.qdb.server.Util;
 import io.qdb.server.model.*;
 import io.qdb.server.model.Queue;
@@ -38,9 +36,10 @@ public class StandaloneRepository implements Repository, Closeable {
     private final int snapshotIntervalSecs;
     private final Timer snapshotTimer;
 
-    private ModelStore<User> users;
-    private ModelStore<Database> databases;
-    private ModelStore<Queue> queues;
+    private final ModelStore<Server> servers;
+    private final ModelStore<User> users;
+    private final ModelStore<Database> databases;
+    private final ModelStore<Queue> queues;
 
     private MessageBuffer txLog;
     private Date upSince;
@@ -50,6 +49,7 @@ public class StandaloneRepository implements Repository, Closeable {
 
     private static class Snapshot {
 
+        public List<Server> servers;
         public List<User> users;
         public List<Database> databases;
         public List<Queue> queues;
@@ -57,6 +57,7 @@ public class StandaloneRepository implements Repository, Closeable {
         public Snapshot() { }
 
         public Snapshot(StandaloneRepository repo) throws IOException {
+            servers = repo.servers.values();
             users = repo.users.values();
             databases = repo.databases.values();
             queues = repo.queues.values();
@@ -68,17 +69,16 @@ public class StandaloneRepository implements Repository, Closeable {
                 @Named("dataDir") String dataDir,
                 @Named("txLogSizeM") int txLogSizeM,
                 @Named("snapshotCount") int snapshotCount,
-                @Named("snapshotIntervalSecs") int snapshotIntervalSecs,
-                @Named("snapshotPretty") boolean snapshotPretty) throws IOException {
+                @Named("snapshotIntervalSecs") int snapshotIntervalSecs) throws IOException {
         this.snapshotCount = snapshotCount;
         this.snapshotIntervalSecs = snapshotIntervalSecs;
 
-        dir = Util.ensureDirectory(new File(dataDir));
+        dir = Util.ensureDirectory(new File(dataDir, "meta-data"));
 
         mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
         mapper.configure(SerializationFeature.WRITE_NULL_MAP_VALUES, false);
-        if (snapshotPretty) mapper.configure(SerializationFeature.INDENT_OUTPUT, true);
+        mapper.configure(SerializationFeature.INDENT_OUTPUT, true);
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
         txLog = new PersistentMessageBuffer(Util.ensureDirectory(new File(dir, "txlog")));
@@ -111,10 +111,19 @@ public class StandaloneRepository implements Repository, Closeable {
         }
 
         if (mostRecentSnapshotId < txLog.getOldestMessageId()) {
-            throw new IOException("Most recent snapshot " + mostRecentSnapshotId +  " is older than oldest record " +
-                    "in txlog " + txLog.getOldestMessageId());
+            throw new IOException("Most recent snapshot " + Long.toHexString(mostRecentSnapshotId) +
+                    " is older than oldest record in txlog " + Long.toHexString(txLog.getOldestMessageId()));
         }
 
+        if (txLog.getNextMessageId() == 0 && mostRecentSnapshotId > 0) {
+            // probably this a recovery after a cluster failure by copying snapshot files around and nuking tx logs
+            // to get everyone in sync
+            log.info("The txlog is empty but we have snapshot " + Long.toHexString(mostRecentSnapshotId) +
+                    " so using that as next id");
+            txLog.setFirstMessageId(mostRecentSnapshotId);
+        }
+
+        servers = new ModelStore<Server>(snapshot == null ? null : snapshot.servers, eventBus);
         users = new ModelStore<User>(snapshot == null ? null : snapshot.users, eventBus);
         databases = new ModelStore<Database>(snapshot == null ? null : snapshot.databases, eventBus);
         queues = new ModelStore<Queue>(snapshot == null ? null : snapshot.queues, eventBus);
@@ -135,7 +144,6 @@ public class StandaloneRepository implements Repository, Closeable {
         snapshotTimer = new Timer("repo-snapshot", true);
 
         upSince = new Date();
-        eventBus.post(getStatus());
     }
 
     private File[] getSnapshotFiles() {
@@ -256,6 +264,7 @@ public class StandaloneRepository implements Repository, Closeable {
         switch (tx.op) {
             case CREATE:    store.create(tx.object);    break;
             case UPDATE:    store.update(tx.object);    break;
+            case DELETE:    store.delete(tx.object);    break;
             default:        throw new IllegalStateException("Unknown operation " + tx.op);
         }
     }
@@ -276,12 +285,25 @@ public class StandaloneRepository implements Repository, Closeable {
     }
 
     @Override
-    public void createQdbNode(QdbNode node) throws IOException {
+    public List<Server> findServers() throws IOException {
+        return servers.find(0, -1);
     }
 
     @Override
-    public List<QdbNode> findQdbNodes() throws IOException {
-        return null;
+    public Server createServer(Server server) throws IOException {
+        exec(new RepoTx(RepoTx.Operation.CREATE, server));
+        return server;
+    }
+
+    @Override
+    public Server updateServer(Server server) throws IOException {
+        exec(new RepoTx(RepoTx.Operation.UPDATE, server));
+        return server;
+    }
+
+    @Override
+    public void deleteServer(Server server) throws IOException {
+        exec(new RepoTx(RepoTx.Operation.DELETE, server));
     }
 
     @Override

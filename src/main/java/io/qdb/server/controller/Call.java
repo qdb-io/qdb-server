@@ -19,20 +19,19 @@ public class Call {
 
     private final Request request;
     private final Response response;
-    private final Auth auth;
     private final String[] segments;
     private final Renderer renderer;
 
     private int currentSegment;
     private int code = 200;
 
+    private Auth auth;
     private Database database;
     private Queue queue;
 
-    public Call(Request request, Response response, Auth auth, Renderer renderer) {
+    public Call(Request request, Response response, Renderer renderer) {
         this.request = request;
         this.response = response;
-        this.auth = auth;
         this.renderer = renderer;
         this.segments = request.getPath().getSegments();
     }
@@ -47,6 +46,10 @@ public class Call {
 
     public Auth getAuth() {
         return auth;
+    }
+
+    public void setAuth(Auth auth) {
+        this.auth = auth;
     }
 
     public User getUser() {

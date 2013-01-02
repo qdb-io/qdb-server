@@ -35,14 +35,15 @@ public interface Repository {
     public Status getStatus();
 
     /**
-     * Publish information about node to the cluster.
+     * Which servers are supposed to be in our cluster?
      */
-    public void createQdbNode(QdbNode node) throws IOException;
+    public List<Server> findServers() throws IOException;
 
-    /**
-     * Find all nodes in our cluster that are up.
-     */
-    public List<QdbNode> findQdbNodes() throws IOException;
+    public Server createServer(Server server) throws IOException;
+
+    public Server updateServer(Server server) throws IOException;
+
+    public void deleteServer(Server server) throws IOException;
 
 
     public User findUser(String id) throws IOException;
@@ -76,6 +77,5 @@ public interface Repository {
     public List<Queue> findQueues(int offset, int limit) throws IOException;
 
     public int countQueues() throws IOException;
-
 
 }

@@ -43,7 +43,7 @@ artifacts {
 }
 
 run {
-    if (project.hasProperty('instance')) jvmArgs = ["-Dqdb.conf=etc/qdb" + project.instance]
+    if (project.hasProperty('server')) jvmArgs = ["-Dqdb.conf=etc/qdb" + project.server]
 }
 
 task("run-debug", dependsOn: 'classes', type: JavaExec) {
