@@ -59,7 +59,7 @@ public class StandaloneRepository implements Repository, Closeable {
 
     @Inject
     public StandaloneRepository(EventBus eventBus, JsonService jsonService,
-                @Named("data.dir") String dataDir,
+                @Named("dataDir") String dataDir,
                 @Named("txLogSizeM") int txLogSizeM,
                 @Named("snapshotCount") int snapshotCount) throws IOException {
         this.jsonService = jsonService;
@@ -162,9 +162,23 @@ public class StandaloneRepository implements Repository, Closeable {
                     }
                 }
             }
+
+            deleteOldSnapshots();
+
         } finally {
             synchronized (this) {
                 busySavingSnapshot = false;
+            }
+        }
+    }
+
+    private void deleteOldSnapshots() {
+        File[] a = getSnapshotFiles();
+        for (int i = 0; i < (a.length - snapshotCount); i++) {
+            if (a[i].delete()) {
+                if (log.isDebugEnabled()) log.debug("Deleted " + a[i]);
+            } else {
+                log.error("Unable to delete " + a[i]);
             }
         }
     }

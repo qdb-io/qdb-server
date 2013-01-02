@@ -19,6 +19,6 @@ public class StandaloneTestModule extends AbstractModule {
 
     @Override
     protected void configure() {
-        bind(Key.get(String.class, Names.named("data.dir"))).toInstance(dataDir.getAbsolutePath());
+        bind(Key.get(String.class, Names.named("dataDir"))).toInstance(dataDir.getAbsolutePath());
     }
 }

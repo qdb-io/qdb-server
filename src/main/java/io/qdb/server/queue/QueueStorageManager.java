@@ -19,7 +19,7 @@ public class QueueStorageManager {
     private final File[] queueDataDirs;
 
     @Inject
-    public QueueStorageManager(@Named("data.dir") String dataDir) throws IOException {
+    public QueueStorageManager(@Named("dataDir") String dataDir) throws IOException {
         queueDataDirs = new File[]{new File(dataDir, "queues")};
         for (File dir : queueDataDirs) Util.ensureDirectory(dir);
     }

@@ -23,7 +23,7 @@ public class ServerId {
     private final String id;
 
     @Inject
-    public ServerId(@Named("data.dir") String dataDir) throws IOException {
+    public ServerId(@Named("dataDir") String dataDir) throws IOException {
         File f = new File(dataDir, "server-id.txt");
         if (f.exists()) {
             id = Files.readFirstLine(f, Charset.forName("UTF8"));
