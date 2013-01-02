@@ -1,6 +1,6 @@
 package io.qdb.server.controller;
 
-import io.qdb.server.JsonService;
+import io.qdb.server.controller.JsonService;
 import io.qdb.server.queue.QueueManager;
 import io.qdb.server.ServerId;
 import io.qdb.server.model.*;

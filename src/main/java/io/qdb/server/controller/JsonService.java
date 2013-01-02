@@ -1,12 +1,11 @@
-package io.qdb.server;
+package io.qdb.server.controller;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.*;
-import com.fasterxml.jackson.databind.jsontype.NamedType;
-import io.qdb.server.model.Database;
-import io.qdb.server.model.Queue;
-import io.qdb.server.model.User;
+import com.google.inject.Inject;
 
+import javax.inject.Named;
 import javax.inject.Singleton;
 import java.io.IOException;
 import java.io.InputStream;
@@ -18,19 +17,16 @@ import java.io.OutputStream;
 @Singleton
 public class JsonService {
 
-    private ObjectMapper mapper = new ObjectMapper();
+    private final ObjectMapper mapper = new ObjectMapper();
 
+    @Inject
     @SuppressWarnings("deprecation")
-    public JsonService() {
+    public JsonService(@Named("prettyPrint") boolean prettyPrint) {
+        mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
         mapper.configure(SerializationFeature.WRITE_NULL_MAP_VALUES, false);
+        if (prettyPrint) mapper.configure(SerializationFeature.INDENT_OUTPUT, true);
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-
-        mapper.registerSubtypes(
-                new NamedType(User.class, "User"),
-                new NamedType(Database.class, "Database"),
-                new NamedType(Queue.class, "Queue")
-        );
     }
 
     /**

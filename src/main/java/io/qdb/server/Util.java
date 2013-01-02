@@ -21,7 +21,7 @@ public class Util {
         } else if (!dir.canWrite()) {
             throw new IOException("Not writable [" + dir.getAbsolutePath() + "]");
         }
-        return dir;
+        return dir.getAbsoluteFile();
     }
 
 }

@@ -13,12 +13,18 @@ import java.util.concurrent.ConcurrentMap;
  */
 class ModelStore<T extends ModelObject> {
 
-    private final ConcurrentMap<String, T> map;
+    private final ConcurrentMap<String, T> map = new ConcurrentHashMap<String, T>();
     private final EventBus eventBus;
     private ModelEvent.Factory<T> eventFactory;
 
-    ModelStore(Map<String, T> map, EventBus eventBus) {
-        this.map = map == null ? new ConcurrentHashMap<String, T>() : new ConcurrentHashMap<String, T>(map);
+    ModelStore(List<T> list, EventBus eventBus) {
+        if (list != null) {
+            for (T o : list) {
+                if (map.putIfAbsent(o.getId(), o) != null) {
+                    throw new IllegalStateException("Duplicate id " + o);
+                }
+            }
+        }
         this.eventBus = eventBus;
     }
 
@@ -64,8 +70,8 @@ class ModelStore<T extends ModelObject> {
         return map.size();
     }
 
-    public Map<String, T> copy() {
-        return new HashMap<String, T>(map);
+    public List<T> values() {
+        return new ArrayList<T>(map.values());
     }
 
     private static String tos(ModelObject o) {

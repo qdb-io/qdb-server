@@ -2,7 +2,7 @@ package io.qdb.server.controller;
 
 import io.qdb.buffer.MessageBuffer;
 import io.qdb.buffer.Timeline;
-import io.qdb.server.JsonService;
+import io.qdb.server.controller.JsonService;
 import io.qdb.server.ServerId;
 import io.qdb.server.model.*;
 import io.qdb.server.model.Queue;

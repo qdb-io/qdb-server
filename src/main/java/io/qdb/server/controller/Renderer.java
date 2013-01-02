@@ -1,6 +1,6 @@
 package io.qdb.server.controller;
 
-import io.qdb.server.JsonService;
+import io.qdb.server.controller.JsonService;
 import org.simpleframework.http.Response;
 
 import javax.inject.Inject;

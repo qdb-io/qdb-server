@@ -1,6 +1,6 @@
 package io.qdb.server.controller;
 
-import io.qdb.server.JsonService;
+import io.qdb.server.controller.JsonService;
 import io.qdb.server.model.Database;
 import io.qdb.server.model.OptLockException;
 import io.qdb.server.model.Repository;

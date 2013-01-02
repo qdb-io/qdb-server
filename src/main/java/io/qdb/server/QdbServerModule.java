@@ -49,6 +49,7 @@ public class QdbServerModule extends AbstractModule {
                 Object v = value.unwrapped();
                 if (v instanceof String) bind(Key.get(String.class, named)).toInstance((String)v);
                 else if (v instanceof Integer) bind(Key.get(Integer.class, named)).toInstance((Integer)v);
+                else if (v instanceof Boolean) bind(Key.get(Boolean.class, named)).toInstance((Boolean)v);
                 else bind(Key.get(Object.class, named)).toInstance(v);
             }
         }

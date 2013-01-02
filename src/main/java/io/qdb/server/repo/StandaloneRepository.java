@@ -1,12 +1,16 @@
 package io.qdb.server.repo;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.google.common.eventbus.EventBus;
 import com.google.common.io.Files;
 import com.google.common.io.PatternFilenameFilter;
 import io.qdb.buffer.MessageBuffer;
 import io.qdb.buffer.MessageCursor;
 import io.qdb.buffer.PersistentMessageBuffer;
-import io.qdb.server.JsonService;
+import io.qdb.server.controller.JsonService;
 import io.qdb.server.Util;
 import io.qdb.server.model.*;
 import io.qdb.server.model.Queue;
@@ -28,10 +32,11 @@ public class StandaloneRepository implements Repository, Closeable {
 
     private static final Logger log = LoggerFactory.getLogger(StandaloneRepository.class);
 
-    private final JsonService jsonService;
-
+    private final ObjectMapper mapper = new ObjectMapper();
     private final File dir;
     private final int snapshotCount;
+    private final int snapshotIntervalSecs;
+    private final Timer snapshotTimer;
 
     private ModelStore<User> users;
     private ModelStore<Database> databases;
@@ -41,31 +46,40 @@ public class StandaloneRepository implements Repository, Closeable {
     private Date upSince;
     private long mostRecentSnapshotId;
     private boolean busySavingSnapshot;
+    private boolean snapshotScheduled;
 
     private static class Snapshot {
 
-        public Map<String, User> users;
-        public Map<String, Database> databases;
-        public Map<String, Queue> queues;
+        public List<User> users;
+        public List<Database> databases;
+        public List<Queue> queues;
 
         public Snapshot() { }
 
         public Snapshot(StandaloneRepository repo) throws IOException {
-            users = repo.users.copy();
-            databases = repo.databases.copy();
-            queues = repo.queues.copy();
+            users = repo.users.values();
+            databases = repo.databases.values();
+            queues = repo.queues.values();
         }
     }
 
     @Inject
-    public StandaloneRepository(EventBus eventBus, JsonService jsonService,
+    public StandaloneRepository(EventBus eventBus,
                 @Named("dataDir") String dataDir,
                 @Named("txLogSizeM") int txLogSizeM,
-                @Named("snapshotCount") int snapshotCount) throws IOException {
-        this.jsonService = jsonService;
+                @Named("snapshotCount") int snapshotCount,
+                @Named("snapshotIntervalSecs") int snapshotIntervalSecs,
+                @Named("snapshotPretty") boolean snapshotPretty) throws IOException {
         this.snapshotCount = snapshotCount;
+        this.snapshotIntervalSecs = snapshotIntervalSecs;
 
         dir = Util.ensureDirectory(new File(dataDir));
+
+        mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
+        mapper.configure(SerializationFeature.WRITE_NULL_MAP_VALUES, false);
+        if (snapshotPretty) mapper.configure(SerializationFeature.INDENT_OUTPUT, true);
+        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
         txLog = new PersistentMessageBuffer(Util.ensureDirectory(new File(dir, "txlog")));
         txLog.setMaxSize(txLogSizeM * 1000000);
@@ -75,11 +89,17 @@ public class StandaloneRepository implements Repository, Closeable {
         Snapshot snapshot = null;
         for (int i = files.length - 1; i >= 0; i--) {
             File f = files[i];
+            BufferedInputStream in = new BufferedInputStream(new FileInputStream(f));
             try {
-                snapshot = jsonService.fromJson(Files.toByteArray(f), Snapshot.class);
+                snapshot = mapper.readValue(in, Snapshot.class);
             } catch (Exception e) {
                 log.error("Error loading " + f + ", ignoring: " + e);
                 continue;
+            } finally {
+                try {
+                    in.close();
+                } catch (IOException ignore) {
+                }
             }
 
             String name = f.getName();
@@ -101,7 +121,7 @@ public class StandaloneRepository implements Repository, Closeable {
 
         int count = 0;
         for (MessageCursor c = txLog.cursor(mostRecentSnapshotId); c.next(); count++) {
-            RepoTx tx = jsonService.fromJson(c.getPayload(), RepoTx.class);
+            RepoTx tx = mapper.readValue(c.getPayload(), RepoTx.class);
             try {
                 apply(tx);
             } catch (ModelException e) {
@@ -111,6 +131,8 @@ public class StandaloneRepository implements Repository, Closeable {
         if (log.isDebugEnabled()) log.debug("Replayed " + count + " transaction(s)");
 
         queues.setEventFactory(Queue.Event.FACTORY); // set this now to avoid firing events when playing the tx log
+
+        snapshotTimer = new Timer("repo-snapshot", true);
 
         upSince = new Date();
         eventBus.post(getStatus());
@@ -124,11 +146,13 @@ public class StandaloneRepository implements Repository, Closeable {
 
     @Override
     public void close() throws IOException {
+        snapshotTimer.cancel();
         txLog.close();
     }
 
     /**
-     * Save a snapshot. This is a NOP if we are already busy saving a snapshot.
+     * Save a snapshot. This is a NOP if we are already busy saving a snapshot or if no new transactions have been
+     * applied since the most recent snapshot was saved.
      */
     void saveSnapshot() throws IOException {
         Snapshot snapshot;
@@ -137,15 +161,17 @@ public class StandaloneRepository implements Repository, Closeable {
             synchronized (this) {
                 if (busySavingSnapshot) return;
                 busySavingSnapshot = true;
-                snapshot = new Snapshot(this);
                 txLog.sync();
                 id = txLog.getNextMessageId();
+                if (id == mostRecentSnapshotId) return; // nothing to do
+                snapshot = new Snapshot(this);
             }
-            File f = new File(dir, "snapshot-" + String.format("%16x", id) + ".json");
+            File f = new File(dir, "snapshot-" + String.format("%016x", id) + ".json");
+            if (log.isDebugEnabled()) log.debug("Creating " + f);
             boolean ok = false;
             FileOutputStream out = new FileOutputStream(f);
             try {
-                jsonService.toJson(out, snapshot);
+                mapper.writeValue(out, snapshot);
                 out.close();
                 synchronized (this) {
                     mostRecentSnapshotId = id;
@@ -187,11 +213,37 @@ public class StandaloneRepository implements Repository, Closeable {
      * Append tx to our tx log and apply it to our in memory model.
      */
     private void exec(RepoTx tx) throws IOException {
-        byte[] payload = jsonService.toJson(tx);
+        byte[] payload = mapper.writeValueAsBytes(tx);
         long timestamp = System.currentTimeMillis();
+        boolean snapshotNow;
         synchronized (this) {
             txLog.append(timestamp, null, payload);
             apply(tx);
+            long bytes = txLog.getNextMessageId() - mostRecentSnapshotId;
+            snapshotNow = bytes > txLog.getMaxSize() / 2; // half our log space is gone so do a snapshot now
+        }
+        if (snapshotNow) {
+            saveSnapshot();
+        } else {
+            scheduleSnapshot();
+        }
+    }
+
+    private synchronized void scheduleSnapshot() {
+        if (!snapshotScheduled) {
+            snapshotTimer.schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    try {
+                        synchronized (StandaloneRepository.this) {
+                            snapshotScheduled = false;
+                        }
+                        saveSnapshot();
+                    } catch (Throwable e) {
+                        log.error("Error saving snapshot: " + e, e);
+                    }
+                }
+            }, snapshotIntervalSecs * 1000L);
         }
     }
 
@@ -330,4 +382,5 @@ public class StandaloneRepository implements Repository, Closeable {
     public int countQueues() throws IOException {
         return queues.size();
     }
+
 }

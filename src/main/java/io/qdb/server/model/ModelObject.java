@@ -1,5 +1,6 @@
 package io.qdb.server.model;
 
+import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 /**
@@ -7,6 +8,11 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
  * Serializable to/from JSON with Jackson.
  */
 @JsonTypeInfo(use=JsonTypeInfo.Id.NAME, include=JsonTypeInfo.As.PROPERTY, property="class")
+@JsonSubTypes({
+    @JsonSubTypes.Type(value = User.class, name = "User"),
+    @JsonSubTypes.Type(value = Database.class, name = "Database"),
+    @JsonSubTypes.Type(value = Queue.class, name = "Queue")
+})
 public abstract class ModelObject implements Cloneable, Comparable<ModelObject> {
 
     private String id;
