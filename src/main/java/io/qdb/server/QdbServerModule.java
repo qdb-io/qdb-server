@@ -10,6 +10,7 @@ import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigValue;
 import io.qdb.server.controller.Router;
 import io.qdb.server.model.Repository;
+import io.qdb.server.repo.StandaloneRepository;
 import io.qdb.server.zk.ZkRepository;
 import org.simpleframework.http.core.Container;
 import org.simpleframework.transport.connect.Connection;
@@ -33,7 +34,7 @@ public class QdbServerModule extends AbstractModule {
     protected void configure() {
         bindProperties();
         bind(Container.class).to(Router.class);
-        bind(Repository.class).to(ZkRepository.class);
+        bind(Repository.class).to(StandaloneRepository.class);
         bind(EventBus.class).toInstance(new EventBus());
         bind(Connection.class).toProvider(ConnectionProvider.class);
     }
@@ -45,7 +46,7 @@ public class QdbServerModule extends AbstractModule {
         for (Map.Entry<String, ConfigValue> entry : cfg.entrySet()) {
             ConfigValue value = entry.getValue();
             String key = entry.getKey();
-            if (value.origin().url() != null || key.equals("data.dir") || key.equals("zookeeper.instance")) {
+            if (value.origin().url() != null) {
                 Named named = Names.named(entry.getKey());
                 Object v = value.unwrapped();
                 if (v instanceof String) bind(Key.get(String.class, named)).toInstance((String)v);

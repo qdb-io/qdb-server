@@ -1,5 +1,6 @@
 package io.qdb.server.queue;
 
+import io.qdb.server.Util;
 import io.qdb.server.model.Queue;
 
 import javax.inject.Inject;
@@ -20,17 +21,7 @@ public class QueueStorageManager {
     @Inject
     public QueueStorageManager(@Named("data.dir") String dataDir) throws IOException {
         queueDataDirs = new File[]{new File(dataDir, "queues")};
-        for (File dir : queueDataDirs) {
-            if (!dir.exists()) {
-                if (!dir.mkdirs()) {
-                    throw new IOException("Unable to create queue data dir [" + dir.getAbsolutePath() + "]");
-                }
-            } else if (!dir.isDirectory()) {
-                throw new IOException("Queue data dir is not a directory [" + dir.getAbsolutePath() + "]");
-            } else if (!dir.canWrite()) {
-                throw new IOException("Queue data dir is not writable [" + dir.getAbsolutePath() + "]");
-            }
-        }
+        for (File dir : queueDataDirs) Util.ensureDirectory(dir);
     }
 
     /**

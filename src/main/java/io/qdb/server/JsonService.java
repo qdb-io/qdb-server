@@ -1,13 +1,18 @@
 package io.qdb.server;
 
+import io.qdb.server.model.Database;
+import io.qdb.server.model.Queue;
+import io.qdb.server.model.User;
 import org.codehaus.jackson.map.DeserializationConfig;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.SerializationConfig;
+import org.codehaus.jackson.map.jsontype.NamedType;
 import org.codehaus.jackson.type.TypeReference;
 
 import javax.inject.Singleton;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 
 /**
  * Marshaling of objects to/from JSON using Jackson.
@@ -23,6 +28,12 @@ public class JsonService {
         mapper.configure(SerializationConfig.Feature.WRITE_DATES_AS_TIMESTAMPS, false);
         mapper.configure(SerializationConfig.Feature.WRITE_NULL_MAP_VALUES, false);
         mapper.configure(DeserializationConfig.Feature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+        mapper.registerSubtypes(
+                new NamedType(User.class, "User"),
+                new NamedType(Database.class, "Database"),
+                new NamedType(Queue.class, "Queue")
+        );
     }
 
     /**
@@ -30,6 +41,13 @@ public class JsonService {
      */
     public byte[] toJson(Object o) throws IOException {
         return mapper.writeValueAsBytes(o);
+    }
+
+    /**
+     * Convert o to JSON.
+     */
+    public void toJson(OutputStream out, Object o) throws IOException {
+        mapper.writeValue(out, o);
     }
 
     /**

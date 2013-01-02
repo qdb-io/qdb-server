@@ -187,7 +187,7 @@ public class ZkRepository implements Repository, Closeable, ConnectionStateListe
             ArrayList<Database> ans = new ArrayList<Database>();
             String[] databases = user.getDatabases();
             if (databases != null) {
-                for (int i = 0, n = Math.min(offset + limit, databases.length); i < n; i++) {
+                for (int i = offset, n = Math.min(offset + limit, databases.length); i < n; i++) {
                     Database db = findDatabase(databases[i]);
                     if (db != null) ans.add(db);
                 }

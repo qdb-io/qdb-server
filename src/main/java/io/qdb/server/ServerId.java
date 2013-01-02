@@ -35,7 +35,7 @@ public class ServerId {
             byte[] data = new byte[8];
             new SecureRandom().nextBytes(data);
             id = new BigInteger(data).abs().toString(36);
-            Files.createParentDirs(f);
+            Util.ensureDirectory(f.getParentFile());
             Files.write(id.getBytes("UTF8"), f);
             log.info("New server ID [" + id + "] stored in [" + f.getAbsolutePath() + "]");
         }

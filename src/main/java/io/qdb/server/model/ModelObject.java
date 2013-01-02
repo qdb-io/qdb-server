@@ -1,15 +1,15 @@
 package io.qdb.server.model;
 
-import org.codehaus.jackson.annotate.JsonIgnore;
+import org.codehaus.jackson.annotate.JsonTypeInfo;
 
 /**
  * Base class for objects in our model. Supports equals (class and id must match) and hashcode (on id).
  * Serializable to/from JSON with Jackson.
  */
-public abstract class ModelObject implements Cloneable {
+@JsonTypeInfo(use=JsonTypeInfo.Id.NAME, include=JsonTypeInfo.As.PROPERTY, property="class")
+public abstract class ModelObject implements Cloneable, Comparable<ModelObject> {
 
     private String id;
-    @JsonIgnore
     private int version;
 
     protected ModelObject() {
@@ -29,6 +29,10 @@ public abstract class ModelObject implements Cloneable {
 
     public void setVersion(int version) {
         this.version = version;
+    }
+
+    public void incVersion() {
+        ++version;
     }
 
     @Override
@@ -54,5 +58,10 @@ public abstract class ModelObject implements Cloneable {
         } catch (CloneNotSupportedException ignore) {
             return null; // not possible since we are Cloneable
         }
+    }
+
+    @Override
+    public int compareTo(ModelObject o) {
+        return id.compareTo(o.id);
     }
 }

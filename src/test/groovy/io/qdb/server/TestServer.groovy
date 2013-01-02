@@ -15,7 +15,6 @@ import io.qdb.server.queue.QueueManager
 class TestServer implements Closeable {
 
     private Injector injector
-    private EmbeddedZooKeeper zookeeper
     private Connection qdb
 
     TestServer(String dir = "build/test-data", int instance = 0) {
@@ -25,7 +24,6 @@ class TestServer implements Closeable {
 
         injector = Guice.createInjector(Modules.override(new QdbServerModule()).with(
                 instance ? new ClusteredTestModule(dataDir, instance) : new StandaloneTestModule(dataDir)))
-        zookeeper = injector.getInstance(EmbeddedZooKeeper.class)
         qdb = injector.getInstance(Connection.class)
     }
 
@@ -40,7 +38,6 @@ class TestServer implements Closeable {
     void close() {
         injector.getInstance(QueueManager)?.close()
         qdb?.close()
-        zookeeper?.close()
     }
 
 }
