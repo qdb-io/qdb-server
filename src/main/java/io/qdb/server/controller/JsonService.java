@@ -16,6 +16,7 @@ import java.io.InputStream;
 public class JsonService {
 
     private final ObjectMapper mapper = new ObjectMapper();
+    private final ObjectMapper mapperNoIdentOutput;
 
     @Inject
     @SuppressWarnings("deprecation")
@@ -23,8 +24,14 @@ public class JsonService {
         mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
         mapper.configure(SerializationFeature.WRITE_NULL_MAP_VALUES, false);
-        if (prettyPrint) mapper.configure(SerializationFeature.INDENT_OUTPUT, true);
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+        if (prettyPrint) {
+            mapperNoIdentOutput = mapper.copy();
+            mapper.configure(SerializationFeature.INDENT_OUTPUT, true);
+        } else {
+            mapperNoIdentOutput = mapper;
+        }
     }
 
     /**
@@ -32,6 +39,13 @@ public class JsonService {
      */
     public byte[] toJson(Object o) throws IOException {
         return mapper.writeValueAsBytes(o);
+    }
+
+    /**
+     * Convert o to JSON with no indenting.
+     */
+    public byte[] toJsonNoIndenting(Object o) throws IOException {
+        return mapperNoIdentOutput.writeValueAsBytes(o);
     }
 
     /**

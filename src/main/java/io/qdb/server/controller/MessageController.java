@@ -198,7 +198,7 @@ public class MessageController extends CrudController {
                 response.set("X-QDB-RoutingKey", c.getRoutingKey());
                 out.write(c.getPayload());
             } else {
-                out.write(jsonService.toJson(new MessageHeader(c)));
+                out.write(jsonService.toJsonNoIndenting(new MessageHeader(c)));
                 out.write(10);
                 out.write(c.getPayload());
                 out.write(separator);
