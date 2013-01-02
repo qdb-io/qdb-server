@@ -1,7 +1,6 @@
 package io.qdb.server.controller;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.*;
 import com.google.inject.Inject;
 
@@ -9,7 +8,6 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 
 /**
  * Marshaling of objects to/from JSON using Jackson.
@@ -37,31 +35,9 @@ public class JsonService {
     }
 
     /**
-     * Convert o to JSON.
-     */
-    public void toJson(OutputStream out, Object o) throws IOException {
-        mapper.writeValue(out, o);
-    }
-
-    /**
-     * Converts content to an instance of a particular type.
-     */
-    public <T> T fromJson(byte[] content, Class<T> klass) throws IOException {
-        return mapper.readValue(content, klass);
-    }
-
-    /**
      * Converts content to an instance of a particular type.
      */
     public <T> T fromJson(InputStream ins, Class<T> klass) throws IOException {
         return mapper.readValue(ins, klass);
     }
-
-    /**
-     * Converts content to an instance of a particular type.
-     */
-    public <T> T fromJson(InputStream content, TypeReference typeRef) throws IOException {
-        return mapper.readValue(content, typeRef);
-    }
-
 }
