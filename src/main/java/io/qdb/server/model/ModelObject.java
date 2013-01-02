@@ -1,6 +1,6 @@
 package io.qdb.server.model;
 
-import org.codehaus.jackson.annotate.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 /**
  * Base class for objects in our model. Supports equals (class and id must match) and hashcode (on id).

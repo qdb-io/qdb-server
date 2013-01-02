@@ -1,13 +1,11 @@
 package io.qdb.server;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.databind.jsontype.NamedType;
 import io.qdb.server.model.Database;
 import io.qdb.server.model.Queue;
 import io.qdb.server.model.User;
-import org.codehaus.jackson.map.DeserializationConfig;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.SerializationConfig;
-import org.codehaus.jackson.map.jsontype.NamedType;
-import org.codehaus.jackson.type.TypeReference;
 
 import javax.inject.Singleton;
 import java.io.IOException;
@@ -24,10 +22,9 @@ public class JsonService {
 
     @SuppressWarnings("deprecation")
     public JsonService() {
-        mapper.configure(SerializationConfig.Feature.WRITE_NULL_PROPERTIES, false);
-        mapper.configure(SerializationConfig.Feature.WRITE_DATES_AS_TIMESTAMPS, false);
-        mapper.configure(SerializationConfig.Feature.WRITE_NULL_MAP_VALUES, false);
-        mapper.configure(DeserializationConfig.Feature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
+        mapper.configure(SerializationFeature.WRITE_NULL_MAP_VALUES, false);
+        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
         mapper.registerSubtypes(
                 new NamedType(User.class, "User"),
