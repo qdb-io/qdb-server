@@ -24,11 +24,12 @@ class TestServer implements Closeable {
 
         injector = Guice.createInjector(Modules.override(new QdbServerModule()).with(
                 instance ? new ClusteredTestModule(dataDir, instance) : new StandaloneTestModule(dataDir)))
-        qdb = injector.getInstance(Connection.class)
+        injector.getInstance(RepositoryInit)
+        qdb = injector.getInstance(Connection)
     }
 
     void waitForRepo() {
-        Repository repo = injector.getInstance(Repository.class)
+        Repository repo = injector.getInstance(Repository)
         synchronized (repo) {
             for (int i = 0; i < 3 && !repo.getStatus().up; i++) repo.wait(1000);
         }

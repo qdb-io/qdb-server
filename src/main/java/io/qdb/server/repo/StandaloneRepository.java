@@ -28,7 +28,6 @@ public class StandaloneRepository implements Repository, Closeable {
 
     private static final Logger log = LoggerFactory.getLogger(StandaloneRepository.class);
 
-    private final EventBus eventBus;
     private final JsonService jsonService;
 
     private final File dir;
@@ -41,6 +40,7 @@ public class StandaloneRepository implements Repository, Closeable {
     private MessageBuffer txLog;
     private Date upSince;
     private long mostRecentSnapshotId;
+    private boolean busySavingSnapshot;
 
     private static class Snapshot {
 
@@ -61,10 +61,7 @@ public class StandaloneRepository implements Repository, Closeable {
     public StandaloneRepository(EventBus eventBus, JsonService jsonService,
                 @Named("data.dir") String dataDir,
                 @Named("txLogSizeM") int txLogSizeM,
-                @Named("snapshotCount") int snapshotCount,
-                @Named("initialAdminPassword") String initialAdminPassword
-                ) throws IOException {
-        this.eventBus = eventBus;
+                @Named("snapshotCount") int snapshotCount) throws IOException {
         this.jsonService = jsonService;
         this.snapshotCount = snapshotCount;
 
@@ -81,7 +78,7 @@ public class StandaloneRepository implements Repository, Closeable {
             try {
                 snapshot = jsonService.fromJson(Files.toByteArray(f), Snapshot.class);
             } catch (Exception e) {
-                log.error("Error reading " + f + ", ignoring: " + e);
+                log.error("Error loading " + f + ", ignoring: " + e);
                 continue;
             }
 
@@ -89,6 +86,7 @@ public class StandaloneRepository implements Repository, Closeable {
             int j = name.indexOf('-');
             int k = name.lastIndexOf('.');
             mostRecentSnapshotId = Long.parseLong(name.substring(j + 1, k), 16);
+            if (log.isDebugEnabled()) log.debug("Loaded " + f);
             break;
         }
 
@@ -101,7 +99,8 @@ public class StandaloneRepository implements Repository, Closeable {
         databases = new ModelStore<Database>(snapshot == null ? null : snapshot.databases, eventBus);
         queues = new ModelStore<Queue>(snapshot == null ? null : snapshot.queues, eventBus);
 
-        for (MessageCursor c = txLog.cursor(mostRecentSnapshotId); c.next(); ) {
+        int count = 0;
+        for (MessageCursor c = txLog.cursor(mostRecentSnapshotId); c.next(); count++) {
             RepoTx tx = jsonService.fromJson(c.getPayload(), RepoTx.class);
             try {
                 apply(tx);
@@ -109,19 +108,12 @@ public class StandaloneRepository implements Repository, Closeable {
                 if (log.isDebugEnabled()) log.debug("Got " + e + " replaying " + tx);
             }
         }
-
-        if (users.find("admin") == null) {
-            User admin = new User();
-            admin.setId("admin");
-            admin.setPassword(initialAdminPassword);
-            admin.setAdmin(true);
-            exec(new RepoTx(RepoTx.Operation.CREATE, admin));
-            log.info("Created initial admin user");
-        }
+        if (log.isDebugEnabled()) log.debug("Replayed " + count + " transaction(s)");
 
         queues.setEventFactory(Queue.Event.FACTORY); // set this now to avoid firing events when playing the tx log
 
         upSince = new Date();
+        eventBus.post(getStatus());
     }
 
     private File[] getSnapshotFiles() {
@@ -135,32 +127,44 @@ public class StandaloneRepository implements Repository, Closeable {
         txLog.close();
     }
 
-    private void saveSnapshot() throws IOException {
+    /**
+     * Save a snapshot. This is a NOP if we are already busy saving a snapshot.
+     */
+    void saveSnapshot() throws IOException {
         Snapshot snapshot;
         long id;
-        synchronized (this) {
-            snapshot = new Snapshot(this);
-            id = txLog.getNextMessageId();
-        }
-        File f = new File(dir, "snapshot-" + String.format("%16x", id) + ".json");
-        boolean ok = false;
-        FileOutputStream out = new FileOutputStream(f);
         try {
-            jsonService.toJson(out, snapshot);
-            out.close();
             synchronized (this) {
-                mostRecentSnapshotId = id;
+                if (busySavingSnapshot) return;
+                busySavingSnapshot = true;
+                snapshot = new Snapshot(this);
+                txLog.sync();
+                id = txLog.getNextMessageId();
             }
-            ok = true;
+            File f = new File(dir, "snapshot-" + String.format("%16x", id) + ".json");
+            boolean ok = false;
+            FileOutputStream out = new FileOutputStream(f);
+            try {
+                jsonService.toJson(out, snapshot);
+                out.close();
+                synchronized (this) {
+                    mostRecentSnapshotId = id;
+                }
+                ok = true;
+            } finally {
+                if (!ok) {
+                    try {
+                        out.close();
+                    } catch (IOException ignore) {
+                    }
+                    if (!f.delete()) {
+                        log.error("Unable to delete bad snapshot: " + f);
+                    }
+                }
+            }
         } finally {
-            if (!ok) {
-                try {
-                    out.close();
-                } catch (IOException ignore) {
-                }
-                if (!f.delete()) {
-                    log.error("Unable to delete bad snapshot: " + f);
-                }
+            synchronized (this) {
+                busySavingSnapshot = false;
             }
         }
     }
