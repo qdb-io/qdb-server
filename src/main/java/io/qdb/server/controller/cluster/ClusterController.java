@@ -1,6 +1,7 @@
 package io.qdb.server.controller.cluster;
 
 import io.qdb.server.controller.Call;
+import io.qdb.server.controller.Controller;
 import io.qdb.server.controller.CrudController;
 import io.qdb.server.controller.JsonService;
 import org.slf4j.Logger;
@@ -16,35 +17,34 @@ import java.io.IOException;
  * These operations are used by the servers in a QDB cluster to exchange meta data, elect leaders etc..
  */
 @Singleton
-public class ClusterController extends CrudController {
+public class ClusterController implements Controller {
 
     private static final Logger log = LoggerFactory.getLogger(ClusterController.class);
 
-    private final boolean clustered;
+    private final TransactionController transactionController;
     private final String clusterName;
     private final String clusterPassword;
 
     @Inject
-    public ClusterController(JsonService jsonService,
-            @Named("clustered") boolean clustered,
+    public ClusterController(TransactionController transactionController,
             @Named("clusterName") String clusterName,
             @Named("clusterPassword") String clusterPassword) {
-        super(jsonService);
-        this.clustered = clustered;
+        this.transactionController = transactionController;
         this.clusterName = clusterName;
         this.clusterPassword = clusterPassword;
     }
 
     @Override
     public void handle(Call call) throws IOException {
-        if (clustered) {
-            if (isAuthenticated(call)) {
-                super.handle(call);
+        if (isAuthenticated(call)) {
+            String seg = call.nextSegment();
+            if ("transactions".equals(seg)) {
+                transactionController.handle(call);
             } else {
-                call.setCode(401);
+                call.setCode(404);
             }
         } else {
-            call.setCode(404, "Clustering is disabled");
+            call.setCode(401);
         }
     }
 

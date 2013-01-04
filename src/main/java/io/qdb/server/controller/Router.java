@@ -73,7 +73,6 @@ public class Router implements Container {
                         else call.setCode(400);
                     }
                 }
-
             }
         } catch (Repository.UnavailableException e) {
             if (log.isDebugEnabled()) log.debug("503: " + req.getPath() + " " + e.getMessage());

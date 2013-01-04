@@ -1,6 +1,7 @@
 package io.qdb.server.repo;
 
 import com.google.common.eventbus.EventBus;
+import io.qdb.server.ServerId;
 import io.qdb.server.model.*;
 
 import javax.inject.Inject;
@@ -20,10 +21,11 @@ import java.util.List;
  * Cluster membership?
  */
 @Singleton
-public class ClusteredRepository implements Repository {
+public class ClusteredRepository extends RepositoryBase {
 
     private final StandaloneRepository local;
     private final EventBus eventBus;
+    private final String serverId;
     private final String clusterName;
     private final String clusterPassword;
 
@@ -33,11 +35,12 @@ public class ClusteredRepository implements Repository {
     private Date upSince;
 
     @Inject
-    public ClusteredRepository(StandaloneRepository local, EventBus eventBus,
+    public ClusteredRepository(StandaloneRepository local, EventBus eventBus, ServerId serverId,
             @Named("clusterName") String clusterName,
             @Named("clusterPassword") String clusterPassword) throws IOException {
         this.local = local;
         this.eventBus = eventBus;
+        this.serverId = serverId.get();
         this.clusterName = clusterName;
         this.clusterPassword = clusterPassword;
 
@@ -52,18 +55,37 @@ public class ClusteredRepository implements Repository {
         // who is master?
     }
 
+    private synchronized boolean isMaster() {
+        return master != null && serverId.equals(master.getId());
+    }
+
+    /**
+     * Append tx to our tx log and apply it to our in memory model. This is used to append transactions from slaves.
+     * Throws an exception if we are not the master.
+     */
+    public synchronized void appendTxFromSlave(RepoTx tx) throws IOException, ModelException {
+        if (!isMaster()) throw new ClusterException.NotMaster();
+        local.exec(tx);
+    }
+
+    @Override
+    protected synchronized void exec(RepoTx tx) throws IOException, ModelException {
+        if (upSince == null) {
+            // todo put more detailed info on why repo is not available in here
+            throw new UnavailableException("Not available");
+        }
+        if (isMaster()) {
+            local.exec(tx);
+        } else {
+
+        }
+    }
+
     @Override
     public Status getStatus() {
         Status s = new Status();
         s.upSince = upSince;
         return s;
-    }
-
-    private synchronized void checkUp() throws IOException {
-        if (upSince == null) {
-            // todo put more detailed info on why it is not available in here
-            throw new UnavailableException("Not available");
-        }
     }
 
     @Override
@@ -72,37 +94,8 @@ public class ClusteredRepository implements Repository {
     }
 
     @Override
-    public Server createServer(Server server) throws IOException {
-        checkUp();
-        return null;
-    }
-
-    @Override
-    public Server updateServer(Server server) throws IOException {
-        checkUp();
-        return null;
-    }
-
-    @Override
-    public void deleteServer(Server server) throws IOException {
-        checkUp();
-    }
-
-    @Override
     public User findUser(String id) throws IOException {
         return local.findUser(id);
-    }
-
-    @Override
-    public User createUser(User user) throws IOException {
-        checkUp();
-        return null;
-    }
-
-    @Override
-    public User updateUser(User user) throws IOException {
-        checkUp();
-        return null;
     }
 
     @Override
@@ -121,18 +114,6 @@ public class ClusteredRepository implements Repository {
     }
 
     @Override
-    public Database createDatabase(Database db) throws IOException {
-        checkUp();
-        return null;
-    }
-
-    @Override
-    public Database updateDatabase(Database db) throws IOException {
-        checkUp();
-        return null;
-    }
-
-    @Override
     public List<Database> findDatabasesVisibleTo(User user, int offset, int limit) throws IOException {
         return local.findDatabasesVisibleTo(user, offset, limit);
     }
@@ -145,18 +126,6 @@ public class ClusteredRepository implements Repository {
     @Override
     public Queue findQueue(String id) throws IOException {
         return local.findQueue(id);
-    }
-
-    @Override
-    public Queue createQueue(Queue queue) throws IOException {
-        checkUp();
-        return null;
-    }
-
-    @Override
-    public Queue updateQueue(Queue queue) throws IOException {
-        checkUp();
-        return null;
     }
 
     @Override

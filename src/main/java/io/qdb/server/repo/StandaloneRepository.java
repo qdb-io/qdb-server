@@ -26,7 +26,7 @@ import java.util.*;
  * for replay from the last snapshot after a crash.
  */
 @Singleton
-public class StandaloneRepository implements Repository, Closeable {
+public class StandaloneRepository extends RepositoryBase implements Closeable {
 
     private static final Logger log = LoggerFactory.getLogger(StandaloneRepository.class);
 
@@ -79,7 +79,7 @@ public class StandaloneRepository implements Repository, Closeable {
         mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
         mapper.configure(SerializationFeature.WRITE_NULL_MAP_VALUES, false);
         mapper.configure(SerializationFeature.INDENT_OUTPUT, true);
-        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true);
 
         txLog = new PersistentMessageBuffer(Util.ensureDirectory(new File(dir, "txlog")));
         txLog.setMaxSize(txLogSizeM * 1000000);
@@ -218,22 +218,27 @@ public class StandaloneRepository implements Repository, Closeable {
     }
 
     /**
-     * Append tx to our tx log and apply it to our in memory model.
+     * Append tx to our tx log and apply it to our in memory model. Throws ModelException for opt locking failures
+     * and so on. Note that the tx is always appended to the log but the model is not actually updated if a
+     * ModelException is thrown.
      */
-    private void exec(RepoTx tx) throws IOException {
+    public void exec(RepoTx tx) throws IOException, ModelException {
         byte[] payload = mapper.writeValueAsBytes(tx);
         long timestamp = System.currentTimeMillis();
-        boolean snapshotNow;
-        synchronized (this) {
-            txLog.append(timestamp, null, payload);
-            apply(tx);
-            long bytes = txLog.getNextMessageId() - mostRecentSnapshotId;
-            snapshotNow = bytes > txLog.getMaxSize() / 2; // half our log space is gone so do a snapshot now
-        }
-        if (snapshotNow) {
-            saveSnapshot();
-        } else {
-            scheduleSnapshot();
+        boolean snapshotNow = false;
+        try {
+            synchronized (this) {
+                txLog.append(timestamp, null, payload);
+                try {
+                    apply(tx);
+                } finally {
+                    long bytes = txLog.getNextMessageId() - mostRecentSnapshotId;
+                    snapshotNow = bytes > txLog.getMaxSize() / 2; // half our log space is gone so do a snapshot now
+                }
+            }
+        } finally {
+            if (snapshotNow) saveSnapshot();
+            else scheduleSnapshot();
         }
     }
 
@@ -290,37 +295,8 @@ public class StandaloneRepository implements Repository, Closeable {
     }
 
     @Override
-    public Server createServer(Server server) throws IOException {
-        exec(new RepoTx(RepoTx.Operation.CREATE, server));
-        return server;
-    }
-
-    @Override
-    public Server updateServer(Server server) throws IOException {
-        exec(new RepoTx(RepoTx.Operation.UPDATE, server));
-        return server;
-    }
-
-    @Override
-    public void deleteServer(Server server) throws IOException {
-        exec(new RepoTx(RepoTx.Operation.DELETE, server));
-    }
-
-    @Override
     public User findUser(String id) throws IOException {
         return users.find(id);
-    }
-
-    @Override
-    public User createUser(User user) throws IOException {
-        exec(new RepoTx(RepoTx.Operation.CREATE, user));
-        return user;
-    }
-
-    @Override
-    public User updateUser(User user) throws IOException {
-        exec(new RepoTx(RepoTx.Operation.UPDATE, user));
-        return user;
     }
 
     @SuppressWarnings("unchecked")
@@ -337,18 +313,6 @@ public class StandaloneRepository implements Repository, Closeable {
     @Override
     public Database findDatabase(String id) throws IOException {
         return databases.find(id);
-    }
-
-    @Override
-    public Database createDatabase(Database db) throws IOException {
-        exec(new RepoTx(RepoTx.Operation.CREATE, db));
-        return db;
-    }
-
-    @Override
-    public Database updateDatabase(Database db) throws IOException {
-        exec(new RepoTx(RepoTx.Operation.UPDATE, db));
-        return db;
     }
 
     @Override
@@ -381,18 +345,6 @@ public class StandaloneRepository implements Repository, Closeable {
     @Override
     public Queue findQueue(String id) throws IOException {
         return queues.find(id);
-    }
-
-    @Override
-    public Queue createQueue(Queue queue) throws IOException {
-        exec(new RepoTx(RepoTx.Operation.CREATE, queue));
-        return queue;
-    }
-
-    @Override
-    public Queue updateQueue(Queue queue) throws IOException {
-        exec(new RepoTx(RepoTx.Operation.UPDATE, queue));
-        return queue;
     }
 
     @Override

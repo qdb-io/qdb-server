@@ -5,7 +5,7 @@ import io.qdb.server.model.ModelObject;
 /**
  * A repository update.
  */
-class RepoTx {
+public class RepoTx {
 
     enum Operation { CREATE, UPDATE, DELETE }
 
