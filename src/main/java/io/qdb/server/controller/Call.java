@@ -133,6 +133,11 @@ public class Call {
         return code;
     }
 
+    public void setText(int code, String message) throws IOException {
+        this.code = code;
+        renderer.setCode(response, code, message);
+    }
+
     /**
      * Render o as json and write to the response.
      */

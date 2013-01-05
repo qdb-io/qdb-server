@@ -18,9 +18,9 @@ public abstract class RepositoryBase implements Repository {
 
     /**
      * Execute the transaction. For a local repository it is appended to the tx log and applied to the memory model.
-     * For a clustered repository it might be sent to the master.
+     * For a clustered repository it might be sent to the master. Returns the transaction id.
      */
-    protected abstract void exec(RepoTx tx) throws IOException, ModelException;
+    protected abstract long exec(RepoTx tx) throws IOException, ModelException;
 
     @Override
     public Server createServer(Server server) throws IOException {

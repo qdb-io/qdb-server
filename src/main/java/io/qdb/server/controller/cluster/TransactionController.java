@@ -1,6 +1,6 @@
 package io.qdb.server.controller.cluster;
 
-import io.qdb.server.ServerId;
+import io.qdb.server.OurServer;
 import io.qdb.server.controller.Call;
 import io.qdb.server.controller.CrudController;
 import io.qdb.server.controller.JsonService;
@@ -8,11 +8,11 @@ import io.qdb.server.model.ModelException;
 import io.qdb.server.repo.ClusterException;
 import io.qdb.server.repo.ClusteredRepository;
 import io.qdb.server.repo.RepoTx;
+import io.qdb.server.repo.TxId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
-import javax.inject.Named;
 import javax.inject.Singleton;
 import java.io.IOException;
 
@@ -26,30 +26,30 @@ public class TransactionController extends CrudController {
     private static final Logger log = LoggerFactory.getLogger(TransactionController.class);
 
     private final ClusteredRepository clusteredRepository;
-    private final String host;
-    private final String serverId;
+    private final OurServer ourServer;
 
     @Inject
-    public TransactionController(JsonService jsonService, ClusteredRepository clusteredRepository, ServerId serverId,
-            @Named("host") String host) {
+    public TransactionController(JsonService jsonService, ClusteredRepository clusteredRepository, OurServer ourServer) {
         super(jsonService);
         this.clusteredRepository = clusteredRepository;
-        this.host = host;
-        this.serverId = serverId.get();
+        this.ourServer = ourServer;
     }
 
+    /**
+     * POST a new transaction. Returns 201 and a TxId JSON object on success. Returns 410 (not longer the master)
+     * or 409 (ModelException) with a text response otherwise.
+     */
     @Override
     protected void create(Call call) throws IOException {
         RepoTx tx = getBodyObject(call, RepoTx.class);
         try {
-            clusteredRepository.appendTxFromSlave(tx);
-            call.setCode(201);
+            call.setCode(201, new TxId(clusteredRepository.appendTxFromSlave(tx)));
         } catch (ClusterException.NotMaster e) {
             if (log.isDebugEnabled()) log.debug(e.toString());
-            call.setCode(410, "Not the master (" + host + " " + serverId + ")");
+            call.setText(410, "Not the master " + ourServer);
         } catch (ModelException e) {
             if (log.isDebugEnabled()) log.debug(e.toString(), e);
-            call.setCode(409, e.getMessage());
+            call.setText(409, e.getMessage());
         }
     }
 }

@@ -2,24 +2,19 @@ package io.qdb.server.controller;
 
 import io.qdb.buffer.MessageBuffer;
 import io.qdb.buffer.Timeline;
-import io.qdb.server.controller.JsonService;
-import io.qdb.server.ServerId;
-import io.qdb.server.model.*;
+import io.qdb.server.OurServer;
 import io.qdb.server.model.Queue;
 import io.qdb.server.queue.QueueManager;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.io.IOException;
-import java.security.SecureRandom;
-import java.util.*;
-import java.util.regex.Pattern;
 
 @Singleton
 public class TimelineController extends CrudController {
 
     private final QueueManager queueManager;
-    private final String serverId;
+    private final String ourServerId;
 
     static class TimelineEntryDTO {
 
@@ -39,16 +34,16 @@ public class TimelineController extends CrudController {
     }
 
     @Inject
-    public TimelineController(JsonService jsonService, QueueManager queueManager, ServerId serverId) {
+    public TimelineController(JsonService jsonService, QueueManager queueManager, OurServer ourServer) {
         super(jsonService);
         this.queueManager = queueManager;
-        this.serverId = serverId.get();
+        this.ourServerId = ourServer.getId();
     }
 
     @Override
     protected void list(Call call, int offset, int limit) throws IOException {
         Queue q = call.getQueue();
-        if (!q.isMaster(serverId) && !q.isSlave(serverId)) {
+        if (!q.isMaster(ourServerId) && !q.isSlave(ourServerId)) {
             // todo set Location header and send a 302 or proxy the master
             call.setCode(500, "Get timeline from non-master non-slave not implemented");
             return;
@@ -80,7 +75,7 @@ public class TimelineController extends CrudController {
         }
 
         Queue q = call.getQueue();
-        if (!q.isMaster(serverId) && !q.isSlave(serverId)) {
+        if (!q.isMaster(ourServerId) && !q.isSlave(ourServerId)) {
             // todo set Location header and send a 302 or proxy the master
             call.setCode(500, "Get timeline from non-master non-slave not implemented");
             return;

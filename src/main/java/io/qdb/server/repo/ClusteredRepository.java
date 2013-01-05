@@ -1,7 +1,7 @@
 package io.qdb.server.repo;
 
 import com.google.common.eventbus.EventBus;
-import io.qdb.server.ServerId;
+import io.qdb.server.OurServer;
 import io.qdb.server.model.*;
 
 import javax.inject.Inject;
@@ -24,23 +24,29 @@ import java.util.List;
 public class ClusteredRepository extends RepositoryBase {
 
     private final StandaloneRepository local;
+    private final JsonConverter jsonConverter;
     private final EventBus eventBus;
-    private final String serverId;
+    private final String ourServerId;
     private final String clusterName;
     private final String clusterPassword;
+    private final int masterTimeoutMs;
 
     enum State { NOT_CONNECTED, MASTER, SLAVE }
 
-    private Server master;
+    private ClusterClient master;
     private Date upSince;
 
     @Inject
-    public ClusteredRepository(StandaloneRepository local, EventBus eventBus, ServerId serverId,
-            @Named("clusterName") String clusterName,
-            @Named("clusterPassword") String clusterPassword) throws IOException {
+    public ClusteredRepository(StandaloneRepository local, EventBus eventBus, OurServer ourServer,
+                JsonConverter jsonConverter,
+                @Named("clusterName") String clusterName,
+                @Named("clusterPassword") String clusterPassword,
+                @Named("masterTimeoutMs") int masterTimeoutMs) throws IOException {
         this.local = local;
         this.eventBus = eventBus;
-        this.serverId = serverId.get();
+        this.jsonConverter = jsonConverter;
+        this.masterTimeoutMs = masterTimeoutMs;
+        this.ourServerId = ourServer.getId();
         this.clusterName = clusterName;
         this.clusterPassword = clusterPassword;
 
@@ -56,28 +62,52 @@ public class ClusteredRepository extends RepositoryBase {
     }
 
     private synchronized boolean isMaster() {
-        return master != null && serverId.equals(master.getId());
+        return master != null && ourServerId.equals(master.getServer().getId());
+    }
+
+    private void enterLookingForMasterState() {
+        // todo enter "looking for master" or master election state?
+        log.info("enterLookingForMasterState");
     }
 
     /**
      * Append tx to our tx log and apply it to our in memory model. This is used to append transactions from slaves.
-     * Throws an exception if we are not the master.
+     * Throws an exception if we are not the master. Returns the transaction id to be sent back to the client.
      */
-    public synchronized void appendTxFromSlave(RepoTx tx) throws IOException, ModelException {
+    public synchronized long appendTxFromSlave(RepoTx tx) throws IOException, ModelException {
         if (!isMaster()) throw new ClusterException.NotMaster();
-        local.exec(tx);
+        return local.exec(tx);
     }
 
     @Override
-    protected synchronized void exec(RepoTx tx) throws IOException, ModelException {
-        if (upSince == null) {
-            // todo put more detailed info on why repo is not available in here
-            throw new UnavailableException("Not available");
+    protected long exec(RepoTx tx) throws IOException, ModelException {
+        synchronized (this) {
+            if (upSince == null) throw new UnavailableException("Not available"); // todo more detailed status
+            if (isMaster()) return local.exec(tx);
         }
-        if (isMaster()) {
-            local.exec(tx);
-        } else {
 
+        StandaloneRepository.TxMonitor txMonitor = local.createTxMonitor();
+        try {
+            long id;
+            try {
+                id = master.POST("cluster/transactions", tx, TxId.class).id;
+            } catch (ResponseCodeException e) {
+                if (e.responseCode == 409) throw new ModelException(e.text);
+                log.error(e.getMessage());
+                if (e.responseCode == 410) enterLookingForMasterState();
+                throw e;
+            }
+            if (txMonitor.waitFor(id, masterTimeoutMs)) return id;
+            String msg = "Timeout waiting for tx " + id + " from master " + master;
+            log.error(msg);
+            enterLookingForMasterState();
+            throw new ClusterException.MasterTimeout(msg);
+        } finally {
+            try {
+                txMonitor.close();
+            } catch (IOException e) {
+                log.warn("Error closing txMonitor: " + e);
+            }
         }
     }
 

@@ -1,8 +1,6 @@
 package io.qdb.server.controller;
 
-import io.qdb.server.controller.JsonService;
-import io.qdb.server.queue.QueueManager;
-import io.qdb.server.ServerId;
+import io.qdb.server.OurServer;
 import io.qdb.server.model.*;
 import io.qdb.server.model.Queue;
 
@@ -19,7 +17,7 @@ public class QueueController extends CrudController {
     private final Repository repo;
     private final MessageController messageController;
     private final TimelineController timelineController;
-    private final ServerId serverId;
+    private final String ourServerId;
 
     private static final SecureRandom RND = new SecureRandom();
 
@@ -58,12 +56,12 @@ public class QueueController extends CrudController {
 
     @Inject
     public QueueController(JsonService jsonService, Repository repo, MessageController messageController,
-                           TimelineController timelineController, ServerId serverId) {
+                           TimelineController timelineController, OurServer ourServer) {
         super(jsonService);
         this.repo = repo;
         this.messageController = messageController;
         this.timelineController = timelineController;
-        this.serverId = serverId;
+        this.ourServerId = ourServer.getId();
     }
 
     @SuppressWarnings("unchecked")
@@ -139,7 +137,7 @@ public class QueueController extends CrudController {
         if (!updateAttributes(q, dto, call)) return;
         q.setDatabase(db.getId());
         // todo use master from the dto if specified
-        q.setMaster(serverId.get());
+        q.setMaster(ourServerId);
 
         for (int attempt = 0; ; ) {
             q.setId(generateQueueId());

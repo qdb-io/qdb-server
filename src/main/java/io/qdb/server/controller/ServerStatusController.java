@@ -1,6 +1,6 @@
 package io.qdb.server.controller;
 
-import io.qdb.server.ServerId;
+import io.qdb.server.OurServer;
 import io.qdb.server.model.Repository;
 
 import javax.inject.Inject;
@@ -31,8 +31,8 @@ public class ServerStatusController implements Controller {
     }
 
     @Inject
-    public ServerStatusController(ServerId serverId, Repository repo) {
-        this.id = serverId.get();
+    public ServerStatusController(OurServer ourServer, Repository repo) {
+        this.id = ourServer.getId();
         this.repo = repo;
     }
 

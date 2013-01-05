@@ -2,10 +2,8 @@ package io.qdb.server.controller;
 
 import io.qdb.buffer.MessageBuffer;
 import io.qdb.buffer.MessageCursor;
-import io.qdb.server.controller.JsonService;
-import io.qdb.server.ServerId;
+import io.qdb.server.OurServer;
 import io.qdb.server.model.Queue;
-import io.qdb.server.model.Repository;
 import io.qdb.server.queue.QueueManager;
 import org.simpleframework.http.Request;
 import org.simpleframework.http.Response;
@@ -23,7 +21,7 @@ public class MessageController extends CrudController {
     private static final Logger log = LoggerFactory.getLogger(MessageController.class);
 
     private final QueueManager queueManager;
-    private final String serverId;
+    private final String ourServerId;
 
     public static class CreateDTO {
 
@@ -54,16 +52,16 @@ public class MessageController extends CrudController {
     }
 
     @Inject
-    public MessageController(JsonService jsonService, QueueManager queueManager, ServerId serverId) {
+    public MessageController(JsonService jsonService, QueueManager queueManager, OurServer ourServer) {
         super(jsonService);
         this.queueManager = queueManager;
-        this.serverId = serverId.get();
+        this.ourServerId = ourServer.getId();
     }
 
     @Override
     protected void create(Call call) throws IOException {
         Queue q = call.getQueue();
-        if (!q.isMaster(serverId)) {
+        if (!q.isMaster(ourServerId)) {
             // todo proxy POST to master and set Location header
             call.setCode(500, "Create message on non-master not implemented");
             return;
@@ -133,7 +131,7 @@ public class MessageController extends CrudController {
     @Override
     protected void list(Call call, int offset, int limit) throws IOException {
         Queue q = call.getQueue();
-        if (!q.isMaster(serverId) && !q.isSlave(serverId)) {
+        if (!q.isMaster(ourServerId) && !q.isSlave(ourServerId)) {
             // todo set Location header and send a 302 or proxy the master
             call.setCode(500, "Get messages from non-master non-slave not implemented");
             return;

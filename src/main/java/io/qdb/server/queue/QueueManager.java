@@ -5,7 +5,7 @@ import com.google.common.eventbus.Subscribe;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.qdb.buffer.MessageBuffer;
 import io.qdb.buffer.PersistentMessageBuffer;
-import io.qdb.server.ServerId;
+import io.qdb.server.OurServer;
 import io.qdb.server.model.Queue;
 import io.qdb.server.model.Repository;
 import org.slf4j.Logger;
@@ -30,15 +30,15 @@ public class QueueManager implements Closeable, Thread.UncaughtExceptionHandler 
 
     private final Repository repo;
     private final QueueStorageManager queueStorageManager;
-    private final String serverId;
+    private final String ourServerId;
     private final Map<String, MessageBuffer> buffers = new ConcurrentHashMap<String, MessageBuffer>();
     private final ExecutorService threadPool;
 
     @Inject
-    public QueueManager(EventBus eventBus, Repository repo, QueueStorageManager queueStorageManager, ServerId serverId) {
+    public QueueManager(EventBus eventBus, Repository repo, QueueStorageManager queueStorageManager, OurServer ourServer) {
         this.repo = repo;
         this.queueStorageManager = queueStorageManager;
-        this.serverId = serverId.get();
+        this.ourServerId = ourServer.getId();
         this.threadPool = new ThreadPoolExecutor(2, Integer.MAX_VALUE,
                 60L, TimeUnit.SECONDS,
                 new SynchronousQueue<Runnable>(),
@@ -54,7 +54,7 @@ public class QueueManager implements Closeable, Thread.UncaughtExceptionHandler 
             MessageBuffer mb = e.getValue();
             try {
                 mb.close();
-            } catch (IOException e1) {
+            } catch (IOException x) {
                 log.error("Error closing " + mb);
             }
         }
@@ -79,8 +79,8 @@ public class QueueManager implements Closeable, Thread.UncaughtExceptionHandler 
     }
 
     private synchronized void syncQueue(Queue q) {
-        boolean master = q.isMaster(serverId);
-        boolean slave = q.isSlave(serverId);
+        boolean master = q.isMaster(ourServerId);
+        boolean slave = q.isSlave(ourServerId);
         MessageBuffer mb = buffers.get(q.getId());
         if (master || slave) {
             boolean newBuffer = mb == null;

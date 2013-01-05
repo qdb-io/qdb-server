@@ -1,9 +1,5 @@
 package io.qdb.server.repo;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
 import com.google.common.eventbus.EventBus;
 import com.google.common.io.PatternFilenameFilter;
 import io.qdb.buffer.MessageBuffer;
@@ -30,7 +26,7 @@ public class StandaloneRepository extends RepositoryBase implements Closeable {
 
     private static final Logger log = LoggerFactory.getLogger(StandaloneRepository.class);
 
-    private final ObjectMapper mapper = new ObjectMapper();
+    private final JsonConverter jsonConverter;
     private final File dir;
     private final int snapshotCount;
     private final int snapshotIntervalSecs;
@@ -47,6 +43,7 @@ public class StandaloneRepository extends RepositoryBase implements Closeable {
     private boolean busySavingSnapshot;
     private boolean snapshotScheduled;
 
+    @SuppressWarnings("UnusedDeclaration")
     private static class Snapshot {
 
         public List<Server> servers;
@@ -65,21 +62,16 @@ public class StandaloneRepository extends RepositoryBase implements Closeable {
     }
 
     @Inject
-    public StandaloneRepository(EventBus eventBus,
+    public StandaloneRepository(EventBus eventBus, JsonConverter jsonConverter,
                 @Named("dataDir") String dataDir,
                 @Named("txLogSizeM") int txLogSizeM,
                 @Named("snapshotCount") int snapshotCount,
                 @Named("snapshotIntervalSecs") int snapshotIntervalSecs) throws IOException {
+        this.jsonConverter = jsonConverter;
         this.snapshotCount = snapshotCount;
         this.snapshotIntervalSecs = snapshotIntervalSecs;
 
         dir = Util.ensureDirectory(new File(dataDir, "meta-data"));
-
-        mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-        mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
-        mapper.configure(SerializationFeature.WRITE_NULL_MAP_VALUES, false);
-        mapper.configure(SerializationFeature.INDENT_OUTPUT, true);
-        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true);
 
         txLog = new PersistentMessageBuffer(Util.ensureDirectory(new File(dir, "txlog")));
         txLog.setMaxSize(txLogSizeM * 1000000);
@@ -91,7 +83,7 @@ public class StandaloneRepository extends RepositoryBase implements Closeable {
             File f = files[i];
             BufferedInputStream in = new BufferedInputStream(new FileInputStream(f));
             try {
-                snapshot = mapper.readValue(in, Snapshot.class);
+                snapshot = this.jsonConverter.readValue(in, Snapshot.class);
             } catch (Exception e) {
                 log.error("Error loading " + f + ", ignoring: " + e);
                 continue;
@@ -130,7 +122,7 @@ public class StandaloneRepository extends RepositoryBase implements Closeable {
 
         int count = 0;
         for (MessageCursor c = txLog.cursor(mostRecentSnapshotId); c.next(); count++) {
-            RepoTx tx = mapper.readValue(c.getPayload(), RepoTx.class);
+            RepoTx tx = this.jsonConverter.readValue(c.getPayload(), RepoTx.class);
             try {
                 apply(tx);
             } catch (ModelException e) {
@@ -179,7 +171,7 @@ public class StandaloneRepository extends RepositoryBase implements Closeable {
             boolean ok = false;
             FileOutputStream out = new FileOutputStream(f);
             try {
-                mapper.writeValue(out, snapshot);
+                jsonConverter.writeValue(out, snapshot);
                 out.close();
                 synchronized (this) {
                     mostRecentSnapshotId = id;
@@ -222,13 +214,14 @@ public class StandaloneRepository extends RepositoryBase implements Closeable {
      * and so on. Note that the tx is always appended to the log but the model is not actually updated if a
      * ModelException is thrown.
      */
-    public void exec(RepoTx tx) throws IOException, ModelException {
-        byte[] payload = mapper.writeValueAsBytes(tx);
+    public long exec(RepoTx tx) throws IOException, ModelException {
+        byte[] payload = jsonConverter.writeValueAsBytes(tx);
         long timestamp = System.currentTimeMillis();
         boolean snapshotNow = false;
+        long txId;
         try {
             synchronized (this) {
-                txLog.append(timestamp, null, payload);
+                txId = txLog.append(timestamp, null, payload);
                 try {
                     apply(tx);
                 } finally {
@@ -236,6 +229,7 @@ public class StandaloneRepository extends RepositoryBase implements Closeable {
                     snapshotNow = bytes > txLog.getMaxSize() / 2; // half our log space is gone so do a snapshot now
                 }
             }
+            return txId;
         } finally {
             if (snapshotNow) saveSnapshot();
             else scheduleSnapshot();
@@ -355,6 +349,46 @@ public class StandaloneRepository extends RepositoryBase implements Closeable {
     @Override
     public int countQueues() throws IOException {
         return queues.size();
+    }
+
+    /**
+     * Create a object that is used to wait for a specific tx to be applied to our model.
+     */
+    public TxMonitor createTxMonitor() throws IOException {
+        return new TxMonitor();
+    }
+
+    public class TxMonitor implements Closeable {
+
+        private final MessageCursor c;
+
+        public TxMonitor() throws IOException {
+            this.c = txLog.cursor(txLog.getNextMessageId());
+        }
+
+        /**
+         * Wait up to timeoutMs for txId to show up and be applied to our model. Returns true if the tx was found or
+         * false otherwise.
+         */
+        public boolean waitFor(long txId, int timeoutMs) throws IOException {
+            while (timeoutMs > 0) {
+                long start = System.currentTimeMillis();
+                try {
+                    if (c.next(timeoutMs)) {
+                        if (c.getId() >= txId) return true;
+                    }
+                } catch (InterruptedException e) {
+                    throw new IOException(e);
+                }
+                timeoutMs -= (int)(System.currentTimeMillis() - start);
+            }
+            return false;
+        }
+
+        @Override
+        public void close() throws IOException {
+            c.close();
+        }
     }
 
 }

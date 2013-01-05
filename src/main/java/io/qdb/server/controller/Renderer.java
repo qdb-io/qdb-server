@@ -37,6 +37,14 @@ public class Renderer {
         json(resp, data);
     }
 
+    public void setText(Response resp, int code, String message) throws IOException {
+        resp.setCode(code);
+        byte[] bytes = message.getBytes("UTF8");
+        resp.set("Content-Type", "text/plain;charset=utf-8");
+        resp.setContentLength(bytes.length);
+        resp.getOutputStream().write(bytes);
+    }
+
     private String toMessage(int code) {
         switch (code) {
             case 200:   return "OK";

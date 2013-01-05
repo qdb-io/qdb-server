@@ -13,6 +13,15 @@ public class ClusterException extends IOException {
         }
     }
 
+    /**
+     * Timeout communicating with the master.
+     */
+    public static class MasterTimeout extends ClusterException {
+        public MasterTimeout(String msg) {
+            super(msg);
+        }
+    }
+
     public ClusterException(String message) {
         super(message);
     }
