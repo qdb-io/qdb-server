@@ -19,8 +19,9 @@ public class ClusterClient {
 
     private static final Logger log = LoggerFactory.getLogger(ClusterClient.class);
 
+    public final Server server;
+
     private final JsonConverter jsonConverter;
-    private final Server server;
     private final int timeoutMs;
     private final String authorization;
 
@@ -33,10 +34,6 @@ public class ClusterClient {
         } catch (UnsupportedEncodingException e) {
             throw new RuntimeException(e);  // not possible really
         }
-    }
-
-    public Server getServer() {
-        return server;
     }
 
     /**

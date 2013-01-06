@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Provider;
+import javax.inject.Singleton;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -16,6 +17,7 @@ import java.net.SocketAddress;
 /**
  * Creates our listener.
  */
+@Singleton
 public class ConnectionProvider implements Provider<Connection> {
 
     private static final Logger log = LoggerFactory.getLogger(ConnectionProvider.class);

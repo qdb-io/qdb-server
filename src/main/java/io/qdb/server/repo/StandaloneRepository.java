@@ -22,7 +22,7 @@ import java.util.*;
  * for replay from the last snapshot after a crash.
  */
 @Singleton
-public class StandaloneRepository extends RepositoryBase implements Closeable {
+public class StandaloneRepository extends RepositoryBase {
 
     private static final Logger log = LoggerFactory.getLogger(StandaloneRepository.class);
 

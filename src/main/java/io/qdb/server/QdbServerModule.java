@@ -11,8 +11,7 @@ import com.typesafe.config.ConfigValue;
 import io.qdb.server.controller.Router;
 import io.qdb.server.controller.cluster.ClusterController;
 import io.qdb.server.model.Repository;
-import io.qdb.server.repo.ClusteredRepository;
-import io.qdb.server.repo.StandaloneRepository;
+import io.qdb.server.repo.*;
 import org.simpleframework.http.core.Container;
 import org.simpleframework.transport.connect.Connection;
 
@@ -37,10 +36,11 @@ public class QdbServerModule extends AbstractModule {
         bind(Container.class).to(Router.class);
         bind(EventBus.class).toInstance(new EventBus());
         bind(Connection.class).toProvider(ConnectionProvider.class);
-        boolean clustered = cfg.getBoolean("clustered");
-        if (clustered) {
+        if (cfg.getBoolean("clustered")) {
             bind(Repository.class).to(ClusteredRepository.class);
             bind(ClusterController.class).to(ClusterController.class);
+            bind(ServerRegistry.class).toProvider(ServerRegistryProvider.class);
+            bind(MasterStrategy.class).toProvider(MasterStrategyProvider.class);
         } else {
             bind(Repository.class).to(StandaloneRepository.class);
         }

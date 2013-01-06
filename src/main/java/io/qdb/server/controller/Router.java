@@ -33,14 +33,12 @@ public class Router implements Container {
 
     @Inject
     public Router(AuthService authService, Renderer renderer, ServerStatusController serverStatusController,
-                  DatabaseController databaseController, UserController userController,
-                  ClusterController clusterController) {
+                  DatabaseController databaseController, UserController userController) {
         this.authService = authService;
         this.renderer = renderer;
         this.serverStatusController = serverStatusController;
         this.databaseController = databaseController;
         this.userController = userController;
-        this.clusterController = clusterController;
     }
 
     @Override

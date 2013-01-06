@@ -1,12 +1,15 @@
 package io.qdb.server.repo;
 
 import com.google.common.eventbus.EventBus;
+import com.google.common.eventbus.Subscribe;
+import com.google.common.io.Closeables;
 import io.qdb.server.OurServer;
 import io.qdb.server.model.*;
 
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.Date;
 import java.util.List;
@@ -25,49 +28,72 @@ public class ClusteredRepository extends RepositoryBase {
 
     private final StandaloneRepository local;
     private final JsonConverter jsonConverter;
+    private final ServerRegistry serverRegistry;
+    private final MasterStrategy masterStrategy;
     private final EventBus eventBus;
-    private final String ourServerId;
+    private final OurServer ourServer;
     private final String clusterName;
     private final String clusterPassword;
     private final int masterTimeoutMs;
-
-    enum State { NOT_CONNECTED, MASTER, SLAVE }
 
     private ClusterClient master;
     private Date upSince;
 
     @Inject
     public ClusteredRepository(StandaloneRepository local, EventBus eventBus, OurServer ourServer,
-                JsonConverter jsonConverter,
+                ServerRegistry serverRegistry, JsonConverter jsonConverter, MasterStrategy masterStrategy,
                 @Named("clusterName") String clusterName,
                 @Named("clusterPassword") String clusterPassword,
                 @Named("masterTimeoutMs") int masterTimeoutMs) throws IOException {
         this.local = local;
         this.eventBus = eventBus;
+        this.serverRegistry = serverRegistry;
         this.jsonConverter = jsonConverter;
+        this.masterStrategy = masterStrategy;
         this.masterTimeoutMs = masterTimeoutMs;
-        this.ourServerId = ourServer.getId();
+        this.ourServer = ourServer;
         this.clusterName = clusterName;
         this.clusterPassword = clusterPassword;
 
-        // find out who is supposed to be in the cluster
-        List<Server> servers = local.findServers();
-        if (servers.isEmpty()) {
+        eventBus.register(this);
+        masterStrategy.chooseMaster();
+    }
 
+    @Override
+    public void close() throws IOException {
+        closeQuietly(local);
+        closeQuietly(masterStrategy);
+        closeQuietly(serverRegistry);
+    }
+
+    private void closeQuietly(Closeable o) {
+        try {
+            o.close();
+        } catch (IOException e) {
+            log.warn(e.toString(), e);
         }
+    }
 
-
-        // which nodes are up?
-        // who is master?
+    @Subscribe
+    public void handleMasterFound(MasterStrategy.MasterFound ev) {
+        if (log.isDebugEnabled()) log.debug(ev.toString());
+        synchronized (this) {
+            if (master != null && master.server.equals(ev.master)) return;
+            if (master != null) {
+                // todo disconnect from old master
+            }
+            master = new ClusterClient(jsonConverter, ev.master, clusterName, clusterPassword, masterTimeoutMs);
+        }
     }
 
     private synchronized boolean isMaster() {
-        return master != null && ourServerId.equals(master.getServer().getId());
+        return master != null && ourServer.equals(master.server);
     }
 
-    private void enterLookingForMasterState() {
-        // todo enter "looking for master" or master election state?
-        log.info("enterLookingForMasterState");
+    private synchronized void chooseMaster() {
+        master = null;
+        upSince = null;
+        masterStrategy.chooseMaster();
     }
 
     /**
@@ -94,13 +120,13 @@ public class ClusteredRepository extends RepositoryBase {
             } catch (ResponseCodeException e) {
                 if (e.responseCode == 409) throw new ModelException(e.text);
                 log.error(e.getMessage());
-                if (e.responseCode == 410) enterLookingForMasterState();
+                if (e.responseCode == 410) chooseMaster();
                 throw e;
             }
             if (txMonitor.waitFor(id, masterTimeoutMs)) return id;
             String msg = "Timeout waiting for tx " + id + " from master " + master;
             log.error(msg);
-            enterLookingForMasterState();
+            chooseMaster();
             throw new ClusterException.MasterTimeout(msg);
         } finally {
             try {

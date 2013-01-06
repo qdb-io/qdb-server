@@ -10,6 +10,10 @@ public class Server extends ModelObject {
 
     public Server() { }
 
+    public Server(String id) {
+        setId(cleanURL(id));
+    }
+
     @Override
     public String toString() {
         String id = getId();

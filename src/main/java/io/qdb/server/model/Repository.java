@@ -1,5 +1,6 @@
 package io.qdb.server.model;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.Date;
 import java.util.List;
@@ -16,7 +17,7 @@ import java.util.List;
  * Fires Status instances on the shared EventBus on connect/disconnect events. Use a negative
  * limit parameter for findXXX(offset,limit) methods to fetch all data.
  */
-public interface Repository {
+public interface Repository extends Closeable {
 
     /**
      * Thrown on all repository operations except getStatus if the repo is down.
