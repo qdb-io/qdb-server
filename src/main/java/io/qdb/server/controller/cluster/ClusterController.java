@@ -1,9 +1,6 @@
 package io.qdb.server.controller.cluster;
 
-import io.qdb.server.controller.Call;
-import io.qdb.server.controller.Controller;
-import io.qdb.server.controller.CrudController;
-import io.qdb.server.controller.JsonService;
+import io.qdb.server.controller.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,14 +19,17 @@ public class ClusterController implements Controller {
     private static final Logger log = LoggerFactory.getLogger(ClusterController.class);
 
     private final TransactionController transactionController;
+    private final ServerStatusController serverStatusController;
     private final String clusterName;
     private final String clusterPassword;
 
     @Inject
     public ClusterController(TransactionController transactionController,
-            @Named("clusterName") String clusterName,
-            @Named("clusterPassword") String clusterPassword) {
+                ServerStatusController serverStatusController,
+                @Named("clusterName") String clusterName,
+                @Named("clusterPassword") String clusterPassword) {
         this.transactionController = transactionController;
+        this.serverStatusController = serverStatusController;
         this.clusterName = clusterName;
         this.clusterPassword = clusterPassword;
     }
@@ -40,6 +40,8 @@ public class ClusterController implements Controller {
             String seg = call.nextSegment();
             if ("transactions".equals(seg)) {
                 transactionController.handle(call);
+            } else if ("status".equals(seg)) {
+                serverStatusController.handle(call);
             } else {
                 call.setCode(404);
             }

@@ -48,7 +48,7 @@ public abstract class ModelObject implements Cloneable, Comparable<ModelObject> 
 
     @Override
     public boolean equals(Object o) {
-        return o != null && o.getClass() == getClass() && id.equals(((ModelObject)o).id);
+        return o != null && o.getClass().isAssignableFrom(getClass()) && id.equals(((ModelObject)o).id);
     }
 
     @Override

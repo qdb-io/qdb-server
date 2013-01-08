@@ -4,6 +4,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.eventbus.EventBus;
 import io.qdb.server.OurServer;
 import io.qdb.server.model.Server;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -17,6 +19,8 @@ import java.util.*;
 @Singleton
 public class FixedServerRegistry implements ServerRegistry {
 
+    private static Logger log = LoggerFactory.getLogger(FixedServerRegistry.class);
+
     private final EventBus eventBus;
     private final List<Server> servers;
 
@@ -27,7 +31,7 @@ public class FixedServerRegistry implements ServerRegistry {
 
         if (servers != null && servers.trim().length() > 0) {
             Set<Server> set = new HashSet<Server>();
-            for (String url : servers.split("[\\w]*,[\\w]*")) {
+            for (String url : servers.split("[\\s]*,[\\s]*")) {
                 Server server;
                 try {
                     server = new Server(url);

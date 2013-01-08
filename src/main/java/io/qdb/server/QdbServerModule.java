@@ -10,6 +10,7 @@ import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigValue;
 import io.qdb.server.controller.Router;
 import io.qdb.server.controller.cluster.ClusterController;
+import io.qdb.server.controller.cluster.ClusterRouter;
 import io.qdb.server.model.Repository;
 import io.qdb.server.repo.*;
 import org.simpleframework.http.core.Container;
@@ -17,6 +18,7 @@ import org.simpleframework.transport.connect.Connection;
 
 import java.io.File;
 import java.util.Map;
+import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * Standard server configuration.
@@ -33,16 +35,17 @@ public class QdbServerModule extends AbstractModule {
     @Override
     protected void configure() {
         bindProperties();
-        bind(Container.class).to(Router.class);
         bind(EventBus.class).toInstance(new EventBus());
         bind(Connection.class).toProvider(ConnectionProvider.class);
-        if (cfg.getBoolean("clustered")) {
+        if (!cfg.getBoolean("clustered")) {
+            bind(Container.class).to(Router.class);
+            bind(Repository.class).to(StandaloneRepository.class);
+        } else {
+            bind(Container.class).to(ClusterRouter.class);
             bind(Repository.class).to(ClusteredRepository.class);
-            bind(ClusterController.class).to(ClusterController.class);
             bind(ServerRegistry.class).toProvider(ServerRegistryProvider.class);
             bind(MasterStrategy.class).toProvider(MasterStrategyProvider.class);
-        } else {
-            bind(Repository.class).to(StandaloneRepository.class);
+            bind(ScheduledExecutorService.class).toProvider(ScheduledExecutorServiceProvider.class);
         }
     }
 

@@ -43,7 +43,13 @@ artifacts {
 }
 
 run {
-    if (project.hasProperty('server')) jvmArgs = ["-Dqdb.conf=etc/qdb" + project.server]
+    def list = []
+    if (project.hasProperty('dbg')) {
+        list << "-Xdebug"
+        list << "-Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5005"
+    }
+    if (project.hasProperty('server')) list << "-Dqdb.conf=etc/qdb" + project.server
+    jvmArgs = list
 }
 
 task("run-debug", dependsOn: 'classes', type: JavaExec) {

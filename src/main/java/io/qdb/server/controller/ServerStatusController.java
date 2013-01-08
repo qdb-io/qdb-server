@@ -23,6 +23,9 @@ public class ServerStatusController implements Controller {
         public Date upSince;
         public boolean up;
 
+        @SuppressWarnings("UnusedDeclaration")
+        public StatusDTO() { }
+
         public StatusDTO(String id, Repository.Status repoStatus) {
             this.id = id;
             upSince = repoStatus.upSince;

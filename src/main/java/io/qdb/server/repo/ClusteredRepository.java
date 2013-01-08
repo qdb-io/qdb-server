@@ -2,12 +2,10 @@ package io.qdb.server.repo;
 
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
-import com.google.common.io.Closeables;
 import io.qdb.server.OurServer;
 import io.qdb.server.model.*;
 
 import javax.inject.Inject;
-import javax.inject.Named;
 import javax.inject.Singleton;
 import java.io.Closeable;
 import java.io.IOException;
@@ -27,33 +25,25 @@ import java.util.List;
 public class ClusteredRepository extends RepositoryBase {
 
     private final StandaloneRepository local;
-    private final JsonConverter jsonConverter;
     private final ServerRegistry serverRegistry;
     private final MasterStrategy masterStrategy;
+    private final ClusterClient.Factory clientFactory;
     private final EventBus eventBus;
     private final OurServer ourServer;
-    private final String clusterName;
-    private final String clusterPassword;
-    private final int masterTimeoutMs;
 
     private ClusterClient master;
     private Date upSince;
 
     @Inject
     public ClusteredRepository(StandaloneRepository local, EventBus eventBus, OurServer ourServer,
-                ServerRegistry serverRegistry, JsonConverter jsonConverter, MasterStrategy masterStrategy,
-                @Named("clusterName") String clusterName,
-                @Named("clusterPassword") String clusterPassword,
-                @Named("masterTimeoutMs") int masterTimeoutMs) throws IOException {
+                               ServerRegistry serverRegistry, MasterStrategy masterStrategy,
+                               ClusterClient.Factory clientFactory) throws IOException {
         this.local = local;
         this.eventBus = eventBus;
         this.serverRegistry = serverRegistry;
-        this.jsonConverter = jsonConverter;
         this.masterStrategy = masterStrategy;
-        this.masterTimeoutMs = masterTimeoutMs;
+        this.clientFactory = clientFactory;
         this.ourServer = ourServer;
-        this.clusterName = clusterName;
-        this.clusterPassword = clusterPassword;
 
         eventBus.register(this);
         masterStrategy.chooseMaster();
@@ -82,7 +72,7 @@ public class ClusteredRepository extends RepositoryBase {
             if (master != null) {
                 // todo disconnect from old master
             }
-            master = new ClusterClient(jsonConverter, ev.master, clusterName, clusterPassword, masterTimeoutMs);
+            master = clientFactory.create(ev.master);
         }
     }
 
@@ -123,7 +113,7 @@ public class ClusteredRepository extends RepositoryBase {
                 if (e.responseCode == 410) chooseMaster();
                 throw e;
             }
-            if (txMonitor.waitFor(id, masterTimeoutMs)) return id;
+            if (txMonitor.waitFor(id, master.getTimeoutMs())) return id;
             String msg = "Timeout waiting for tx " + id + " from master " + master;
             log.error(msg);
             chooseMaster();

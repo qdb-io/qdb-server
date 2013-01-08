@@ -1,7 +1,5 @@
 package io.qdb.server.controller;
 
-import com.google.inject.Inject;
-import io.qdb.server.controller.cluster.ClusterController;
 import io.qdb.server.model.Repository;
 import io.qdb.server.security.Auth;
 import io.qdb.server.security.AuthService;
@@ -11,6 +9,7 @@ import org.simpleframework.http.core.Container;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.io.IOException;
 
@@ -28,9 +27,6 @@ public class Router implements Container {
     private final DatabaseController databaseController;
     private final UserController userController;
 
-    @Inject(optional = true)
-    private ClusterController clusterController;
-
     @Inject
     public Router(AuthService authService, Renderer renderer, ServerStatusController serverStatusController,
                   DatabaseController databaseController, UserController userController) {
@@ -47,11 +43,7 @@ public class Router implements Container {
             Call call = new Call(req, resp, renderer);
             String seg = call.nextSegment();
             if ("cluster".equals(seg)) {
-                if (clusterController == null) {
-                    call.setCode(404, "Clustering is disabled");
-                } else {
-                    clusterController.handle(call);
-                }
+                handleCluster(call);
             } else {
                 Auth auth = authService.authenticate(req, resp);
                 if (auth == null) {
@@ -84,6 +76,10 @@ public class Router implements Container {
         } catch (IOException x) {
             if (log.isDebugEnabled()) log.debug("Error closing response: " + x, x);
         }
+    }
+
+    protected void handleCluster(Call call) throws IOException {
+        call.setCode(404, "Clustering is disabled");
     }
 
     private void quietRenderCode(Request req, Response resp, int code, String msg) {
