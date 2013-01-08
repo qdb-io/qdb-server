@@ -30,6 +30,12 @@ public interface Repository extends Closeable {
 
     public static class Status {
         public Date upSince;
+        public String clusterName;
+        public Server master;
+        public Server[] servers;
+        public String serverDiscoveryStatus;
+        public String masterElectionStatus;
+
         public boolean isUp() { return upSince != null; }
     }
 

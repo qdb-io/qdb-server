@@ -58,7 +58,7 @@ public class FixedServerRegistry implements ServerRegistry {
 
     @Override
     public String getStatus() {
-        return "Found " + servers.toString();
+        return null;    // nothing to report - we always know our servers
     }
 
     @Override

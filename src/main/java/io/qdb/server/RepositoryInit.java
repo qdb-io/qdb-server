@@ -21,20 +21,24 @@ public class RepositoryInit {
     private static final Logger log = LoggerFactory.getLogger(RepositoryInit.class);
 
     private final Repository repo;
+    private final OurServer ourServer;
     private final String initialAdminPassword;
 
     @Inject
-    public RepositoryInit(Repository repo, EventBus eventBus,
+    public RepositoryInit(Repository repo, EventBus eventBus, OurServer ourServer,
                 @Named("initialAdminPassword") String initialAdminPassword) {
         this.repo = repo;
+        this.ourServer = ourServer;
         this.initialAdminPassword = initialAdminPassword;
         eventBus.register(this);
-        if (repo.getStatus().isUp()) ensureAdminUser();
+        handleRepoStatusChange(repo.getStatus());
     }
 
     @Subscribe
     public void handleRepoStatusChange(Repository.Status status) {
-        if (status.isUp()) ensureAdminUser();
+        if (status.isUp() && (status.clusterName == null || ourServer.equals(status.master))) {
+            ensureAdminUser();
+        }
     }
 
     private void ensureAdminUser() {
@@ -47,7 +51,7 @@ public class RepositoryInit {
                 repo.createUser(admin);
                 log.info("Created initial admin user");
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
             log.error(e.toString(), e);
         }
     }

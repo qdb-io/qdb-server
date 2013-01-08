@@ -6,6 +6,7 @@ import io.qdb.server.OurServer;
 import io.qdb.server.model.*;
 
 import javax.inject.Inject;
+import javax.inject.Named;
 import javax.inject.Singleton;
 import java.io.Closeable;
 import java.io.IOException;
@@ -30,20 +31,24 @@ public class ClusteredRepository extends RepositoryBase {
     private final ClusterClient.Factory clientFactory;
     private final EventBus eventBus;
     private final OurServer ourServer;
+    private final String clusterName;
 
+    private Server[] servers;
     private ClusterClient master;
     private Date upSince;
 
     @Inject
     public ClusteredRepository(StandaloneRepository local, EventBus eventBus, OurServer ourServer,
-                               ServerRegistry serverRegistry, MasterStrategy masterStrategy,
-                               ClusterClient.Factory clientFactory) throws IOException {
+                ServerRegistry serverRegistry, MasterStrategy masterStrategy,
+                ClusterClient.Factory clientFactory,
+                @Named("clusterName") String clusterName) throws IOException {
         this.local = local;
         this.eventBus = eventBus;
         this.serverRegistry = serverRegistry;
         this.masterStrategy = masterStrategy;
         this.clientFactory = clientFactory;
         this.ourServer = ourServer;
+        this.clusterName = clusterName;
 
         eventBus.register(this);
         masterStrategy.chooseMaster();
@@ -65,6 +70,13 @@ public class ClusteredRepository extends RepositoryBase {
     }
 
     @Subscribe
+    public void handleServersFound(ServerRegistry.ServersFound ev) {
+        synchronized (this) {
+            this.servers = ev.servers.toArray(new Server[ev.servers.size()]);
+        }
+    }
+
+    @Subscribe
     public void handleMasterFound(MasterStrategy.MasterFound ev) {
         if (log.isDebugEnabled()) log.debug(ev.toString());
         synchronized (this) {
@@ -73,7 +85,9 @@ public class ClusteredRepository extends RepositoryBase {
                 // todo disconnect from old master
             }
             master = clientFactory.create(ev.master);
+            upSince = new Date();
         }
+        eventBus.post(getStatus());
     }
 
     private synchronized boolean isMaster() {
@@ -131,6 +145,11 @@ public class ClusteredRepository extends RepositoryBase {
     public Status getStatus() {
         Status s = new Status();
         s.upSince = upSince;
+        s.clusterName = clusterName;
+        if (master != null) s.master = master.server;
+        s.servers = servers;
+        s.serverDiscoveryStatus = serverRegistry.getStatus();
+        s.masterElectionStatus = masterStrategy.getStatus();
         return s;
     }
 

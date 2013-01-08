@@ -71,7 +71,7 @@ public class FixedMasterStrategy implements MasterStrategy {
             updateStatus("Found " + servers);
         }
         if (!ev.servers.contains(master)) {
-            log.warn("master [" + master + "] not in cluster " + servers + " ?");
+            log.warn(updateStatus("master [" + master + "] not in cluster " + servers + " ?"));
             return;
         }
 
@@ -84,7 +84,7 @@ public class FixedMasterStrategy implements MasterStrategy {
     }
 
     private void postMasterFound() {
-        updateStatus("Master found");
+        updateStatus(null);
         eventBus.post(new MasterFound(master));
     }
 
