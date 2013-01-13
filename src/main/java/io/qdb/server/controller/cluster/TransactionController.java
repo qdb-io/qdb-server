@@ -7,10 +7,7 @@ import io.qdb.server.controller.CrudController;
 import io.qdb.server.controller.JsonService;
 import io.qdb.server.controller.MessageController;
 import io.qdb.server.model.ModelException;
-import io.qdb.server.repo.ClusterException;
-import io.qdb.server.repo.ClusteredRepository;
-import io.qdb.server.repo.RepoTx;
-import io.qdb.server.repo.TxId;
+import io.qdb.server.repo.*;
 import org.simpleframework.http.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,14 +29,17 @@ public class TransactionController extends CrudController {
 
     private final ClusteredRepository repo;
     private final OurServer ourServer;
+    private final SlaveRegistry slaveRegistry;
     private final int clusterTimeoutMs;
 
     @Inject
     public TransactionController(JsonService jsonService, ClusteredRepository clusteredRepository, OurServer ourServer,
-            @Named("clusterTimeoutMs") int clusterTimeoutMs) {
+                SlaveRegistry slaveRegistry,
+                @Named("clusterTimeoutMs") int clusterTimeoutMs) {
         super(jsonService);
         this.repo = clusteredRepository;
         this.ourServer = ourServer;
+        this.slaveRegistry = slaveRegistry;
         this.clusterTimeoutMs = clusterTimeoutMs;
     }
 
@@ -77,8 +77,8 @@ public class TransactionController extends CrudController {
             call.setText(400, "Invalid keepAliveMs parameter: " + keepAliveMs);
             return;
         }
-        String slave = call.getRequest().getValue("Referer");
-        if (slave == null) {
+        String slaveId = call.getRequest().getValue("Referer");
+        if (slaveId == null) {
             call.setText(400, "Missing 'Referer' HTTP Header");
             return;
         }
@@ -92,8 +92,7 @@ public class TransactionController extends CrudController {
             return;
         }
 
-        log.info("Slave " + slave + " connected (txId " + txId + ")");
-
+        SlaveRegistry.Slave slave = slaveRegistry.slaveConnected(slaveId, txId);
         try {
             Response response = call.getResponse();
             response.set("Content-Type", "text/plain");
@@ -110,28 +109,32 @@ public class TransactionController extends CrudController {
                         }
                         out.write(10);
                         out.flush();
+                        slave.active(txId);
                     }
                 } catch (InterruptedException e) {
                     break;
                 }
 
                 MessageController.MessageHeader h = new MessageController.MessageHeader(c);
-                if (log.isDebugEnabled()) log.debug("Sending txId " + h.id + " to " + slave);
+                txId = h.id;
+                if (log.isDebugEnabled()) log.debug("Sending txId " + txId + " to slave " + slave);
                 out.write(jsonService.toJsonNoIndenting(h));
                 out.write(10);
                 out.write(c.getPayload());
                 out.write(10);
+                out.flush();
+                slave.active(txId);
             }
         } catch (IOException e) {
             Throwable t , n;
             for (t = e; (n = t.getCause()) != null; t = n);
-            log.warn("Error sending transactions to slave " + slave + ": " + t);
+            slave.setErrorMessage(t.toString());
         } finally {
             try {
                 c.close();
             } catch (IOException ignore) {
             }
-            if (log.isDebugEnabled()) log.debug("Slave " + slave + " disconnected");
+            slave.disconnected();
         }
     }
 }

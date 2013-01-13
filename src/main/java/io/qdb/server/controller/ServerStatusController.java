@@ -42,9 +42,11 @@ public class ServerStatusController implements Controller {
                 master = ServerDTO.create(repoStatus.master);
                 if (repoStatus.servers != null) {
                     servers = new ServerDTO[repoStatus.servers.length];
-                    for (int i = 0; i < servers.length; i++) {
-                        servers[i] = ServerDTO.create(repoStatus.servers[i]);
-                    }
+                    for (int i = 0; i < servers.length; i++) servers[i] = ServerDTO.create(repoStatus.servers[i]);
+                }
+                if (repoStatus.slaves != null) {
+                    slaves = new ServerDTO[repoStatus.slaves.length];
+                    for (int i = 0; i < slaves.length; i++) slaves[i] = ServerDTO.create(repoStatus.slaves[i]);
                 }
                 serverDiscoveryStatus = repoStatus.serverDiscoveryStatus;
                 masterElectionStatus = repoStatus.masterElectionStatus;
@@ -55,6 +57,7 @@ public class ServerStatusController implements Controller {
     public static class ServerDTO {
         public String id;
         public Integer msSinceLastContact;
+        public String message;
 
         public ServerDTO(Server s) {
             id = s.getId();
@@ -63,6 +66,7 @@ public class ServerStatusController implements Controller {
         public ServerDTO(Repository.ServerStatus s) {
             id = s.id;
             msSinceLastContact = s.msSinceLastContact;
+            message = s.message;
         }
 
         public static ServerDTO create(Server s) {

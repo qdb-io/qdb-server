@@ -6,14 +6,14 @@ import io.qdb.buffer.MessageCursor;
 import io.qdb.server.OurServer;
 import io.qdb.server.controller.MessageController;
 import io.qdb.server.model.*;
+import io.qdb.server.model.Queue;
 import io.qdb.server.util.StoppableTask;
 
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import java.io.*;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
 
 /**
@@ -36,6 +36,7 @@ public class ClusteredRepository extends RepositoryBase {
     private final OurServer ourServer;
     private final ScheduledExecutorService executorService;
     private final JsonConverter jsonConverter;
+    private final SlaveRegistry slaveRegistry;
     private final BackoffPolicy slaveTxDownloadBackoff;
     private final BackoffPolicy slaveTxExecBackoff;
     private final String clusterName;
@@ -49,7 +50,7 @@ public class ClusteredRepository extends RepositoryBase {
     @Inject
     public ClusteredRepository(StandaloneRepository local, EventBus eventBus, OurServer ourServer,
                ServerRegistry serverRegistry, MasterStrategy masterStrategy, ClusterClient.Factory clientFactory,
-               ScheduledExecutorService executorService, JsonConverter jsonConverter,
+               ScheduledExecutorService executorService, JsonConverter jsonConverter, SlaveRegistry slaveRegistry,
                @Named("clusterName") String clusterName,
                @Named("slaveTxDownloadBackoff") BackoffPolicy slaveTxDownloadBackoff,
                @Named("slaveTxExecBackoff") BackoffPolicy slaveTxExecBackoff
@@ -62,6 +63,7 @@ public class ClusteredRepository extends RepositoryBase {
         this.ourServer = ourServer;
         this.executorService = executorService;
         this.jsonConverter = jsonConverter;
+        this.slaveRegistry = slaveRegistry;
         this.clusterName = clusterName;
         this.slaveTxDownloadBackoff = slaveTxDownloadBackoff;
         this.slaveTxExecBackoff = slaveTxExecBackoff;
@@ -140,7 +142,7 @@ public class ClusteredRepository extends RepositoryBase {
                 txDownloader.stop();
                 txDownloader = null;
             }
-            // todo what about disconnecting slaves?
+            slaveRegistry.disconnectAndClear();
         }
         eventBus.post(getStatus());
         masterStrategy.chooseMaster();
@@ -196,7 +198,7 @@ public class ClusteredRepository extends RepositoryBase {
     }
 
     @Override
-    public Status getStatus() {
+    public synchronized Status getStatus() {
         Status s = new Status();
         s.upSince = upSince;
         s.clusterName = clusterName;
@@ -204,6 +206,7 @@ public class ClusteredRepository extends RepositoryBase {
             s.master = master.getStatus();
             if (isMaster()) s.master.msSinceLastContact = 0;
         }
+        s.slaves = slaveRegistry.getSlaveStatuses();
         s.servers = servers;
         s.serverDiscoveryStatus = serverRegistry.getStatus();
         s.masterElectionStatus = masterStrategy.getStatus();

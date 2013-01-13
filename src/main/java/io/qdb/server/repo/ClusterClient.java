@@ -85,10 +85,8 @@ public class ClusterClient {
     }
 
     public Repository.ServerStatus getStatus() {
-        Repository.ServerStatus s = new Repository.ServerStatus();
-        s.id = server.getId();
-        if (lastContact > 0) s.msSinceLastContact = (int)(System.currentTimeMillis() - lastContact);
-        return s;
+        return new Repository.ServerStatus(server.getId(),
+                lastContact > 0 ? (int)(System.currentTimeMillis() - lastContact) : null, null);
     }
 
     /**

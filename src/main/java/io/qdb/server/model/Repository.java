@@ -40,9 +40,21 @@ public interface Repository extends Closeable {
         public boolean isUp() { return upSince != null; }
     }
 
-    public static class ServerStatus {
-        public String id;
+    public static class ServerStatus implements Comparable<ServerStatus> {
+        public final String id;
         public Integer msSinceLastContact;
+        public String message;
+
+        public ServerStatus(String id, Integer msSinceLastContact, String message) {
+            this.id = id;
+            this.msSinceLastContact = msSinceLastContact;
+            this.message = message;
+        }
+
+        @Override
+        public int compareTo(ServerStatus o) {
+            return id.compareTo(o.id);
+        }
     }
 
     public Status getStatus();
