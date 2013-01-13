@@ -2,6 +2,7 @@ package io.qdb.server.repo;
 
 import com.google.common.io.ByteStreams;
 import io.qdb.server.OurServer;
+import io.qdb.server.model.Repository;
 import io.qdb.server.model.Server;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,6 +30,8 @@ public class ClusterClient {
     private final JsonConverter jsonConverter;
     private final int timeoutMs;
     private final String authorization;
+
+    private long lastContact;
 
     @Singleton
     public static class Factory {
@@ -71,6 +74,21 @@ public class ClusterClient {
 
     public int getTimeoutMs() {
         return timeoutMs;
+    }
+
+    public long getLastContact() {
+        return lastContact;
+    }
+
+    public void updateLastContact() {
+        this.lastContact = System.currentTimeMillis();
+    }
+
+    public Repository.ServerStatus getStatus() {
+        Repository.ServerStatus s = new Repository.ServerStatus();
+        s.id = server.getId();
+        if (lastContact > 0) s.msSinceLastContact = (int)(System.currentTimeMillis() - lastContact);
+        return s;
     }
 
     /**
@@ -117,6 +135,7 @@ public class ClusterClient {
 
         int rc = con.getResponseCode();
         if (rc == expectedCode) {
+            updateLastContact();
             InputStream ins = con.getInputStream();
             return response == InputStream.class ? (T)ins : jsonConverter.readValue(ins, response);
         } else {

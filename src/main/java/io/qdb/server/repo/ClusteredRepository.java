@@ -39,7 +39,6 @@ public class ClusteredRepository extends RepositoryBase {
     private final BackoffPolicy slaveTxDownloadBackoff;
     private final BackoffPolicy slaveTxExecBackoff;
     private final String clusterName;
-    private final int clusterTimeoutMs;
 
     private Server[] servers;
     private ClusterClient master;
@@ -52,7 +51,6 @@ public class ClusteredRepository extends RepositoryBase {
                ServerRegistry serverRegistry, MasterStrategy masterStrategy, ClusterClient.Factory clientFactory,
                ScheduledExecutorService executorService, JsonConverter jsonConverter,
                @Named("clusterName") String clusterName,
-               @Named("clusterTimeoutMs") int clusterTimeoutMs,
                @Named("slaveTxDownloadBackoff") BackoffPolicy slaveTxDownloadBackoff,
                @Named("slaveTxExecBackoff") BackoffPolicy slaveTxExecBackoff
                ) throws IOException {
@@ -65,7 +63,6 @@ public class ClusteredRepository extends RepositoryBase {
         this.executorService = executorService;
         this.jsonConverter = jsonConverter;
         this.clusterName = clusterName;
-        this.clusterTimeoutMs = clusterTimeoutMs;
         this.slaveTxDownloadBackoff = slaveTxDownloadBackoff;
         this.slaveTxExecBackoff = slaveTxExecBackoff;
 
@@ -203,7 +200,7 @@ public class ClusteredRepository extends RepositoryBase {
         Status s = new Status();
         s.upSince = upSince;
         s.clusterName = clusterName;
-        if (master != null) s.master = master.server;
+        if (master != null) s.master = master.getStatus();
         s.servers = servers;
         s.serverDiscoveryStatus = serverRegistry.getStatus();
         s.masterElectionStatus = masterStrategy.getStatus();
@@ -270,7 +267,6 @@ public class ClusteredRepository extends RepositoryBase {
         }
 
         protected void runImpl() {
-            long lastResponse = System.currentTimeMillis();
             int ioExceptionCount = 0;
             int execFailureCount = 0;
             Server lastMaster = null;
@@ -294,7 +290,7 @@ public class ClusteredRepository extends RepositoryBase {
                             while (true) {
                                 int b = ins.read();
                                 ioExceptionCount = 0;
-                                lastResponse = System.currentTimeMillis();
+                                master.updateLastContact();
                                 if (b != 10) {
                                     ins.unread(b);
                                     break;
@@ -322,7 +318,9 @@ public class ClusteredRepository extends RepositoryBase {
                 } catch (InterruptedIOException e) {
                     if (log.isDebugEnabled()) log.debug(e.toString());
                 } catch (IOException e) {
-                    int ms = slaveTxDownloadBackoff.getMaxDelayMs () - (int)(System.currentTimeMillis() - lastResponse);
+                    int ms = slaveTxDownloadBackoff.getMaxDelayMs();
+                    long lastContact = master.getLastContact();
+                    if (lastContact > 0) ms -= (int)(System.currentTimeMillis() - lastContact);
                     if (ms > 0) {
                         log.error("Error streaming transactions from master " + m + ", retrying: " + e);
                         slaveTxDownloadBackoff.sleep(++ioExceptionCount, ms);
