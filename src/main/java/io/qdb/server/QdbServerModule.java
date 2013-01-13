@@ -9,7 +9,6 @@ import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigValue;
 import io.qdb.server.controller.Router;
-import io.qdb.server.controller.cluster.ClusterController;
 import io.qdb.server.controller.cluster.ClusterRouter;
 import io.qdb.server.model.Repository;
 import io.qdb.server.repo.*;

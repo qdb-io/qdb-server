@@ -1,4 +1,4 @@
-package io.qdb.server.repo;
+package io.qdb.server.util;
 
 /**
  * Runnable that can be stopped.

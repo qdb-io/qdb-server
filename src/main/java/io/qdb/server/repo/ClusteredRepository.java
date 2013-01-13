@@ -3,10 +3,10 @@ package io.qdb.server.repo;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import io.qdb.buffer.MessageCursor;
-import io.qdb.server.BackoffPolicy;
 import io.qdb.server.OurServer;
 import io.qdb.server.controller.MessageController;
 import io.qdb.server.model.*;
+import io.qdb.server.util.StoppableTask;
 
 import javax.inject.Inject;
 import javax.inject.Named;

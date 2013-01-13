@@ -1,4 +1,4 @@
-package io.qdb.server;
+package io.qdb.server.util;
 
 import java.io.File;
 import java.io.IOException;

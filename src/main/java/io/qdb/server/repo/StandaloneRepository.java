@@ -5,7 +5,7 @@ import com.google.common.io.PatternFilenameFilter;
 import io.qdb.buffer.MessageBuffer;
 import io.qdb.buffer.MessageCursor;
 import io.qdb.buffer.PersistentMessageBuffer;
-import io.qdb.server.Util;
+import io.qdb.server.util.Util;
 import io.qdb.server.model.*;
 import io.qdb.server.model.Queue;
 import org.slf4j.Logger;

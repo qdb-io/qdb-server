@@ -2,10 +2,10 @@ package io.qdb.server.repo;
 
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
-import io.qdb.server.BackoffPolicy;
 import io.qdb.server.OurServer;
 import io.qdb.server.controller.ServerStatusController;
 import io.qdb.server.model.Server;
+import io.qdb.server.util.StoppableTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

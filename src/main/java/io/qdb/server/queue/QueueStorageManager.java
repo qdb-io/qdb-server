@@ -1,6 +1,6 @@
 package io.qdb.server.queue;
 
-import io.qdb.server.Util;
+import io.qdb.server.util.Util;
 import io.qdb.server.model.Queue;
 
 import javax.inject.Inject;

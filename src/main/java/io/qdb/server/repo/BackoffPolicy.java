@@ -1,4 +1,4 @@
-package io.qdb.server;
+package io.qdb.server.repo;
 
 /**
  * Calculates delay intervals base on consecutive failure counts.
