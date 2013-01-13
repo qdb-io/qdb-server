@@ -6,15 +6,28 @@ package io.qdb.server;
 public interface BackoffPolicy {
 
     /**
-     * Convert a failure count unto a the delay in ms.
+     * Convert a failure count into a the delay in ms.
      */
     int getDelayMs(int failureCount);
+
+    /**
+     * What is the default max delay time?
+     */
+    int getMaxDelayMs();
 
     /**
      * Sleep for the appropriate amount of time. Ignores InterruptedException from Thread.sleep.
      */
     void sleep(int failureCount);
 
+    /**
+     * Sleep for the appropriate amount of time up to maxDelayMs. Ignores InterruptedException from Thread.sleep.
+     */
+    void sleep(int failureCount, int maxDelayMs);
+
+    /**
+     * Simple implementation of several policies parsed from a string.
+     */
     public static class Standard implements BackoffPolicy {
 
         /**
@@ -60,9 +73,19 @@ public interface BackoffPolicy {
         }
 
         @Override
+        public int getMaxDelayMs() {
+            return maxMs;
+        }
+
+        @Override
         public void sleep(int failureCount) {
+            sleep(failureCount, Integer.MAX_VALUE);
+        }
+
+        @Override
+        public void sleep(int failureCount, int maxDelayMs) {
             try {
-                Thread.sleep(getDelayMs(failureCount));
+                Thread.sleep(Math.min(getDelayMs(failureCount), maxDelayMs));
             } catch (InterruptedException ignore) {
             }
         }

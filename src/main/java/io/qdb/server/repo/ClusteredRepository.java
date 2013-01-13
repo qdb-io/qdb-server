@@ -54,7 +54,8 @@ public class ClusteredRepository extends RepositoryBase {
                @Named("clusterName") String clusterName,
                @Named("clusterTimeoutMs") int clusterTimeoutMs,
                @Named("slaveTxDownloadBackoff") BackoffPolicy slaveTxDownloadBackoff,
-               @Named("slaveTxExecBackoff") BackoffPolicy slaveTxExecBackoff) throws IOException {
+               @Named("slaveTxExecBackoff") BackoffPolicy slaveTxExecBackoff
+               ) throws IOException {
         this.local = local;
         this.eventBus = eventBus;
         this.serverRegistry = serverRegistry;
@@ -100,12 +101,16 @@ public class ClusteredRepository extends RepositoryBase {
 
     @Subscribe
     public void handleMasterFound(MasterStrategy.MasterFound ev) {
-        if (log.isDebugEnabled()) log.debug(ev.toString());
         try {
             synchronized (this) {
                 if (master != null && master.server.equals(ev.master)) return;
 
                 master = clientFactory.create(ev.master);
+                if (isMaster()) {
+                    log.info("We are the MASTER " + master);
+                } else {
+                    log.info("We are a SLAVE, master is " + master);
+                }
 
                 if (isSlave()) {
                     // get our snapshot up to date with our tx log
@@ -135,7 +140,6 @@ public class ClusteredRepository extends RepositoryBase {
             upSince = null;
             master = null;
             if (txDownloader != null) {
-                log.info("Disconnecting from master " + master);
                 txDownloader.stop();
                 txDownloader = null;
             }
@@ -259,32 +263,22 @@ public class ClusteredRepository extends RepositoryBase {
     /**
      * Streams transactions from the master to us when we are acting as a slave.
      */
-    private class TxDownloader implements Runnable {
-
-        private Thread thread;
-        private boolean diePiggyDie;
+    private class TxDownloader extends StoppableTask {
 
         public synchronized ClusterClient getMaster() {
-            return diePiggyDie ? null : master;
+            return isStopped() ? null : master;
         }
 
-        @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-        @Override
-        public void run() {
-            synchronized (this) {
-                this.thread = Thread.currentThread();
-            }
+        protected void runImpl() {
+            long lastResponse = System.currentTimeMillis();
             int ioExceptionCount = 0;
             int execFailureCount = 0;
             Server lastMaster = null;
+            boolean chooseMaster = false;
 
-            while (true) {
-                ClusterClient m = getMaster();
-                if (m == null) break;
-
+            for (ClusterClient m; (m = getMaster()) != null; ) {
                 if (lastMaster == null) {
                     lastMaster = m.server;
-                    if (log.isDebugEnabled()) log.debug("Connecting to master " + lastMaster);
                 } else if (!lastMaster.equals(m.server)) {
                     log.warn("Master changed from " + lastMaster + " to " + m.server + " without stopping " + this);
                     break;
@@ -292,6 +286,7 @@ public class ClusteredRepository extends RepositoryBase {
 
                 Exception execException = null;
                 try {
+                    if (log.isDebugEnabled()) log.debug("Connecting to master " + lastMaster);
                     PushbackInputStream ins = new PushbackInputStream(
                             m.GET("cluster/transactions?txId=" + local.getNextTxId()), 1);
                     try {
@@ -299,6 +294,7 @@ public class ClusteredRepository extends RepositoryBase {
                             while (true) {
                                 int b = ins.read();
                                 ioExceptionCount = 0;
+                                lastResponse = System.currentTimeMillis();
                                 if (b != 10) {
                                     ins.unread(b);
                                     break;
@@ -326,8 +322,15 @@ public class ClusteredRepository extends RepositoryBase {
                 } catch (InterruptedIOException e) {
                     if (log.isDebugEnabled()) log.debug(e.toString());
                 } catch (IOException e) {
-                    log.error("Error streaming transactions from master " + m + ": " + e);
-                    slaveTxDownloadBackoff.sleep(++ioExceptionCount);
+                    int ms = slaveTxDownloadBackoff.getMaxDelayMs () - (int)(System.currentTimeMillis() - lastResponse);
+                    if (ms > 0) {
+                        log.error("Error streaming transactions from master " + m + ", retrying: " + e);
+                        slaveTxDownloadBackoff.sleep(++ioExceptionCount, ms);
+                    } else {
+                        log.error("Error streaming transactions from master " + m + ": " + e);
+                        chooseMaster = true;
+                        break;
+                    }
                 }
 
                 if (execException != null) {
@@ -342,11 +345,11 @@ public class ClusteredRepository extends RepositoryBase {
             } else {
                 if (log.isDebugEnabled()) log.debug("Disconnected from master " + lastMaster);
             }
-        }
 
-        public synchronized void stop() {
-            diePiggyDie = true;
-            if (thread != null) thread.interrupt();
+            if (chooseMaster) {
+                log.info("Master timeout " + slaveTxDownloadBackoff.getMaxDelayMs() + " ms exceed, choosing new master");
+                chooseMaster();
+            }
         }
     }
 }

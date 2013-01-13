@@ -2,6 +2,7 @@ package io.qdb.server.repo;
 
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
+import io.qdb.server.BackoffPolicy;
 import io.qdb.server.OurServer;
 import io.qdb.server.controller.ServerStatusController;
 import io.qdb.server.model.Server;
@@ -12,11 +13,9 @@ import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 /**
  * The master is specified in the configuration.
@@ -31,35 +30,34 @@ public class FixedMasterStrategy implements MasterStrategy {
     private final ScheduledExecutorService executorService;
     private final ClusterClient.Factory clientFactory;
     private final OurServer ourServer;
+    private final BackoffPolicy pingMasterBackoff;
     private final Server master;
-
-    private final Callable<Void> pingCommand  = new Callable<Void>() {
-        @Override
-        public Void call() throws Exception {
-            pingMaster();
-            return null;
-        }
-    };
 
     private List<Server> servers;
     private String status;
+    private MasterPinger masterPinger;
 
     @Inject
     public FixedMasterStrategy(EventBus eventBus, ServerRegistry serverRegistry,
                 ScheduledExecutorService executorService, ClusterClient.Factory clientFactory, OurServer ourServer,
+                @Named("pingMasterBackoff") BackoffPolicy pingMasterBackoff,
                 @Named("master") String master) {
         this.eventBus = eventBus;
         this.serverRegistry = serverRegistry;
         this.executorService = executorService;
         this.clientFactory = clientFactory;
         this.ourServer = ourServer;
+        this.pingMasterBackoff = pingMasterBackoff;
         this.master = new Server(master);
         eventBus.register(this);
     }
 
     @Override
     public void chooseMaster() {
-        updateStatus("Discovering which servers are in the cluster");
+        log.info(updateStatus("Discovering which servers are in the cluster"));
+        synchronized (this) {
+            this.servers = null;
+        }
         serverRegistry.lookForServers();
     }
 
@@ -68,7 +66,7 @@ public class FixedMasterStrategy implements MasterStrategy {
         synchronized (this) {
             if (servers != null && servers.equals(ev.servers)) return;
             servers = ev.servers;
-            updateStatus("Found " + servers);
+            log.info(updateStatus("Found " + servers));
         }
         if (!ev.servers.contains(master)) {
             log.warn(updateStatus("master [" + master + "] not in cluster " + servers + " ?"));
@@ -79,29 +77,14 @@ public class FixedMasterStrategy implements MasterStrategy {
             postMasterFound();
         } else {
             // check that the master is up before announcing it
-            executorService.submit(pingCommand);
+            if (masterPinger != null) masterPinger.stop();
+            executorService.submit(masterPinger = new MasterPinger());
         }
     }
 
     private void postMasterFound() {
         updateStatus(null);
         eventBus.post(new MasterFound(master));
-    }
-
-    private void pingMaster() {
-        updateStatus("Checking that master " + master + " us up");
-        try {
-            ServerStatusController.StatusDTO dto = clientFactory.create(master).GET("cluster/status",
-                    ServerStatusController.StatusDTO.class);
-            if (dto.up) {
-                postMasterFound();
-                return;
-            }
-            log.info(updateStatus("Master " + master + " is DOWN"));
-        } catch (IOException e) {
-            log.info(updateStatus("Master " + master + " not responding: " + e));
-        }
-        executorService.schedule(pingCommand, 1000, TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -116,5 +99,31 @@ public class FixedMasterStrategy implements MasterStrategy {
 
     @Override
     public void close() throws IOException {
+        if (masterPinger != null) {
+            masterPinger.stop();
+            masterPinger = null;
+        }
+    }
+
+    private class MasterPinger extends StoppableTask {
+
+        @Override
+        protected void runImpl() {
+            updateStatus("Checking that master " + master + " us up");
+            for (int errorCount = 1; !isStopped(); pingMasterBackoff.sleep(++errorCount)) {
+                try {
+                    ServerStatusController.StatusDTO dto = clientFactory.create(master).GET("cluster/status",
+                            ServerStatusController.StatusDTO.class);
+                    if (dto.up) {
+                        postMasterFound();
+                        break;
+                    }
+                    log.info(updateStatus("Master " + master + " is DOWN"));
+                } catch (InterruptedIOException ignore) {
+                } catch (IOException e) {
+                    log.info(updateStatus("Master " + master + " not responding: " + e));
+                }
+            }
+        }
     }
 }

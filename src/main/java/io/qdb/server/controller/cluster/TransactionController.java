@@ -92,7 +92,7 @@ public class TransactionController extends CrudController {
             return;
         }
 
-        if (log.isDebugEnabled()) log.debug("Slave " + slave + " connected (txId " + txId + ")");
+        log.info("Slave " + slave + " connected (txId " + txId + ")");
 
         try {
             Response response = call.getResponse();
