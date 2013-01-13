@@ -27,6 +27,7 @@ public class ServerStatusController implements Controller {
         public String serverDiscoveryStatus;
         public String masterElectionStatus;
         public ServerDTO master;
+        public ServerDTO[] slaves;
         public ServerDTO[] servers;
 
         @SuppressWarnings("UnusedDeclaration")
@@ -53,8 +54,24 @@ public class ServerStatusController implements Controller {
 
     public static class ServerDTO {
         public String id;
-        public ServerDTO(Server s) { id = s.getId(); }
-        public static ServerDTO create(Server s) { return s == null ? null : new ServerDTO(s); }
+        public Integer msSinceLastContact;
+
+        public ServerDTO(Server s) {
+            id = s.getId();
+        }
+
+        public ServerDTO(Repository.ServerStatus s) {
+            id = s.id;
+            msSinceLastContact = s.msSinceLastContact;
+        }
+
+        public static ServerDTO create(Server s) {
+            return s == null ? null : new ServerDTO(s);
+        }
+
+        public static ServerDTO create(Repository.ServerStatus s) {
+            return s == null ? null : new ServerDTO(s);
+        }
     }
 
     @Inject

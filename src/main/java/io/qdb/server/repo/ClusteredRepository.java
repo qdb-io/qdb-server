@@ -200,7 +200,10 @@ public class ClusteredRepository extends RepositoryBase {
         Status s = new Status();
         s.upSince = upSince;
         s.clusterName = clusterName;
-        if (master != null) s.master = master.getStatus();
+        if (master != null) {
+            s.master = master.getStatus();
+            if (isMaster()) s.master.msSinceLastContact = 0;
+        }
         s.servers = servers;
         s.serverDiscoveryStatus = serverRegistry.getStatus();
         s.masterElectionStatus = masterStrategy.getStatus();
@@ -318,6 +321,11 @@ public class ClusteredRepository extends RepositoryBase {
                 } catch (InterruptedIOException e) {
                     if (log.isDebugEnabled()) log.debug(e.toString());
                 } catch (IOException e) {
+                    if (e instanceof ResponseCodeException && ((ResponseCodeException)e).responseCode == 410) {
+                        log.info("Got 410 from master " + m + " (longer the master)");
+                        chooseMaster = true;
+                        break;
+                    }
                     int ms = slaveTxDownloadBackoff.getMaxDelayMs();
                     long lastContact = master.getLastContact();
                     if (lastContact > 0) ms -= (int)(System.currentTimeMillis() - lastContact);

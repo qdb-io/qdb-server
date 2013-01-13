@@ -14,6 +14,7 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 import java.io.IOException;
 import java.io.InterruptedIOException;
+import java.net.ConnectException;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -121,7 +122,8 @@ public class FixedMasterStrategy implements MasterStrategy {
                     log.info(updateStatus("Master " + master + " is DOWN"));
                 } catch (InterruptedIOException ignore) {
                 } catch (IOException e) {
-                    log.info(updateStatus("Master " + master + " not responding: " + e));
+                    String msg = e instanceof ConnectException ? e.getMessage() : e.toString();
+                    log.info(updateStatus("Master " + master + " not responding: " + msg));
                 }
             }
         }
