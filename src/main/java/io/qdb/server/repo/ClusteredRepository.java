@@ -204,6 +204,7 @@ public class ClusteredRepository extends RepositoryBase {
         s.clusterName = clusterName;
         if (master != null) {
             s.master = master.getStatus();
+            s.master.role = ServerRole.MASTER;
             if (isMaster()) s.master.msSinceLastContact = 0;
         }
         s.slaves = slaveRegistry.getSlaveStatuses();

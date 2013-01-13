@@ -56,6 +56,8 @@ public class ServerStatusController implements Controller {
 
     public static class ServerDTO {
         public String id;
+        public String role;
+        public Boolean up;
         public Integer msSinceLastContact;
         public String message;
 
@@ -65,6 +67,8 @@ public class ServerStatusController implements Controller {
 
         public ServerDTO(Repository.ServerStatus s) {
             id = s.id;
+            if (s.role != null) role = s.role.name();
+            if (s.up) up = true;
             msSinceLastContact = s.msSinceLastContact;
             message = s.message;
         }

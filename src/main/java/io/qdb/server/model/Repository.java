@@ -40,12 +40,18 @@ public interface Repository extends Closeable {
         public boolean isUp() { return upSince != null; }
     }
 
+    public enum ServerRole {
+        MASTER, SLAVE
+    }
+
     public static class ServerStatus implements Comparable<ServerStatus> {
         public final String id;
+        public ServerRole role;
+        public boolean up;
         public Integer msSinceLastContact;
         public String message;
 
-        public ServerStatus(String id, Integer msSinceLastContact, String message) {
+        public ServerStatus(String id, ServerRole role, Integer msSinceLastContact, String message) {
             this.id = id;
             this.msSinceLastContact = msSinceLastContact;
             this.message = message;

@@ -59,11 +59,13 @@ public class SlaveRegistry {
         int n = slaves.size();
         if (n == 0) return null;
         Repository.ServerStatus[] ans = new Repository.ServerStatus[n];
-        int c = 0;
         long now = System.currentTimeMillis();
         for (int i = 0; i < n; i++) {
             Slave slave = slaves.get(i);
-            ans[i] = new Repository.ServerStatus(slave.id, (int)(now - slave.lastContact), slave.errorMessage);
+            Repository.ServerStatus status = new Repository.ServerStatus(slave.id, Repository.ServerRole.SLAVE,
+                    (int) (now - slave.lastContact), slave.errorMessage);
+            status.up = slave.isConnected();
+            ans[i] = status;
         }
         Arrays.sort(ans);
         return ans;
