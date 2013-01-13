@@ -2,16 +2,19 @@ package io.qdb.server.repo;
 
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
+import io.qdb.buffer.MessageCursor;
+import io.qdb.server.BackoffPolicy;
 import io.qdb.server.OurServer;
+import io.qdb.server.controller.MessageController;
 import io.qdb.server.model.*;
 
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
-import java.io.Closeable;
-import java.io.IOException;
+import java.io.*;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * Repository implementation for clustered deployment. All repository updates are carried out by the leader of the
@@ -31,24 +34,39 @@ public class ClusteredRepository extends RepositoryBase {
     private final ClusterClient.Factory clientFactory;
     private final EventBus eventBus;
     private final OurServer ourServer;
+    private final ScheduledExecutorService executorService;
+    private final JsonConverter jsonConverter;
+    private final BackoffPolicy slaveTxDownloadBackoff;
+    private final BackoffPolicy slaveTxExecBackoff;
     private final String clusterName;
+    private final int clusterTimeoutMs;
 
     private Server[] servers;
     private ClusterClient master;
     private Date upSince;
 
+    private TxDownloader txDownloader;
+
     @Inject
     public ClusteredRepository(StandaloneRepository local, EventBus eventBus, OurServer ourServer,
-                ServerRegistry serverRegistry, MasterStrategy masterStrategy,
-                ClusterClient.Factory clientFactory,
-                @Named("clusterName") String clusterName) throws IOException {
+               ServerRegistry serverRegistry, MasterStrategy masterStrategy, ClusterClient.Factory clientFactory,
+               ScheduledExecutorService executorService, JsonConverter jsonConverter,
+               @Named("clusterName") String clusterName,
+               @Named("clusterTimeoutMs") int clusterTimeoutMs,
+               @Named("slaveTxDownloadBackoff") BackoffPolicy slaveTxDownloadBackoff,
+               @Named("slaveTxExecBackoff") BackoffPolicy slaveTxExecBackoff) throws IOException {
         this.local = local;
         this.eventBus = eventBus;
         this.serverRegistry = serverRegistry;
         this.masterStrategy = masterStrategy;
         this.clientFactory = clientFactory;
         this.ourServer = ourServer;
+        this.executorService = executorService;
+        this.jsonConverter = jsonConverter;
         this.clusterName = clusterName;
+        this.clusterTimeoutMs = clusterTimeoutMs;
+        this.slaveTxDownloadBackoff = slaveTxDownloadBackoff;
+        this.slaveTxExecBackoff = slaveTxExecBackoff;
 
         eventBus.register(this);
         masterStrategy.chooseMaster();
@@ -71,32 +89,59 @@ public class ClusteredRepository extends RepositoryBase {
 
     @Subscribe
     public void handleServersFound(ServerRegistry.ServersFound ev) {
-        synchronized (this) {
-            this.servers = ev.servers.toArray(new Server[ev.servers.size()]);
+        try {
+            synchronized (this) {
+                this.servers = ev.servers.toArray(new Server[ev.servers.size()]);
+            }
+        } catch (Exception e) {
+            log.error(e.toString(), e);
         }
     }
 
     @Subscribe
     public void handleMasterFound(MasterStrategy.MasterFound ev) {
         if (log.isDebugEnabled()) log.debug(ev.toString());
-        synchronized (this) {
-            if (master != null && master.server.equals(ev.master)) return;
-            if (master != null) {
-                // todo disconnect from old master
+        try {
+            synchronized (this) {
+                if (master != null && master.server.equals(ev.master)) return;
+
+                master = clientFactory.create(ev.master);
+
+                if (isSlave()) {
+                    // get our snapshot up to date with our tx log
+                    local.saveSnapshot();
+                    // todo get local snapshot in sync with master (may need merge + reset of our tx log to master id etc.)
+                    executorService.execute(txDownloader = new TxDownloader());
+                }
+
+                upSince = new Date();
             }
-            master = clientFactory.create(ev.master);
-            upSince = new Date();
+            eventBus.post(getStatus());
+        } catch (Exception e) {
+            log.error(e.toString(), e);
         }
-        eventBus.post(getStatus());
     }
 
     private synchronized boolean isMaster() {
         return master != null && ourServer.equals(master.server);
     }
 
-    private synchronized void chooseMaster() {
-        master = null;
-        upSince = null;
+    private synchronized boolean isSlave() {
+        return master != null && !ourServer.equals(master.server);
+    }
+
+    private void chooseMaster() {
+        synchronized (this) {
+            upSince = null;
+            master = null;
+            if (txDownloader != null) {
+                log.info("Disconnecting from master " + master);
+                txDownloader.stop();
+                txDownloader = null;
+            }
+            // todo what about disconnecting slaves?
+        }
+        eventBus.post(getStatus());
         masterStrategy.chooseMaster();
     }
 
@@ -107,6 +152,14 @@ public class ClusteredRepository extends RepositoryBase {
     public synchronized long appendTxFromSlave(RepoTx tx) throws IOException, ModelException {
         if (!isMaster()) throw new ClusterException.NotMaster();
         return local.exec(tx);
+    }
+
+    /**
+     * Open a cursor to our tx log for slaves to receive transactions.
+     */
+    public synchronized MessageCursor openTxCursor(long id) throws IOException {
+        if (!isMaster()) throw new ClusterException.NotMaster();
+        return local.openTxCursor(id);
     }
 
     @Override
@@ -201,5 +254,99 @@ public class ClusteredRepository extends RepositoryBase {
     @Override
     public int countQueues() throws IOException {
         return local.countQueues();
+    }
+
+    /**
+     * Streams transactions from the master to us when we are acting as a slave.
+     */
+    private class TxDownloader implements Runnable {
+
+        private Thread thread;
+        private boolean diePiggyDie;
+
+        public synchronized ClusterClient getMaster() {
+            return diePiggyDie ? null : master;
+        }
+
+        @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+        @Override
+        public void run() {
+            synchronized (this) {
+                this.thread = Thread.currentThread();
+            }
+            int ioExceptionCount = 0;
+            int execFailureCount = 0;
+            Server lastMaster = null;
+
+            while (true) {
+                ClusterClient m = getMaster();
+                if (m == null) break;
+
+                if (lastMaster == null) {
+                    lastMaster = m.server;
+                    if (log.isDebugEnabled()) log.debug("Connecting to master " + lastMaster);
+                } else if (!lastMaster.equals(m.server)) {
+                    log.warn("Master changed from " + lastMaster + " to " + m.server + " without stopping " + this);
+                    break;
+                }
+
+                Exception execException = null;
+                try {
+                    PushbackInputStream ins = new PushbackInputStream(
+                            m.GET("cluster/transactions?txId=" + local.getNextTxId()), 1);
+                    try {
+                        while (getMaster() != null) {
+                            while (true) {
+                                int b = ins.read();
+                                ioExceptionCount = 0;
+                                if (b != 10) {
+                                    ins.unread(b);
+                                    break;
+                                }
+                            }
+
+                            MessageController.MessageHeader h = jsonConverter.readValue(ins,
+                                    MessageController.MessageHeader.class);
+                            RepoTx tx = jsonConverter.readValue(ins, RepoTx.class);
+
+                            try {
+                                if (log.isDebugEnabled()) log.debug("Executing txId " + h.id + " from master " + m.server);
+                                local.exec(tx);
+                            } catch (ModelException e) {
+                                log.warn("Tx from master failed: " + e);
+                            } catch (Exception e) {
+                                log.error("Error executing tx from master: " + e, e);
+                                execException = e;
+                                break;
+                            }
+                        }
+                    } finally {
+                        closeQuietly(ins);
+                    }
+                } catch (InterruptedIOException e) {
+                    if (log.isDebugEnabled()) log.debug(e.toString());
+                } catch (IOException e) {
+                    log.error("Error streaming transactions from master " + m + ": " + e);
+                    slaveTxDownloadBackoff.sleep(++ioExceptionCount);
+                }
+
+                if (execException != null) {
+                    slaveTxExecBackoff.sleep(++execFailureCount);
+                } else {
+                    execFailureCount = 0;
+                }
+            }
+
+            if (lastMaster == null) {
+                if (log.isDebugEnabled()) log.debug(this + " exiting without connecting to master");
+            } else {
+                if (log.isDebugEnabled()) log.debug("Disconnected from master " + lastMaster);
+            }
+        }
+
+        public synchronized void stop() {
+            diePiggyDie = true;
+            if (thread != null) thread.interrupt();
+        }
     }
 }

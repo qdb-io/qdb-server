@@ -1,6 +1,7 @@
 package io.qdb.server.repo;
 
 import com.google.common.io.ByteStreams;
+import io.qdb.server.OurServer;
 import io.qdb.server.model.Server;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,6 +25,7 @@ public class ClusterClient {
 
     public final Server server;
 
+    private final String referer;
     private final JsonConverter jsonConverter;
     private final int timeoutMs;
     private final String authorization;
@@ -31,16 +33,18 @@ public class ClusterClient {
     @Singleton
     public static class Factory {
 
+        private final OurServer ourServer;
         private final JsonConverter jsonConverter;
         private final String clusterName;
         private final String clusterPassword;
         private final int clusterTimeoutMs;
 
         @Inject
-        public Factory(JsonConverter jsonConverter,
+        public Factory(OurServer ourServer, JsonConverter jsonConverter,
                    @Named("clusterName") String clusterName,
                    @Named("clusterPassword") String clusterPassword,
                    @Named("clusterTimeoutMs") int clusterTimeoutMs) {
+            this.ourServer = ourServer;
             this.jsonConverter = jsonConverter;
             this.clusterName = clusterName;
             this.clusterPassword = clusterPassword;
@@ -48,11 +52,13 @@ public class ClusterClient {
         }
 
         public ClusterClient create(Server server) {
-            return new ClusterClient(jsonConverter, server, clusterName, clusterPassword, clusterTimeoutMs);
+            return new ClusterClient(ourServer, jsonConverter, server, clusterName, clusterPassword, clusterTimeoutMs);
         }
     }
 
-    public ClusterClient(JsonConverter jsonConverter, Server server, String username, String password, int timeoutMs) {
+    public ClusterClient(OurServer ourServer, JsonConverter jsonConverter, Server server, String username,
+                String password, int timeoutMs) {
+        this.referer = ourServer.getId();
         this.jsonConverter = jsonConverter;
         this.server = server;
         this.timeoutMs = timeoutMs;
@@ -76,6 +82,14 @@ public class ClusterClient {
     }
 
     /**
+     * GET an input stream from path.
+     * @exception ResponseCodeException if the response code is not 200
+     */
+    public InputStream GET(String path) throws IOException {
+        return call("GET", path, null, InputStream.class, 200);
+    }
+
+    /**
      * Convert data to JSON and POST to path. Convert the JSON response to an object of cls.
      * @exception ResponseCodeException if the response code is not 201
      */
@@ -83,6 +97,7 @@ public class ClusterClient {
         return call("POST", path, data, response, 201);
     }
 
+    @SuppressWarnings("unchecked")
     private <T> T call(String method, String path, Object data, Class<T> response, int expectedCode) throws IOException {
         URL url = new URL(server.getId() + path);
         if (log.isDebugEnabled()) log.debug(method  + " " + url + (data != null ? " " + data : ""));
@@ -92,6 +107,7 @@ public class ClusterClient {
         con.setConnectTimeout(timeoutMs);
         con.setReadTimeout(timeoutMs);
         con.setRequestProperty("Authorization", authorization);
+        con.setRequestProperty("Referer", referer);
 
         if (data != null) {
             con.setRequestProperty("Content-Type", "application/json");
@@ -101,7 +117,8 @@ public class ClusterClient {
 
         int rc = con.getResponseCode();
         if (rc == expectedCode) {
-            return jsonConverter.readValue(con.getInputStream(), response);
+            InputStream ins = con.getInputStream();
+            return response == InputStream.class ? (T)ins : jsonConverter.readValue(ins, response);
         } else {
             // always read the error stream so the underlying TCP connection can be re-used
             String text = null;

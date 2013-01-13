@@ -43,6 +43,9 @@ public class MessageController extends CrudController {
         public int payloadSize;
         public String routingKey;
 
+        @SuppressWarnings("UnusedDeclaration")
+        public MessageHeader() { }
+
         public MessageHeader(MessageCursor c) throws IOException {
             id = c.getId();
             timestamp = c.getTimestamp();

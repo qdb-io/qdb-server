@@ -276,6 +276,20 @@ public class StandaloneRepository extends RepositoryBase {
         throw new IllegalStateException("Unknown object type " + o);
     }
 
+    /**
+     * Open a cursor to our tx log.
+     */
+    public MessageCursor openTxCursor(long id) throws IOException {
+        return txLog.cursor(id);
+    }
+
+    /**
+     * What will the next tx id be?
+     */
+    public long getNextTxId() throws IOException {
+        return txLog.getNextMessageId();
+    }
+
     @Override
     public Status getStatus() {
         Status s = new Status();

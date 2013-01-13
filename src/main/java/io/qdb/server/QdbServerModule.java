@@ -56,12 +56,28 @@ public class QdbServerModule extends AbstractModule {
         for (Map.Entry<String, ConfigValue> entry : cfg.entrySet()) {
             ConfigValue value = entry.getValue();
             if (value.origin().url() != null) {
-                Named named = Names.named(entry.getKey());
+                String key = entry.getKey();
+                Named named = Names.named(key);
                 Object v = value.unwrapped();
-                if (v instanceof String) bind(Key.get(String.class, named)).toInstance((String)v);
-                else if (v instanceof Integer) bind(Key.get(Integer.class, named)).toInstance((Integer)v);
-                else if (v instanceof Boolean) bind(Key.get(Boolean.class, named)).toInstance((Boolean)v);
-                else bind(Key.get(Object.class, named)).toInstance(v);
+                if (v instanceof String) {
+                    if (key.endsWith("Backoff")) {
+                        BackoffPolicy bp;
+                        try {
+                            bp = BackoffPolicy.Standard.parse((String)v);
+                        } catch (Exception e) {
+                            throw new IllegalArgumentException("Invalid " + key + " [" + v + "]: " + e.getMessage());
+                        }
+                        bind(Key.get(BackoffPolicy.class, named)).toInstance(bp);
+                    } else {
+                        bind(Key.get(String.class, named)).toInstance((String)v);
+                    }
+                } else if (v instanceof Integer) {
+                    bind(Key.get(Integer.class, named)).toInstance((Integer)v);
+                } else if (v instanceof Boolean) {
+                    bind(Key.get(Boolean.class, named)).toInstance((Boolean)v);
+                } else {
+                    bind(Key.get(Object.class, named)).toInstance(v);
+                }
             }
         }
     }
