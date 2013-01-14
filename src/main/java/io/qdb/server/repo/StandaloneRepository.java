@@ -45,7 +45,6 @@ public class StandaloneRepository extends RepositoryBase {
     @SuppressWarnings("UnusedDeclaration")
     private static class Snapshot {
 
-        public List<Server> servers;
         public List<User> users;
         public List<Database> databases;
         public List<Queue> queues;
