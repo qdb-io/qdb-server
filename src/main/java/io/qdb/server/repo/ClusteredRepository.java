@@ -208,12 +208,8 @@ public class ClusteredRepository extends RepositoryBase {
         if (master != null) {
             ServerStatus ms = master.getStatus();
             ms.role = ServerRole.MASTER;
-            if (isMaster()) {
-                ms.msSinceLastContact = 0;
-                ms.connected = true;
-            } else {
-                // todo get connected et al from tx downloader
-            }
+            ms.connected = true;    // if we have a master it is up
+            if (isMaster()) ms.msSinceLastContact = 0;
             map.put(ms.id, ms);
             s.master = ms;
         }
