@@ -32,8 +32,7 @@ public interface Repository extends Closeable {
         public Date upSince;
         public String clusterName;
         public ServerStatus master;
-        public ServerStatus[] slaves;
-        public Server[] servers;
+        public ServerStatus[] servers;
         public String serverDiscoveryStatus;
         public String masterElectionStatus;
 
@@ -47,12 +46,13 @@ public interface Repository extends Closeable {
     public static class ServerStatus implements Comparable<ServerStatus> {
         public final String id;
         public ServerRole role;
-        public boolean up;
+        public boolean connected;
         public Integer msSinceLastContact;
         public String message;
 
         public ServerStatus(String id, ServerRole role, Integer msSinceLastContact, String message) {
             this.id = id;
+            this.role = role;
             this.msSinceLastContact = msSinceLastContact;
             this.message = message;
         }

@@ -64,7 +64,7 @@ public class SlaveRegistry {
             Slave slave = slaves.get(i);
             Repository.ServerStatus status = new Repository.ServerStatus(slave.id, Repository.ServerRole.SLAVE,
                     (int) (now - slave.lastContact), slave.errorMessage);
-            status.up = slave.isConnected();
+            status.connected = slave.isConnected();
             ans[i] = status;
         }
         Arrays.sort(ans);

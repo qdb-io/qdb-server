@@ -202,13 +202,42 @@ public class ClusteredRepository extends RepositoryBase {
         Status s = new Status();
         s.upSince = upSince;
         s.clusterName = clusterName;
+
+        Map<String, ServerStatus> map = new HashMap<String, ServerStatus>();
+
         if (master != null) {
-            s.master = master.getStatus();
-            s.master.role = ServerRole.MASTER;
-            if (isMaster()) s.master.msSinceLastContact = 0;
+            ServerStatus ms = master.getStatus();
+            ms.role = ServerRole.MASTER;
+            if (isMaster()) {
+                ms.msSinceLastContact = 0;
+                ms.connected = true;
+            } else {
+                // todo get connected et al from tx downloader
+            }
+            map.put(ms.id, ms);
+            s.master = ms;
         }
-        s.slaves = slaveRegistry.getSlaveStatuses();
-        s.servers = servers;
+
+        if (isSlave()) {
+            ServerStatus ss = new ServerStatus(ourServer.getId(), ServerRole.SLAVE, 0, null);
+            map.put(ourServer.getId(), ss);
+            if (s.isUp()) ss.connected = true;
+        }
+
+        ServerStatus[] a = slaveRegistry.getSlaveStatuses();
+        if (a != null) for (ServerStatus ss : a) map.put(ss.id, ss);
+
+        if (servers != null) {
+            for (Server o : servers) {
+                if (!map.containsKey(o.getId())) {
+                    map.put(o.getId(), new ServerStatus(o.getId(), null, null, null));
+                }
+            }
+        }
+
+        s.servers = map.values().toArray(new ServerStatus[map.size()]);
+        Arrays.sort(s.servers);
+
         s.serverDiscoveryStatus = serverRegistry.getStatus();
         s.masterElectionStatus = masterStrategy.getStatus();
         return s;

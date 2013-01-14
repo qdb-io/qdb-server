@@ -24,11 +24,9 @@ public class ServerStatusController implements Controller {
         public Date upSince;
         public boolean up;
         public String clusterName;
+        public ServerDTO[] servers;
         public String serverDiscoveryStatus;
         public String masterElectionStatus;
-        public ServerDTO master;
-        public ServerDTO[] slaves;
-        public ServerDTO[] servers;
 
         @SuppressWarnings("UnusedDeclaration")
         public StatusDTO() { }
@@ -39,14 +37,9 @@ public class ServerStatusController implements Controller {
             up = repoStatus.isUp();
             clusterName = repoStatus.clusterName;
             if (complete) {
-                master = ServerDTO.create(repoStatus.master);
                 if (repoStatus.servers != null) {
                     servers = new ServerDTO[repoStatus.servers.length];
                     for (int i = 0; i < servers.length; i++) servers[i] = ServerDTO.create(repoStatus.servers[i]);
-                }
-                if (repoStatus.slaves != null) {
-                    slaves = new ServerDTO[repoStatus.slaves.length];
-                    for (int i = 0; i < slaves.length; i++) slaves[i] = ServerDTO.create(repoStatus.slaves[i]);
                 }
                 serverDiscoveryStatus = repoStatus.serverDiscoveryStatus;
                 masterElectionStatus = repoStatus.masterElectionStatus;
@@ -68,7 +61,7 @@ public class ServerStatusController implements Controller {
         public ServerDTO(Repository.ServerStatus s) {
             id = s.id;
             if (s.role != null) role = s.role.name();
-            if (s.up) up = true;
+            if (s.connected) up = true;
             msSinceLastContact = s.msSinceLastContact;
             message = s.message;
         }
