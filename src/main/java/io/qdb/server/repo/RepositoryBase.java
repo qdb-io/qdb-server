@@ -23,22 +23,6 @@ public abstract class RepositoryBase implements Repository {
     protected abstract long exec(RepoTx tx) throws IOException, ModelException;
 
     @Override
-    public Server createServer(Server server) throws IOException {
-        exec(new RepoTx(RepoTx.Operation.CREATE, server));
-        return server;
-    }
-
-    @Override
-    public Server updateServer(Server server) throws IOException {
-        exec(new RepoTx(RepoTx.Operation.UPDATE, server));
-        return server;
-    }
-
-    @Override
-    public void deleteServer(Server server) throws IOException {
-        exec(new RepoTx(RepoTx.Operation.DELETE, server));
-    }
-    @Override
     public User createUser(User user) throws IOException {
         exec(new RepoTx(RepoTx.Operation.CREATE, user));
         return user;

@@ -32,7 +32,6 @@ public class StandaloneRepository extends RepositoryBase {
     private final int snapshotIntervalSecs;
     private final Timer snapshotTimer;
 
-    private final ModelStore<Server> servers;
     private final ModelStore<User> users;
     private final ModelStore<Database> databases;
     private final ModelStore<Queue> queues;
@@ -54,7 +53,6 @@ public class StandaloneRepository extends RepositoryBase {
         public Snapshot() { }
 
         public Snapshot(StandaloneRepository repo) throws IOException {
-            servers = repo.servers.values();
             users = repo.users.values();
             databases = repo.databases.values();
             queues = repo.queues.values();
@@ -115,7 +113,6 @@ public class StandaloneRepository extends RepositoryBase {
             txLog.setFirstMessageId(mostRecentSnapshotId);
         }
 
-        servers = new ModelStore<Server>(snapshot == null ? null : snapshot.servers, eventBus);
         users = new ModelStore<User>(snapshot == null ? null : snapshot.users, eventBus);
         databases = new ModelStore<Database>(snapshot == null ? null : snapshot.databases, eventBus);
         queues = new ModelStore<Queue>(snapshot == null ? null : snapshot.queues, eventBus);
@@ -295,11 +292,6 @@ public class StandaloneRepository extends RepositoryBase {
         Status s = new Status();
         s.upSince = upSince;
         return s;
-    }
-
-    @Override
-    public List<Server> findServers() throws IOException {
-        return servers.find(0, -1);
     }
 
     @Override

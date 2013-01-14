@@ -240,11 +240,6 @@ public class ClusteredRepository extends RepositoryBase {
     }
 
     @Override
-    public List<Server> findServers() throws IOException {
-        return local.findServers();
-    }
-
-    @Override
     public User findUser(String id) throws IOException {
         return local.findUser(id);
     }

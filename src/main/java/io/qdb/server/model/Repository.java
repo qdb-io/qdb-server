@@ -65,17 +65,6 @@ public interface Repository extends Closeable {
 
     public Status getStatus();
 
-    /**
-     * Which servers are supposed to be in our cluster?
-     */
-    public List<Server> findServers() throws IOException;
-
-    public Server createServer(Server server) throws IOException;
-
-    public Server updateServer(Server server) throws IOException;
-
-    public void deleteServer(Server server) throws IOException;
-
 
     public User findUser(String id) throws IOException;
 
