@@ -1,6 +1,7 @@
 package io.qdb.server.repo;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -25,6 +26,7 @@ public class JsonConverter {
         mapper.configure(SerializationFeature.WRITE_NULL_MAP_VALUES, false);
         mapper.configure(SerializationFeature.INDENT_OUTPUT, true);
         mapper.configure(JsonParser.Feature.AUTO_CLOSE_SOURCE, false);
+        mapper.configure(JsonGenerator.Feature.AUTO_CLOSE_TARGET, false);
     }
 
     public <T> T readValue(InputStream src, Class<T> valueType) throws IOException {

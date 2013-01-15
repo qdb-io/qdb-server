@@ -15,6 +15,7 @@ import javax.inject.Singleton;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.zip.GZIPInputStream;
 
 /**
  * Repository implementation for clustered deployment. All repository updates are carried out by the leader of the
@@ -105,15 +106,21 @@ public class ClusteredRepository extends RepositoryBase {
                 if (master != null && master.server.equals(ev.master)) return;
 
                 master = clientFactory.create(ev.master);
-                if (isMaster()) {
-                    log.info("We are the MASTER " + master);
-                } else {
-                    log.info("We are a SLAVE, master is " + master);
-                }
+                if (isMaster()) log.info("We are the MASTER " + master);
+                else log.info("We are a SLAVE, master is " + master);
 
                 if (isSlave()) {
-                    // get our snapshot up to date with our tx log
-                    local.saveSnapshot();
+                    if (local.isEmpty()) {
+                        log.info("Downloading meta-data from master " + master);
+                        // todo need more error handling and retries with backoff
+                        InputStream ins = new GZIPInputStream(master.GET("cluster/snapshots/latest"));
+                        StandaloneRepository.Snapshot snapshot = jsonConverter.readValue(ins, StandaloneRepository.Snapshot.class);
+                        ins.close();
+                        local.initFromSnapshot(snapshot);
+                    } else {
+                        local.saveSnapshot(); // get our snapshot up to date with our tx log
+                    }
+
                     // todo get local snapshot in sync with master (may need merge + reset of our tx log to master id etc.)
                     executorService.execute(txDownloader = new TxDownloader());
                 }
@@ -123,6 +130,7 @@ public class ClusteredRepository extends RepositoryBase {
             eventBus.post(getStatus());
         } catch (Exception e) {
             log.error(e.toString(), e);
+            // todo should we wait a bit and then re-enter choose master? otherwise we are now stuck
         }
     }
 
@@ -316,7 +324,7 @@ public class ClusteredRepository extends RepositoryBase {
                 try {
                     if (log.isDebugEnabled()) log.debug("Connecting to master " + lastMaster);
                     PushbackInputStream ins = new PushbackInputStream(
-                            m.GET("cluster/transactions?txId=" + local.getNextTxId()), 1);
+                            m.GET("cluster/transactions?txId=" + local.getNextTxId() + "&repositoryId=" + getRepositoryId()), 1);
                     try {
                         while (getMaster() != null) {
                             while (true) {

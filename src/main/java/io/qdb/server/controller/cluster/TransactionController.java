@@ -69,14 +69,26 @@ public class TransactionController extends CrudController {
     protected void list(Call call, int offset, int limit) throws IOException {
         long txId = call.getLong("txId", -1L);
         if (txId < 0) {
-            call.setText(400, "Missing txId parameter");
+            call.setText(400, "Missing txId");
             return;
         }
+
+        String repositoryId = call.getString("repositoryId", null);
+        if (repositoryId == null) {
+            call.setText(400, "Missing repositoryId");
+            return;
+        }
+        if (!repositoryId.equals(repo.getRepositoryId())) {
+            call.setText(409, "Invalid repositoryId");
+            return;
+        }
+
         int keepAliveMs = call.getInt("keepAlive", clusterTimeoutMs / 2);
         if (keepAliveMs <= 100) {
-            call.setText(400, "Invalid keepAliveMs parameter: " + keepAliveMs);
+            call.setText(400, "Invalid keepAliveMs: " + keepAliveMs);
             return;
         }
+
         String slaveId = call.getRequest().getValue("Referer");
         if (slaveId == null) {
             call.setText(400, "Missing 'Referer' HTTP Header");

@@ -19,16 +19,18 @@ public class ClusterController implements Controller {
     private static final Logger log = LoggerFactory.getLogger(ClusterController.class);
 
     private final TransactionController transactionController;
+    private final SnapshotController snapshotController;
     private final ServerStatusController serverStatusController;
     private final String clusterName;
     private final String clusterPassword;
 
     @Inject
-    public ClusterController(TransactionController transactionController,
+    public ClusterController(TransactionController transactionController, SnapshotController snapshotController,
                 ServerStatusController serverStatusController,
                 @Named("clusterName") String clusterName,
                 @Named("clusterPassword") String clusterPassword) {
         this.transactionController = transactionController;
+        this.snapshotController = snapshotController;
         this.serverStatusController = serverStatusController;
         this.clusterName = clusterName;
         this.clusterPassword = clusterPassword;
@@ -42,6 +44,8 @@ public class ClusterController implements Controller {
                 transactionController.handle(call);
             } else if ("status".equals(seg)) {
                 serverStatusController.handle(call);
+            } else if ("snapshots".equals(seg)) {
+                snapshotController.handle(call);
             } else {
                 call.setCode(404);
             }

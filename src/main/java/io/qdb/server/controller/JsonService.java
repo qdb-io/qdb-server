@@ -8,6 +8,7 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 
 /**
  * Marshaling of objects to/from JSON using Jackson.
@@ -45,6 +46,13 @@ public class JsonService {
      */
     public byte[] toJsonNoIndenting(Object o) throws IOException {
         return mapperNoIdentOutput.writeValueAsBytes(o);
+    }
+
+    /**
+     * Convert o to JSON with no indenting.
+     */
+    public void toJsonNoIndenting(OutputStream out, Object o) throws IOException {
+        mapperNoIdentOutput.writeValue(out, o);
     }
 
     /**

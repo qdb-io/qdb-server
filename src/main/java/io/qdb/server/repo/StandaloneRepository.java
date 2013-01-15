@@ -46,8 +46,9 @@ public class StandaloneRepository extends RepositoryBase {
     private boolean snapshotScheduled;
 
     @SuppressWarnings("UnusedDeclaration")
-    private static class Snapshot {
+    public static class Snapshot {
 
+        public Long txId;
         public String repositoryId;
         public List<User> users;
         public List<Database> databases;
@@ -138,8 +139,6 @@ public class StandaloneRepository extends RepositoryBase {
 
         snapshotTimer = new Timer("repo-snapshot", true);
 
-        if (noSnapshot) saveSnapshot();
-
         upSince = new Date();
     }
 
@@ -163,10 +162,35 @@ public class StandaloneRepository extends RepositoryBase {
     }
 
     /**
+     * Create a snapshot of this repository including its txId.
+     */
+    public synchronized Snapshot createSnapshot() throws IOException {
+        txLog.sync();
+        Snapshot ans = new Snapshot(this);
+        ans.txId = txLog.getNextMessageId();
+        return ans;
+    }
+
+    /**
+     * Initialize this repository from snapshot. The repository must be empty and the snapshot must include a
+     * txId.
+     */
+    public synchronized void initFromSnapshot(Snapshot snapshot) throws IOException {
+        if (!isEmpty()) throw new IllegalStateException("Repository is not empty");
+        if (snapshot.txId == null) throw new IllegalArgumentException("Snapshot is missing txId");
+        repositoryId = snapshot.repositoryId;
+        txLog.setFirstMessageId(snapshot.txId);
+        for (User user : snapshot.users) this.users.create(user);
+        for (Database db : snapshot.databases) this.databases.create(db);
+        for (Queue q : snapshot.queues) this.queues.create(q);
+        saveSnapshot();
+    }
+
+    /**
      * Save a snapshot. This is a NOP if we are already busy saving a snapshot or if no new transactions have been
      * applied since the most recent snapshot was saved.
      */
-    void saveSnapshot() throws IOException {
+    public void saveSnapshot() throws IOException {
         Snapshot snapshot;
         long id;
         try {
@@ -175,7 +199,7 @@ public class StandaloneRepository extends RepositoryBase {
                 busySavingSnapshot = true;
                 txLog.sync();
                 id = txLog.getNextMessageId();
-                if (id > 0 && id == mostRecentSnapshotId) return; // nothing to do
+                if (id == mostRecentSnapshotId) return; // nothing to do
                 snapshot = new Snapshot(this);
             }
             File f = new File(dir, "snapshot-" + String.format("%016x", id) + ".json");
@@ -184,6 +208,8 @@ public class StandaloneRepository extends RepositoryBase {
             FileOutputStream out = new FileOutputStream(f);
             try {
                 jsonConverter.writeValue(out, snapshot);
+                out.flush();
+                out.getChannel().force(true);
                 out.close();
                 synchronized (this) {
                     mostRecentSnapshotId = id;
@@ -304,7 +330,8 @@ public class StandaloneRepository extends RepositoryBase {
 
 
     /**
-     * Does this repository hold no model objects?
+     * Does this repository hold no model objects? An empty repository can be initialized with a snapshot from
+     * another repository.
      */
     public boolean isEmpty() throws IOException {
         return users.size() == 0 && databases.size() == 0 && queues.size() == 0;
