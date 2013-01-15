@@ -63,6 +63,11 @@ public interface Repository extends Closeable {
         }
     }
 
+    /**
+     * Get this repository's unique id.
+     */
+    public String getRepositoryId();
+
     public Status getStatus();
 
 

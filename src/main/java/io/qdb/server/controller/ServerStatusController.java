@@ -23,6 +23,7 @@ public class ServerStatusController implements Controller {
         public String id;
         public Date upSince;
         public boolean up;
+        public String repositoryId;
         public String clusterName;
         public ServerDTO[] servers;
         public String serverDiscoveryStatus;
@@ -31,12 +32,13 @@ public class ServerStatusController implements Controller {
         @SuppressWarnings("UnusedDeclaration")
         public StatusDTO() { }
 
-        public StatusDTO(String id, Repository.Status repoStatus, boolean complete) {
+        public StatusDTO(String id, String repositoryId, Repository.Status repoStatus, boolean complete) {
             this.id = id;
             upSince = repoStatus.upSince;
             up = repoStatus.isUp();
             clusterName = repoStatus.clusterName;
             if (complete) {
+                this.repositoryId = repositoryId;
                 if (repoStatus.servers != null) {
                     servers = new ServerDTO[repoStatus.servers.length];
                     for (int i = 0; i < servers.length; i++) servers[i] = ServerDTO.create(repoStatus.servers[i]);
@@ -87,6 +89,7 @@ public class ServerStatusController implements Controller {
             call.setCode(400);
             return;
         }
-        call.setJson(new StatusDTO(id, repo.getStatus(), call.getAuth() != null && !call.getAuth().isAnonymous()));
+        call.setJson(new StatusDTO(id, repo.getRepositoryId(), repo.getStatus(),
+                call.getAuth() != null && !call.getAuth().isAnonymous()));
     }
 }

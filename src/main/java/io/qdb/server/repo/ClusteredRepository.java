@@ -198,6 +198,11 @@ public class ClusteredRepository extends RepositoryBase {
     }
 
     @Override
+    public String getRepositoryId() {
+        return local.getRepositoryId();
+    }
+
+    @Override
     public synchronized Status getStatus() {
         Status s = new Status();
         s.upSince = upSince;

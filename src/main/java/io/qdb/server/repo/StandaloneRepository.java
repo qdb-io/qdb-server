@@ -15,6 +15,8 @@ import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import java.io.*;
+import java.math.BigInteger;
+import java.security.SecureRandom;
 import java.util.*;
 
 /**
@@ -32,6 +34,7 @@ public class StandaloneRepository extends RepositoryBase {
     private final int snapshotIntervalSecs;
     private final Timer snapshotTimer;
 
+    private String repositoryId;
     private final ModelStore<User> users;
     private final ModelStore<Database> databases;
     private final ModelStore<Queue> queues;
@@ -45,6 +48,7 @@ public class StandaloneRepository extends RepositoryBase {
     @SuppressWarnings("UnusedDeclaration")
     private static class Snapshot {
 
+        public String repositoryId;
         public List<User> users;
         public List<Database> databases;
         public List<Queue> queues;
@@ -52,6 +56,7 @@ public class StandaloneRepository extends RepositoryBase {
         public Snapshot() { }
 
         public Snapshot(StandaloneRepository repo) throws IOException {
+            repositoryId = repo.repositoryId;
             users = repo.users.values();
             databases = repo.databases.values();
             queues = repo.queues.values();
@@ -112,9 +117,11 @@ public class StandaloneRepository extends RepositoryBase {
             txLog.setFirstMessageId(mostRecentSnapshotId);
         }
 
-        users = new ModelStore<User>(snapshot == null ? null : snapshot.users, eventBus);
-        databases = new ModelStore<Database>(snapshot == null ? null : snapshot.databases, eventBus);
-        queues = new ModelStore<Queue>(snapshot == null ? null : snapshot.queues, eventBus);
+        boolean noSnapshot = snapshot == null;
+        repositoryId = noSnapshot ? generateRepositoryId() : snapshot.repositoryId;
+        users = new ModelStore<User>(noSnapshot ? null : snapshot.users, eventBus);
+        databases = new ModelStore<Database>(noSnapshot ? null : snapshot.databases, eventBus);
+        queues = new ModelStore<Queue>(noSnapshot ? null : snapshot.queues, eventBus);
 
         int count = 0;
         for (MessageCursor c = txLog.cursor(mostRecentSnapshotId); c.next(); count++) {
@@ -131,6 +138,8 @@ public class StandaloneRepository extends RepositoryBase {
 
         snapshotTimer = new Timer("repo-snapshot", true);
 
+        if (noSnapshot) saveSnapshot();
+
         upSince = new Date();
     }
 
@@ -138,6 +147,13 @@ public class StandaloneRepository extends RepositoryBase {
         File[] files = dir.listFiles(new PatternFilenameFilter("snapshot-[0-9a-f]+.json"));
         Arrays.sort(files);
         return files;
+    }
+
+    private String generateRepositoryId() {
+        SecureRandom rnd = new SecureRandom();
+        byte[] a = new byte[8];
+        rnd.nextBytes(a);
+        return new BigInteger(a).abs().toString(36);
     }
 
     @Override
@@ -159,7 +175,7 @@ public class StandaloneRepository extends RepositoryBase {
                 busySavingSnapshot = true;
                 txLog.sync();
                 id = txLog.getNextMessageId();
-                if (id == mostRecentSnapshotId) return; // nothing to do
+                if (id > 0 && id == mostRecentSnapshotId) return; // nothing to do
                 snapshot = new Snapshot(this);
             }
             File f = new File(dir, "snapshot-" + String.format("%016x", id) + ".json");
@@ -284,6 +300,19 @@ public class StandaloneRepository extends RepositoryBase {
      */
     public long getNextTxId() throws IOException {
         return txLog.getNextMessageId();
+    }
+
+
+    /**
+     * Does this repository hold no model objects?
+     */
+    public boolean isEmpty() throws IOException {
+        return users.size() == 0 && databases.size() == 0 && queues.size() == 0;
+    }
+
+    @Override
+    public String getRepositoryId() {
+        return repositoryId;
     }
 
     @Override
