@@ -44,8 +44,10 @@ public class ClusteredRepository extends RepositoryBase {
 
     private Server[] servers;
     private ClusterClient master;
+    private boolean inChooseMaster;
     private Date upSince;
 
+    private SnapshotDownloader snapshotDownloader;
     private TxDownloader txDownloader;
 
     @Inject
@@ -82,7 +84,7 @@ public class ClusteredRepository extends RepositoryBase {
 
     private void closeQuietly(Closeable o) {
         try {
-            o.close();
+            if (o != null) o.close();
         } catch (IOException e) {
             log.warn(e.toString(), e);
         }
@@ -111,27 +113,30 @@ public class ClusteredRepository extends RepositoryBase {
 
                 if (isSlave()) {
                     if (local.isEmpty()) {
-                        log.info("Downloading meta-data from master " + master);
-                        // todo need more error handling and retries with backoff
-                        InputStream ins = new GZIPInputStream(master.GET("cluster/snapshots/latest"));
-                        StandaloneRepository.Snapshot snapshot = jsonConverter.readValue(ins, StandaloneRepository.Snapshot.class);
-                        ins.close();
-                        local.initFromSnapshot(snapshot);
-                    } else {
-                        local.saveSnapshot(); // get our snapshot up to date with our tx log
+                        executorService.execute(snapshotDownloader = new SnapshotDownloader());
+                        return;
                     }
 
-                    // todo get local snapshot in sync with master (may need merge + reset of our tx log to master id etc.)
+                    local.saveSnapshot(); // get our snapshot up to date with our tx log
                     executorService.execute(txDownloader = new TxDownloader());
                 }
 
-                upSince = new Date();
+                serverUp();
             }
             eventBus.post(getStatus());
         } catch (Exception e) {
             log.error(e.toString(), e);
-            // todo should we wait a bit and then re-enter choose master? otherwise we are now stuck
+            chooseMaster();
         }
+    }
+
+    private void serverUp() {
+        upSince = new Date();
+        log.info("Server up as " + (isMaster() ? "MASTER" : "SLAVE, master is " + master));
+    }
+
+    private synchronized ClusterClient getMaster() {
+        return master;
     }
 
     private synchronized boolean isMaster() {
@@ -144,13 +149,23 @@ public class ClusteredRepository extends RepositoryBase {
 
     private void chooseMaster() {
         synchronized (this) {
-            upSince = null;
-            master = null;
-            if (txDownloader != null) {
-                txDownloader.stop();
-                txDownloader = null;
+            if (inChooseMaster) return;
+            try {
+                inChooseMaster = true;
+                upSince = null;
+                master = null;
+                if (snapshotDownloader != null) {
+                    snapshotDownloader.stop();
+                    snapshotDownloader = null;
+                }
+                if (txDownloader != null) {
+                    txDownloader.stop();
+                    txDownloader = null;
+                }
+                slaveRegistry.disconnectAndClear();
+            } finally {
+                inChooseMaster = false;
             }
-            slaveRegistry.disconnectAndClear();
         }
         eventBus.post(getStatus());
         masterStrategy.chooseMaster();
@@ -295,6 +310,49 @@ public class ClusteredRepository extends RepositoryBase {
     @Override
     public int countQueues() throws IOException {
         return local.countQueues();
+    }
+
+    /**
+     * Initializes our (empty) repository using a snapshot downloaded from the master.
+     */
+    private class SnapshotDownloader extends StoppableTask {
+
+        @Override
+        protected void runImpl() {
+            ClusterClient m = getMaster();
+            if (m == null) return;  // must be choosing a new master or something
+
+            log.info("Downloading meta-data from master " + m);
+
+            StandaloneRepository.Snapshot snapshot = null;
+            InputStream ins = null;
+            try {
+                ins  = new GZIPInputStream(m.GET("cluster/snapshots/latest"));
+                snapshot = jsonConverter.readValue(ins, StandaloneRepository.Snapshot.class);
+            } catch (IOException x) {
+                log.error("Error downloading meta-data from master " + m + ": " + x);
+                slaveTxDownloadBackoff.sleep(2);
+                chooseMaster();
+                return;
+            } finally {
+                closeQuietly(ins);
+            }
+
+            try {
+                synchronized (this) {
+                    local.initFromSnapshot(snapshot);
+                    executorService.execute(txDownloader = new TxDownloader());
+                    serverUp();
+                }
+            } catch (Exception e) {
+                log.error("Error loading meta-data received from master " + m + ": " + e, e);
+                slaveTxDownloadBackoff.sleep(2);
+                chooseMaster();
+                return;
+            }
+
+            eventBus.post(getStatus());
+        }
     }
 
     /**

@@ -436,7 +436,14 @@ public class StandaloneRepository extends RepositoryBase {
                 long start = System.currentTimeMillis();
                 try {
                     if (c.next(timeoutMs)) {
-                        if (c.getId() >= txId) return true;
+                        if (c.getId() >= txId) {
+                            // this sync block makes sure that the tx has actually been applied to our model before
+                            // we return as the tx is appended to the log and applied in a sync block
+                            synchronized (StandaloneRepository.this) {
+                                if (log.isDebugEnabled()) log.debug("TxMonitor txId " + txId + " from master has been applied");
+                                return true;
+                            }
+                        }
                     }
                 } catch (InterruptedException e) {
                     throw new IOException(e);

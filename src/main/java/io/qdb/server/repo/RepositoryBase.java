@@ -25,37 +25,37 @@ public abstract class RepositoryBase implements Repository {
     @Override
     public User createUser(User user) throws IOException {
         exec(new RepoTx(RepoTx.Operation.CREATE, user));
-        return user;
+        return findUser(user.getId());
     }
 
     @Override
     public User updateUser(User user) throws IOException {
         exec(new RepoTx(RepoTx.Operation.UPDATE, user));
-        return user;
+        return findUser(user.getId());
     }
 
     @Override
     public Database createDatabase(Database db) throws IOException {
         exec(new RepoTx(RepoTx.Operation.CREATE, db));
-        return db;
+        return findDatabase(db.getId());
     }
 
     @Override
     public Database updateDatabase(Database db) throws IOException {
         exec(new RepoTx(RepoTx.Operation.UPDATE, db));
-        return db;
+        return findDatabase(db.getId());
     }
 
     @Override
     public Queue createQueue(Queue queue) throws IOException {
         exec(new RepoTx(RepoTx.Operation.CREATE, queue));
-        return queue;
+        return findQueue(queue.getId());
     }
 
     @Override
     public Queue updateQueue(Queue queue) throws IOException {
         exec(new RepoTx(RepoTx.Operation.UPDATE, queue));
-        return queue;
+        return findQueue(queue.getId());
     }
 
 }
