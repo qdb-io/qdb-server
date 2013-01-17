@@ -1,9 +1,10 @@
-package io.qdb.server.repo;
+package io.qdb.server.repo.cluster;
 
 import com.google.common.io.ByteStreams;
 import io.qdb.server.OurServer;
 import io.qdb.server.model.Repository;
 import io.qdb.server.model.Server;
+import io.qdb.server.repo.JsonConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

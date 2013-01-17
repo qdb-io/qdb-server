@@ -1,4 +1,4 @@
-package io.qdb.server.repo;
+package io.qdb.server.repo.cluster;
 
 import java.io.IOException;
 

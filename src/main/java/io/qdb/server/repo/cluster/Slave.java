@@ -1,4 +1,4 @@
-package io.qdb.server.repo;
+package io.qdb.server.repo.cluster;
 
 /**
  * A slave connected (at some point) to us (the master).

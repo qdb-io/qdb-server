@@ -1,4 +1,4 @@
-package io.qdb.server.repo;
+package io.qdb.server.repo.cluster;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.eventbus.EventBus;

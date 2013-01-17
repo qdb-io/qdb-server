@@ -1,4 +1,4 @@
-package io.qdb.server.repo;
+package io.qdb.server.repo.cluster;
 
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
@@ -7,6 +7,7 @@ import io.qdb.server.OurServer;
 import io.qdb.server.controller.MessageController;
 import io.qdb.server.model.*;
 import io.qdb.server.model.Queue;
+import io.qdb.server.repo.*;
 import io.qdb.server.util.StoppableTask;
 
 import javax.inject.Inject;
