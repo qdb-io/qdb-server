@@ -2,6 +2,7 @@ package io.qdb.server.repo.cluster;
 
 import com.google.inject.Inject;
 import com.google.inject.Injector;
+import io.qdb.server.repo.paxos.PaxosMasterStrategy;
 
 import javax.inject.Named;
 import javax.inject.Provider;
@@ -20,6 +21,8 @@ public class MasterStrategyProvider implements Provider<MasterStrategy> {
     public MasterStrategyProvider(Injector injector, @Named("masterStrategy") String masterStrategy) {
         if ("fixed".equals(masterStrategy)) {
             this.masterStrategy = injector.getInstance(FixedMasterStrategy.class);
+        } else if ("paxos".equals(masterStrategy)) {
+            this.masterStrategy = injector.getInstance(PaxosMasterStrategy.class);
         } else {
             try {
                 Class cls = Class.forName(masterStrategy, true, getClass().getClassLoader());
