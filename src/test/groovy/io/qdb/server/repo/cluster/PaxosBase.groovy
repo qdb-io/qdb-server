@@ -27,28 +27,11 @@ class PaxosBase extends Specification {
         }
     }
 
-    static class MsgFactory implements Paxos.MsgFactory<String, Integer> {
-        Paxos.Msg<String, Integer> create(Paxos.Msg.Type type, Integer n, String v, Integer nv) {
-            return new Msg(type: type, n: n, v: v, nv: nv)
-        }
-    }
-
-    static class Msg implements Paxos.Msg<String, Integer> {
-        Paxos.Msg.Type type
-        Integer n
-        String v
-        Integer nv
-
-        String toString() {
-            return "" + type + (n ? " n=" + n : "" ) + (v ? " v=" + v : "") + (nv ? " nv=" + nv : "")
-        }
-    }
-
-    @Shared MsgFactory msgFactory = new MsgFactory()
+    @Shared Msg.Factory msgFactory = new Msg.Factory()
     @Shared Transport transport = new Transport()
 
-    @Shared Paxos s1 = new Paxos<String, Integer>(transport, new SeqNoFactory(1), msgFactory)
-    @Shared Paxos s2 = new Paxos<String, Integer>(transport, new SeqNoFactory(2), msgFactory)
-    @Shared Paxos s3 = new Paxos<String, Integer>(transport, new SeqNoFactory(3), msgFactory)
+    @Shared Paxos s1 = new Paxos<String, Integer>(1, transport, new SeqNoFactory(1), msgFactory)
+    @Shared Paxos s2 = new Paxos<String, Integer>(2, transport, new SeqNoFactory(2), msgFactory)
+    @Shared Paxos s3 = new Paxos<String, Integer>(3, transport, new SeqNoFactory(3), msgFactory)
 
 }

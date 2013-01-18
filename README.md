@@ -133,6 +133,14 @@ Use `gradle run` to run a non-clustered instance.
 Use `gradle run -Pinstance=1` to run a clustered instance (use 2 and 3 for the other nodes in the cluster).
 
 
+Running Tests
+-------------
+
+Use `gradle check` to run all tests (unit and functional).
+
+Use `gradle test -Dtest.single=PaxosSpec` to run a single test spec (PaxosSpec in this example).
+
+
 License
 -------
 

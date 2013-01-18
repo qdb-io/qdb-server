@@ -5,6 +5,7 @@ package io.qdb.server.repo.cluster;
  */
 public class Paxos<V, N extends Comparable<N>> {
 
+    private final Object self;
     private final Transport transport;
     private final SequenceNoFactory<N> sequenceNoFactory;
     private final MsgFactory<V, N> msgFactory;
@@ -15,7 +16,8 @@ public class Paxos<V, N extends Comparable<N>> {
     private N highestSeqNoSeen;
     private V proposal;
 
-    public Paxos(Transport transport, SequenceNoFactory<N> sequenceNoFactory, MsgFactory<V, N> msgFactory) {
+    public Paxos(Object self, Transport transport, SequenceNoFactory<N> sequenceNoFactory, MsgFactory<V, N> msgFactory) {
+        this.self = self;
         this.transport = transport;
         this.sequenceNoFactory = sequenceNoFactory;
         this.msgFactory = msgFactory;
@@ -30,7 +32,9 @@ public class Paxos<V, N extends Comparable<N>> {
         this.ourProposal = proposal;
 
         Msg<V, N> prepare = msgFactory.create(Msg.Type.PREPARE, sequenceNoFactory.next(highestSeqNoSeen), proposal, null);
-        for (Object node : nodes) transport.send(node, prepare);
+        for (Object node : nodes) {
+            if (!self.equals(node)) transport.send(node, prepare);
+        }
     }
 
     /**
@@ -41,8 +45,9 @@ public class Paxos<V, N extends Comparable<N>> {
             case PREPARE:
                 onPrepareReceived(from, msg);
                 break;
+            default:
+                throw new IllegalArgumentException("Unknown msg type: " + msg);
         }
-        throw new IllegalArgumentException("Unknown msg type: " + msg);
     }
 
     private void onPrepareReceived(Object from, Msg<V, N> msg) {
@@ -51,12 +56,12 @@ public class Paxos<V, N extends Comparable<N>> {
             // haven't seen any proposals so accept this one
             highestSeqNoSeen = n;
             proposal = msg.getV();
-            Msg<V, N> ack = msgFactory.create(Msg.Type.ACK, highestSeqNoSeen, proposal, null);
-            transport.send(from, ack);
+            // todo stable storage?
+            transport.send(from, msgFactory.create(Msg.Type.ACK, n, null, null));
 
         } else if (n.compareTo(highestSeqNoSeen) < 0) {
-            // proposal has lower sequence no so NACK it
-            transport.send(from, msgFactory.create(Msg.Type.NACK, n, null, null));
+            // proposal has lower sequence no so NACK it and include our highest seq no
+            transport.send(from, msgFactory.create(Msg.Type.NACK, highestSeqNoSeen, null, null));
 
         } else {
             // proposal has higher sequence so send back previous highest sequence and it's proposal
