@@ -2,7 +2,6 @@ package io.qdb.server.repo.cluster;
 
 import com.google.inject.Inject;
 import com.google.inject.Injector;
-import io.qdb.server.repo.paxos.PaxosMasterStrategy;
 
 import javax.inject.Named;
 import javax.inject.Provider;

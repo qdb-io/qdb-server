@@ -1,8 +1,9 @@
-package io.qdb.server.repo.paxos;
+package io.qdb.server.repo.cluster;
 
 /**
  * A unique sequence number. The most significant portion is the transaction id of the server generating the number
- * to ensure that only servers with the highest txId can win the master election.
+ * to ensure that only servers with the highest txId (i.e. likely the most up-to-date meta data) can win the master
+ * election.
  */
 public class SequenceNo implements Comparable<SequenceNo> {
 

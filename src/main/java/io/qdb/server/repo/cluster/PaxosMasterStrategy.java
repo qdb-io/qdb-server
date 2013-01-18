@@ -1,12 +1,10 @@
-package io.qdb.server.repo.paxos;
+package io.qdb.server.repo.cluster;
 
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import io.qdb.server.OurServer;
 import io.qdb.server.model.Server;
 import io.qdb.server.repo.StandaloneRepository;
-import io.qdb.server.repo.cluster.MasterStrategy;
-import io.qdb.server.repo.cluster.ServerRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,33 +30,6 @@ public class PaxosMasterStrategy implements MasterStrategy {
 
     private List<Server> servers;
     private String status;
-
-    private SequenceNo highestSeqNoSeen;
-
-    public static class Prepare {
-        public SequenceNo n;
-        public String v;
-    }
-
-    public static class Ack {
-        public SequenceNo n;
-        public String v;
-        public SequenceNo nv;
-    }
-
-    public static class Nack {
-        public SequenceNo n;
-    }
-
-    public static class Accept {
-        public SequenceNo n;
-        public String v;
-    }
-
-    public static class Accepted {
-        public SequenceNo n;
-        public String v;
-    }
 
     @Inject
     public PaxosMasterStrategy(ScheduledExecutorService pool, EventBus eventBus, ServerRegistry serverRegistry,
@@ -103,16 +74,16 @@ public class PaxosMasterStrategy implements MasterStrategy {
         }
 
         // propose ourselves as master
-        try {
-            Prepare prepare = new Prepare();
-            prepare.n = new SequenceNo(local.getNextTxId(), highestSeqNoSeen == null ? 1 : highestSeqNoSeen.seq + 1,
-                    ourServer.getId());
-            prepare.v = ourServer.getId();
-
-        } catch (IOException e) {
-            log.error(e.toString(), e);
-            // todo what to do about this?
-        }
+//        try {
+//            Prepare prepare = new Prepare();
+//            prepare.n = new SequenceNo(local.getNextTxId(), highestSeqNoSeen == null ? 1 : highestSeqNoSeen.seq + 1,
+//                    ourServer.getId());
+//            prepare.v = ourServer.getId();
+//
+//        } catch (IOException e) {
+//            log.error(e.toString(), e);
+//            // todo what to do about this?
+//        }
     }
 
 
