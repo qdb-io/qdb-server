@@ -3,14 +3,14 @@ package io.qdb.server.repo.cluster
 import spock.lang.Stepwise
 
 @Stepwise
-class PaxosCompleteSpec extends PaxosBase {
+class PaxosCompleteSpec extends PaxosNonSharedBase {
 
     def "Single proposal accepted"() {
         s1.propose("p1")
-        for (int i = 0; i < 10 && transport.sent; i++) {
-            println("Step " + i)
-            transport.deliver()
-        }
+        transport.deliver("PREPARE")
+        transport.deliver("PROMISE")
+        transport.deliver("ACCEPT")
+        transport.deliver("ACCEPTED")
 
         expect:
         listener1.accepted == "p1"

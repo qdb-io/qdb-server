@@ -3,7 +3,7 @@ package io.qdb.server.repo.cluster
 import spock.lang.Stepwise
 
 @Stepwise
-class PaxosPhase1Spec extends PaxosBase {
+class PaxosPhase1Spec extends PaxosSharedBase {
 
     def "PREPARE sent to all nodes on start"() {
         s1.propose("p1")

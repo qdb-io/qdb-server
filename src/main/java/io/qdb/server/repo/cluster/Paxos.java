@@ -73,6 +73,7 @@ public class Paxos<N extends Comparable<N>> {
         switch (msg.getType()) {
             case PREPARE:   onPrepareReceived(from, msg);     break;
             case PROMISE:   onPromiseReceived(from, msg);     break;
+            case NACK:      onNackReceived();                 break;
             case ACCEPT:    onAcceptReceived(msg);            break;
             case ACCEPTED:  onAcceptedReceived(msg);          break;
             default:
@@ -113,7 +114,7 @@ public class Paxos<N extends Comparable<N>> {
             log.warn("PROMISE received from node " + from + " not known to us, ignoring: " + msg);
             return;
         }
-        if (promised == null) return;  // ACCEPT already sent
+        if (promised == null) return;  // ACCEPT already sent or proposal abandoned
 
         Msg<N> prev = promised[i];
         if (prev == null || prev.getN().compareTo(msg.getN()) < 0) {
@@ -136,6 +137,11 @@ public class Paxos<N extends Comparable<N>> {
                 for (Object node : nodes) send(accept, node);
             }
         }
+    }
+
+    private void onNackReceived() {
+        // abandon our proposal
+        promised = null;
     }
 
     private void onAcceptReceived(Msg<N> msg) {

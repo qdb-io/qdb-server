@@ -25,7 +25,8 @@ class PaxosBase extends Specification {
             sent << new Delivery(to: to, msg: msg, from: from, dest: deliverTo[to])
         }
 
-        void deliver() {
+        void deliver(String step) {
+            println("\nDelivering " + step + ":")
             def todo = sent
             sent = []
             todo.each { it.deliver() }
@@ -50,18 +51,6 @@ class PaxosBase extends Specification {
     @Shared Listener listener1 = new Listener()
     @Shared Listener listener2 = new Listener()
     @Shared Listener listener3 = new Listener()
-
-    @Shared Paxos s1 = new Paxos<Integer>(1, transport, new SeqNoFactory(1), msgFactory, listener1)
-    @Shared Paxos s2 = new Paxos<Integer>(2, transport, new SeqNoFactory(2), msgFactory, listener2)
-    @Shared Paxos s3 = new Paxos<Integer>(3, transport, new SeqNoFactory(3), msgFactory, listener3)
-    @Shared Map<Object, Paxos<Integer>> servers = [1: s1, 2: s2, 3: s3]
-
-    def setupSpec() {
-        transport.deliverTo = servers
-        s1.nodes = [1, 2, 3] as Object[]
-        s2.nodes = [1, 2, 3] as Object[]
-        s3.nodes = [1, 2, 3] as Object[]
-    }
 
     def setup() {
         transport.sent = []

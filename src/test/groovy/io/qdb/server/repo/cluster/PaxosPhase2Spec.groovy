@@ -3,7 +3,7 @@ package io.qdb.server.repo.cluster
 import spock.lang.Stepwise
 
 @Stepwise
-class PaxosPhase2Spec extends PaxosBase {
+class PaxosPhase2Spec extends PaxosSharedBase {
 
     def setupSpec() {
         s1.propose("p1")
