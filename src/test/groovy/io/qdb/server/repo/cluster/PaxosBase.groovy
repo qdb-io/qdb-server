@@ -17,6 +17,7 @@ class PaxosBase extends Specification {
     static class Transport implements Paxos.Transport {
         List<Delivery> sent = []
         void send(Object to, Paxos.Msg msg) { sent << new Delivery(to: to, msg: msg) }
+        String sent() { def s = sent.toString(); s.substring(1, s.length() - 1) }
     }
 
     static class SeqNoFactory implements Paxos.SequenceNoFactory<Integer> {
@@ -33,5 +34,15 @@ class PaxosBase extends Specification {
     @Shared Paxos s1 = new Paxos<String, Integer>(1, transport, new SeqNoFactory(1), msgFactory)
     @Shared Paxos s2 = new Paxos<String, Integer>(2, transport, new SeqNoFactory(2), msgFactory)
     @Shared Paxos s3 = new Paxos<String, Integer>(3, transport, new SeqNoFactory(3), msgFactory)
+
+    def setupSpec() {
+        s1.nodes = [1, 2, 3] as Object[]
+        s2.nodes = [1, 2, 3] as Object[]
+        s3.nodes = [1, 2, 3] as Object[]
+    }
+
+    def setup() {
+        transport.sent = []
+    }
 
 }

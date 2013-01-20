@@ -17,6 +17,14 @@ public class Msg implements Paxos.Msg<String, Integer> {
         }
     }
 
+    public Msg(Type type, Integer n) {
+        this(type, n, null, null);
+    }
+
+    public Msg(Type type, Integer n, String v) {
+        this(type, n, v, null);
+    }
+
     public Msg(Type type, Integer n, String v, Integer nv) {
         this.type = type;
         this.n = n;
