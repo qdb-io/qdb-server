@@ -5,10 +5,6 @@ import spock.lang.Stepwise
 @Stepwise
 class PaxosCompleteSpec extends PaxosBase {
 
-    def setupSpec() {
-        transport.deliverTo = servers
-    }
-
     def "Single proposal accepted"() {
         s1.propose("p1")
         for (int i = 0; i < 10 && transport.sent; i++) {

@@ -22,9 +22,7 @@ class PaxosBase extends Specification {
         Map deliverTo
 
         void send(Object to, Paxos.Msg msg, Object from) {
-            def delivery = new Delivery(to: to, msg: msg, from: from)
-            if (deliverTo) delivery.dest = (Paxos)deliverTo[to]
-            sent << delivery
+            sent << new Delivery(to: to, msg: msg, from: from, dest: deliverTo[to])
         }
 
         void deliver() {
@@ -59,6 +57,7 @@ class PaxosBase extends Specification {
     @Shared Map<Object, Paxos<Integer>> servers = [1: s1, 2: s2, 3: s3]
 
     def setupSpec() {
+        transport.deliverTo = servers
         s1.nodes = [1, 2, 3] as Object[]
         s2.nodes = [1, 2, 3] as Object[]
         s3.nodes = [1, 2, 3] as Object[]
