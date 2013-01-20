@@ -13,7 +13,7 @@ public class Paxos<N extends Comparable<N>> {
     private static final Logger log = LoggerFactory.getLogger(Paxos.class);
 
     private final Object self;
-    private final Transport transport;
+    private final Transport<N> transport;
     private final SequenceNoFactory<N> sequenceNoFactory;
     private final MsgFactory<N> msgFactory;
     private final Listener listener;
@@ -24,7 +24,7 @@ public class Paxos<N extends Comparable<N>> {
     private N highestSeqNoSeen;
     private Object v;
 
-    public Paxos(Object self, Transport transport, SequenceNoFactory<N> sequenceNoFactory, MsgFactory<N> msgFactory,
+    public Paxos(Object self, Transport<N> transport, SequenceNoFactory<N> sequenceNoFactory, MsgFactory<N> msgFactory,
                 Listener listener) {
         this.self = self;
         this.transport = transport;
@@ -162,8 +162,8 @@ public class Paxos<N extends Comparable<N>> {
     }
 
     /** Sends messages to nodes asynchronously. */
-    public interface Transport {
-        void send(Object to, Msg msg, Object from);
+    public interface Transport<N extends Comparable<N>> {
+        void send(Object to, Msg<N> msg, Object from);
     }
 
     public interface SequenceNoFactory<N extends Comparable<N>> {

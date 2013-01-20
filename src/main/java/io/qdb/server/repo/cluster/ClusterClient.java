@@ -136,7 +136,12 @@ public class ClusterClient {
         if (rc == expectedCode) {
             updateLastContact();
             InputStream ins = con.getInputStream();
-            return response == InputStream.class ? (T)ins : jsonConverter.readValue(ins, response);
+            if (response == null) {
+                ins.close();
+                return null;
+            } else {
+                return response == InputStream.class ? (T)ins : jsonConverter.readValue(ins, response);
+            }
         } else {
             // always read the error stream so the underlying TCP connection can be re-used
             String text = null;
