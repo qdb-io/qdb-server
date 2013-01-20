@@ -53,4 +53,10 @@ class PaxosPhase2Spec extends PaxosBase {
         transport.sent() == ""
     }
 
+    def "Listener notified when node receives ACCEPTED"() {
+        s2.onMessageReceived(1, new Msg(Paxos.Msg.Type.ACCEPTED, 21, "p2"))
+
+        expect:
+        listener2.accepted == "p2"
+    }
 }

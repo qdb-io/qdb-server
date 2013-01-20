@@ -16,24 +16,28 @@ public class Paxos<V, N extends Comparable<N>> {
     private final Transport transport;
     private final SequenceNoFactory<N> sequenceNoFactory;
     private final MsgFactory<V, N> msgFactory;
+    private final Listener<V> listener;
 
     private Object[] nodes;
-    private Msg<V,N>[] promised;        // highest numbered PROMISE received from each node PREPARE's sent
 
+    private Msg<V,N>[] promised;        // highest numbered PROMISE received from each node
     private N highestSeqNoSeen;
     private V v;
 
-    public Paxos(Object self, Transport transport, SequenceNoFactory<N> sequenceNoFactory, MsgFactory<V, N> msgFactory) {
+    public Paxos(Object self, Transport transport, SequenceNoFactory<N> sequenceNoFactory, MsgFactory<V, N> msgFactory,
+                Listener<V> listener) {
         this.self = self;
         this.transport = transport;
         this.sequenceNoFactory = sequenceNoFactory;
         this.msgFactory = msgFactory;
+        this.listener = listener;
     }
 
     /**
      * Set the list of nodes we know about. Any election already in progress is cancelled if the list of nodes has
      * actually changed.
      */
+    @SuppressWarnings("StatementWithEmptyBody")
     public synchronized void setNodes(Object[] nodes) {
         if (this.nodes == null || !Arrays.equals(this.nodes, nodes)) {
             int i;
@@ -48,11 +52,16 @@ public class Paxos<V, N extends Comparable<N>> {
     /**
      * Start the Paxos algorithm. Any election already in progress is restarted.
      */
-    @SuppressWarnings({"StatementWithEmptyBody", "unchecked"})
+    @SuppressWarnings("unchecked")
     public synchronized void propose(V proposal) {
         this.promised = new Msg[nodes.length];
         Msg<V, N> prepare = msgFactory.create(Msg.Type.PREPARE, sequenceNoFactory.next(highestSeqNoSeen), proposal, null);
-        for (Object node : nodes) transport.send(node, prepare);
+        for (Object node : nodes) send(prepare, node);
+    }
+
+    private void send(Msg<V, N> msg, Object node) {
+        if (log.isDebugEnabled()) log.debug("Sending " + msg + " to " + node);
+        transport.send(node, msg);
     }
 
     /**
@@ -60,10 +69,12 @@ public class Paxos<V, N extends Comparable<N>> {
      */
     @SuppressWarnings("StatementWithEmptyBody")
     public synchronized void onMessageReceived(Object from, Msg<V, N> msg) {
+        if (log.isDebugEnabled()) log.debug("Received " + msg + "  from " + from);
         switch (msg.getType()) {
             case PREPARE:   onPrepareReceived(from, msg);           break;
             case PROMISE:   onPromiseReceived(from, msg);           break;
-            case ACCEPT:    onAcceptReceived(from, msg);            break;
+            case ACCEPT:    onAcceptReceived(msg);            break;
+            case ACCEPTED:  onAcceptedReceived(msg);          break;
             default:
                 throw new IllegalArgumentException("Unknown msg type: " + msg);
         }
@@ -82,17 +93,17 @@ public class Paxos<V, N extends Comparable<N>> {
             // haven't seen any proposals so accept this one
             highestSeqNoSeen = n;
             v = msg.getV();
-            transport.send(from, msgFactory.create(Msg.Type.PROMISE, n, v, highestSeqNoSeen));
+            send(msgFactory.create(Msg.Type.PROMISE, n, v, highestSeqNoSeen), from);
 
         } else if (n.compareTo(highestSeqNoSeen) < 0) {
             // proposal has lower sequence no so NACK it and include our highest seq no
-            transport.send(from, msgFactory.create(Msg.Type.NACK, highestSeqNoSeen, null, null));
+            send(msgFactory.create(Msg.Type.NACK, highestSeqNoSeen, null, null), from);
 
         } else {
             // proposal has higher sequence so send back previous highest sequence and it's proposal
             Msg<V, N> ack = msgFactory.create(Msg.Type.PROMISE, n, v, highestSeqNoSeen);
             highestSeqNoSeen = n;
-            transport.send(from, ack);
+            send(ack, from);
         }
     }
 
@@ -122,12 +133,12 @@ public class Paxos<V, N extends Comparable<N>> {
             if (count > nodes.length / 2) {
                 promised = null;
                 Msg<V, N> accept = msgFactory.create(Msg.Type.ACCEPT, highest, value, null);
-                for (Object node : nodes) transport.send(node, accept);
+                for (Object node : nodes) send(accept, node);
             }
         }
     }
 
-    private void onAcceptReceived(Object from, Msg<V, N> msg) {
+    private void onAcceptReceived(Msg<V, N> msg) {
         // ignore if we have already PROMISEd for a higher sequence no
         if (highestSeqNoSeen != null && highestSeqNoSeen.compareTo(msg.getN()) > 0) return;
 
@@ -135,7 +146,13 @@ public class Paxos<V, N extends Comparable<N>> {
         v = msg.getV();
 
         Msg<V, N> accepted = msgFactory.create(Msg.Type.ACCEPTED, highestSeqNoSeen, v, null);
-        for (Object node : nodes) transport.send(node, accepted);
+        for (Object node : nodes) send(accepted, node);
+    }
+
+    private void onAcceptedReceived(Msg<V, N> msg) {
+        highestSeqNoSeen = msg.getN();
+        v = msg.getV();
+        listener.accepted(v);
     }
 
     /** Sends messages to nodes asynchronously. */
@@ -144,12 +161,13 @@ public class Paxos<V, N extends Comparable<N>> {
     }
 
     public interface SequenceNoFactory<N extends Comparable<N>> {
-        /** Generate a unique sequence number higher than highestSeqNoSeen (which may be null). */
-        public N next(N highestSeqNoSeen);
+        /** Generate a unique sequence number higher than n (which may be null). */
+        public N next(N n);
     }
 
     /** Notified of the progress of the algorithm and the final result (if any). */
     public interface Listener<V> {
+        void accepted(V v);
     }
 
     /** Creates messages. */

@@ -23,17 +23,23 @@ class PaxosBase extends Specification {
     static class SeqNoFactory implements Paxos.SequenceNoFactory<Integer> {
         final int serverNo
         SeqNoFactory(int serverNo) { this.serverNo = serverNo }
-        Integer next(Integer highestSeqNoSeen) {
-            return (highestSeqNoSeen == null ? 10 : highestSeqNoSeen - (highestSeqNoSeen % 10)) + serverNo
-        }
+        Integer next(Integer n) { return (n == null ? 10 : n - (n % 10)) + serverNo }
+    }
+
+    static class Listener implements Paxos.Listener<String> {
+        String accepted
+        void accepted(String v) { this.accepted = v }
     }
 
     @Shared Msg.Factory msgFactory = new Msg.Factory()
     @Shared Transport transport = new Transport()
+    @Shared Listener listener1 = new Listener()
+    @Shared Listener listener2 = new Listener()
+    @Shared Listener listener3 = new Listener()
 
-    @Shared Paxos s1 = new Paxos<String, Integer>(1, transport, new SeqNoFactory(1), msgFactory)
-    @Shared Paxos s2 = new Paxos<String, Integer>(2, transport, new SeqNoFactory(2), msgFactory)
-    @Shared Paxos s3 = new Paxos<String, Integer>(3, transport, new SeqNoFactory(3), msgFactory)
+    @Shared Paxos s1 = new Paxos<String, Integer>(1, transport, new SeqNoFactory(1), msgFactory, listener1)
+    @Shared Paxos s2 = new Paxos<String, Integer>(2, transport, new SeqNoFactory(2), msgFactory, listener2)
+    @Shared Paxos s3 = new Paxos<String, Integer>(3, transport, new SeqNoFactory(3), msgFactory, listener3)
 
     def setupSpec() {
         s1.nodes = [1, 2, 3] as Object[]
