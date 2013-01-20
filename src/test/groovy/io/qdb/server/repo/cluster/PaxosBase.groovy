@@ -14,9 +14,18 @@ class PaxosBase extends Specification {
         String toString() { "" + msg + " to " + to }
     }
 
-    static class Transport implements Paxos.Transport {
+    class Transport implements Paxos.Transport {
         List<Delivery> sent = []
-        void send(Object to, Paxos.Msg msg) { sent << new Delivery(to: to, msg: msg) }
+        Map deliverTo
+
+        void send(Object to, Paxos.Msg msg, Object from) {
+            sent << new Delivery(to: to, msg: msg)
+            if (deliverTo) {
+                Paxos dest = (Paxos)deliverTo[to]
+                if (dest) dest.onMessageReceived(from, msg)
+            }
+        }
+
         String sent() { def s = sent.toString(); s.substring(1, s.length() - 1) }
     }
 
@@ -26,9 +35,9 @@ class PaxosBase extends Specification {
         Integer next(Integer n) { return (n == null ? 10 : n - (n % 10)) + serverNo }
     }
 
-    static class Listener implements Paxos.Listener<String> {
-        String accepted
-        void accepted(String v) { this.accepted = v }
+    static class Listener implements Paxos.Listener {
+        Object accepted
+        void accepted(Object v) { this.accepted = v }
     }
 
     @Shared Msg.Factory msgFactory = new Msg.Factory()
@@ -37,9 +46,10 @@ class PaxosBase extends Specification {
     @Shared Listener listener2 = new Listener()
     @Shared Listener listener3 = new Listener()
 
-    @Shared Paxos s1 = new Paxos<String, Integer>(1, transport, new SeqNoFactory(1), msgFactory, listener1)
-    @Shared Paxos s2 = new Paxos<String, Integer>(2, transport, new SeqNoFactory(2), msgFactory, listener2)
-    @Shared Paxos s3 = new Paxos<String, Integer>(3, transport, new SeqNoFactory(3), msgFactory, listener3)
+    @Shared Paxos s1 = new Paxos<Integer>(1, transport, new SeqNoFactory(1), msgFactory, listener1)
+    @Shared Paxos s2 = new Paxos<Integer>(2, transport, new SeqNoFactory(2), msgFactory, listener2)
+    @Shared Paxos s3 = new Paxos<Integer>(3, transport, new SeqNoFactory(3), msgFactory, listener3)
+    @Shared Map<Object, Paxos<Integer>> servers = [1: s1, 2: s2, 3: s3]
 
     def setupSpec() {
         s1.nodes = [1, 2, 3] as Object[]

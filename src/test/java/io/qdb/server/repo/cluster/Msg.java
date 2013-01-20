@@ -3,16 +3,16 @@ package io.qdb.server.repo.cluster;
 /**
  * For testing Paxos. I had some weird hassles coding this in Groovy which is why it is in Java.
  */
-public class Msg implements Paxos.Msg<String, Integer> {
+public class Msg implements Paxos.Msg<Integer> {
 
     private final Type type;
     private final Integer n;
-    private final String v;
+    private final Object v;
     private final Integer nv;
 
-    public static class Factory implements Paxos.MsgFactory<String, Integer> {
+    public static class Factory implements Paxos.MsgFactory<Integer> {
         @Override
-        public Paxos.Msg<String, Integer> create(Type type, Integer n, String v, Integer nv) {
+        public Paxos.Msg<Integer> create(Type type, Integer n, Object v, Integer nv) {
             return new Msg(type, n, v, nv);
         }
     }
@@ -21,11 +21,11 @@ public class Msg implements Paxos.Msg<String, Integer> {
         this(type, n, null, null);
     }
 
-    public Msg(Type type, Integer n, String v) {
+    public Msg(Type type, Integer n, Object v) {
         this(type, n, v, null);
     }
 
-    public Msg(Type type, Integer n, String v, Integer nv) {
+    public Msg(Type type, Integer n, Object v, Integer nv) {
         this.type = type;
         this.n = n;
         this.v = v;
@@ -40,7 +40,7 @@ public class Msg implements Paxos.Msg<String, Integer> {
         return n;
     }
 
-    public String getV() {
+    public Object getV() {
         return v;
     }
 

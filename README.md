@@ -7,15 +7,14 @@ HTTP interface to qdb message queues with easy clustering.
 Usage
 -----
 
-The server follows REST principles and speaks JSON. It is easy to control using curl. These examples use jq
-(http://stedolan.github.com/jq/) to pretty print and filter the JSON returned. The following example will list all
-users:
+The server follows REST principles and speaks JSON. It is easy to control using curl. The following example will list
+all users:
 
-    curl -s --user admin:admin http://127.0.0.1:9554/users | jq '.'
+    curl -s --user admin:admin http://127.0.0.1:9554/users
 
 HTTP Basic authentication is used. The only endpoint that does not require authentication is the root of the server:
 
-    curl -s http://127.0.0.1:9554/ | jq '.'
+    curl -s http://127.0.0.1:9554/
 
 This outputs:
 
@@ -29,7 +28,7 @@ Authenticated users using this endpoint receive a lot more information about the
 
 You can also POST and PUT json data to the server using curl. This example creates a new user:
 
-    curl -s -X POST -H "Content-Type: application/json" --user admin:admin http://127.0.0.1:9554/users -d @user.json | jq '.'
+    curl -s -X POST -H "Content-Type: application/json" --user admin:admin http://127.0.0.1:9554/users -d @user.json
 
 It is important to specify the content type.
 
@@ -138,7 +137,7 @@ Running Tests
 
 Use `gradle check` to run all tests (unit and functional).
 
-Use `gradle test -Dtest.single=PaxosSpec` to run a single test spec (PaxosSpec in this example).
+Use `gradle test -Dtest.single=Paxos*` to run matching test specs (all the Paxos* specs in this example).
 
 
 License
