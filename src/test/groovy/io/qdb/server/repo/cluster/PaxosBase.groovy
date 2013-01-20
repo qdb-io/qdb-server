@@ -11,6 +11,9 @@ class PaxosBase extends Specification {
     static class Delivery {
         Object to
         Paxos.Msg msg
+        Object from
+        Paxos dest
+        void deliver() { dest.onMessageReceived(from, msg) }
         String toString() { "" + msg + " to " + to }
     }
 
@@ -19,11 +22,15 @@ class PaxosBase extends Specification {
         Map deliverTo
 
         void send(Object to, Paxos.Msg msg, Object from) {
-            sent << new Delivery(to: to, msg: msg)
-            if (deliverTo) {
-                Paxos dest = (Paxos)deliverTo[to]
-                if (dest) dest.onMessageReceived(from, msg)
-            }
+            def delivery = new Delivery(to: to, msg: msg, from: from)
+            if (deliverTo) delivery.dest = (Paxos)deliverTo[to]
+            sent << delivery
+        }
+
+        void deliver() {
+            def todo = sent
+            sent = []
+            todo.each { it.deliver() }
         }
 
         String sent() { def s = sent.toString(); s.substring(1, s.length() - 1) }
