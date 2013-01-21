@@ -19,6 +19,10 @@ import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * Uses the Paxos algorithm to decide who the master is.
+ *
+ * todo remember previous master
+ * todo avoid master changing if one already elected
+ * todo how does master know if its slaves cannot reach it? check still master before executing each tx with multi-paxos
  */
 @Singleton
 public class PaxosMasterStrategy implements MasterStrategy {
