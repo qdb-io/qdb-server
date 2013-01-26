@@ -6,16 +6,7 @@ import java.util.Date;
 import java.util.List;
 
 /**
- * Retrieves and persists our model objects. Find methods that return single objects return null if the object
- * does not exist. The returned object is a clone of the one from the store and may be modified. Other find
- * methods do not copy objects and the objects must not be modified.
- *
- * Create and update methods do not clone the incoming object so these objects must not be modified after being
- * created/updated. The repository must accept an EventBust constructor parameter and post events when
- * objects are created or updated (see {@link ModelEvent}).
- *
- * Fires Status instances on the shared EventBus on connect/disconnect events. Use a negative
- * limit parameter for findXXX(offset,limit) methods to fetch all data.
+ * Retrieves and persists our model objects using a {@link io.qdb.kvstore.KeyValueStore}.
  */
 public interface Repository extends Closeable {
 

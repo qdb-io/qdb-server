@@ -1,7 +1,6 @@
 package io.qdb.server.controller;
 
-import io.qdb.server.controller.JsonService;
-import io.qdb.server.model.OptLockException;
+import io.qdb.kvstore.OptimisticLockingException;
 import io.qdb.server.model.Repository;
 import io.qdb.server.model.User;
 
@@ -120,7 +119,7 @@ public class UserController extends CrudController {
         }
         try {
             call.setJson(new UserDTO(repo.updateUser(u)));
-        } catch (OptLockException e) {
+        } catch (OptimisticLockingException e) {
             u = repo.findUser(u.getId());
             if (u == null) call.setCode(410);
             else call.setCode(409, new UserDTO(u));

@@ -1,9 +1,11 @@
 package io.qdb.server.model;
 
+import io.qdb.kvstore.KeyValueStoreException;
+
 /**
  * Thrown when creating new objects if there is already an object with the same id.
  */
-public class DuplicateIdException extends ModelException {
+public class DuplicateIdException extends KeyValueStoreException {
 
     public DuplicateIdException(String message) {
         super(message);

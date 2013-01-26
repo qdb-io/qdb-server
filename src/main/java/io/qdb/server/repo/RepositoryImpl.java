@@ -1,6 +1,7 @@
 package io.qdb.server.repo;
 
 import io.qdb.kvstore.KeyValueStore;
+import io.qdb.kvstore.OptimisticLockingException;
 import io.qdb.server.model.*;
 import io.qdb.server.model.Queue;
 import org.slf4j.Logger;
@@ -176,7 +177,7 @@ public class RepositoryImpl implements Repository {
     @SuppressWarnings("unchecked")
     private void update(ConcurrentMap map, ModelObject o) throws IOException {
         if (map.replace(o.getId(), o) == null) {
-            throw new OptLockException(tos(o) + " not found");
+            throw new OptimisticLockingException(tos(o) + " not found");
         }
     }
 

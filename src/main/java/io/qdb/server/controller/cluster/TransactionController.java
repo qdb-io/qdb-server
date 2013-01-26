@@ -6,7 +6,6 @@ import io.qdb.server.controller.Call;
 import io.qdb.server.controller.CrudController;
 import io.qdb.server.controller.JsonService;
 import io.qdb.server.controller.MessageController;
-import io.qdb.server.model.ModelException;
 import io.qdb.server.repo.*;
 import io.qdb.server.repo.cluster.ClusterException;
 import io.qdb.server.repo.cluster.ClusteredRepository;

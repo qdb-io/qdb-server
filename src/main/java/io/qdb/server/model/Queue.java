@@ -14,20 +14,6 @@ public class Queue extends ModelObject {
     private int maxPayloadSize;
     private String contentType;
 
-    public static class Event extends ModelEvent<Queue> {
-
-        public static final ModelEvent.Factory<Queue> FACTORY = new Factory<Queue>() {
-            @Override
-            public ModelEvent<Queue> createEvent(Type type, Queue object) {
-                return new Event(type, object);
-            }
-        };
-
-        public Event(Type type, Queue object) {
-            super(type, object);
-        }
-    }
-
     public Queue() {
     }
 

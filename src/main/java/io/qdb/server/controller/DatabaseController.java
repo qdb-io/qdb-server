@@ -1,8 +1,7 @@
 package io.qdb.server.controller;
 
-import io.qdb.server.controller.JsonService;
+import io.qdb.kvstore.OptimisticLockingException;
 import io.qdb.server.model.Database;
-import io.qdb.server.model.OptLockException;
 import io.qdb.server.model.Repository;
 
 import javax.inject.Inject;
@@ -22,6 +21,7 @@ public class DatabaseController extends CrudController {
         public Integer version;
         public String owner;
 
+        @SuppressWarnings("UnusedDeclaration")
         public DatabaseDTO() { }
 
         public DatabaseDTO(Database db) {
@@ -101,7 +101,7 @@ public class DatabaseController extends CrudController {
         }
         try {
             call.setJson(new DatabaseDTO(repo.updateDatabase(db)));
-        } catch (OptLockException e) {
+        } catch (OptimisticLockingException e) {
             db = repo.findDatabase(db.getId());
             if (db == null) call.setCode(410);
             else call.setCode(409, new DatabaseDTO(db));

@@ -1,5 +1,6 @@
 package io.qdb.server.controller;
 
+import io.qdb.kvstore.OptimisticLockingException;
 import io.qdb.server.OurServer;
 import io.qdb.server.model.*;
 import io.qdb.server.model.Queue;
@@ -33,6 +34,7 @@ public class QueueController extends CrudController {
         public Integer maxPayloadSize;
         public String contentType;
 
+        @SuppressWarnings("UnusedDeclaration")
         public QueueDTO() { }
 
         public QueueDTO(String id, Queue queue) {
@@ -154,7 +156,7 @@ public class QueueController extends CrudController {
             try {
                 repo.updateDatabase(db);
                 break;
-            } catch (OptLockException e) {
+            } catch (OptimisticLockingException e) {
                 if (++attempt == 20) throw new IOException("Got " + attempt + " opt lock errors attempting to update db?");
                 db = repo.findDatabase(db.getId());
                 if (db == null) {
@@ -201,7 +203,7 @@ public class QueueController extends CrudController {
 
         try {
             call.setJson(new QueueDTO(id, repo.updateQueue(q)));
-        } catch (OptLockException e) {
+        } catch (OptimisticLockingException e) {
             q = repo.findQueue(q.getId());
             if (q == null) call.setCode(410);
             else call.setCode(409, new QueueDTO(id, q));

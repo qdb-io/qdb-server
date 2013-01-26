@@ -1,15 +1,10 @@
 package io.qdb.server.controller;
 
-import com.sun.tools.internal.ws.processor.modeler.ModelerException;
-import io.qdb.server.controller.JsonService;
-import io.qdb.server.model.Database;
-import io.qdb.server.model.ModelException;
-import io.qdb.server.model.ModelObject;
+import io.qdb.kvstore.KeyValueStoreException;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.channels.Channels;
-import java.util.List;
 
 /**
  * Base class for controllers that provide CRUD for some resource.
@@ -49,7 +44,7 @@ public abstract class CrudController implements Controller {
                     getController(call, id, resource).handle(call);
                 }
             }
-        } catch (ModelException e) {
+        } catch (KeyValueStoreException e) {
             call.setCode(400, e.getMessage());
         }
     }
