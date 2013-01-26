@@ -46,10 +46,13 @@ public class TransactionController extends CrudController {
         this.clusterTimeoutMs = clusterTimeoutMs;
     }
 
-    /**
+/*
+    */
+/**
      * POST a new transaction. Returns 201 and a TxId JSON object on success. Returns 410 (not longer the master)
      * or 409 (ModelException) with a text response otherwise.
-     */
+     *//*
+
     @Override
     protected void create(Call call) throws IOException {
         RepoTx tx = getBodyObject(call, RepoTx.class);
@@ -64,9 +67,11 @@ public class TransactionController extends CrudController {
         }
     }
 
-    /**
+    */
+/**
      * Stream transactions from id onwards.
-     */
+     *//*
+
     @SuppressWarnings("StatementWithEmptyBody")
     @Override
     protected void list(Call call, int offset, int limit) throws IOException {
@@ -152,4 +157,5 @@ public class TransactionController extends CrudController {
             slave.disconnected();
         }
     }
+*/
 }

@@ -4,7 +4,7 @@ import com.google.common.io.ByteStreams;
 import io.qdb.server.OurServer;
 import io.qdb.server.model.Repository;
 import io.qdb.server.model.Server;
-import io.qdb.server.repo.JsonConverter;
+import io.qdb.server.repo.JsonSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,7 +28,7 @@ public class ClusterClient {
     public final Server server;
 
     private final String referer;
-    private final JsonConverter jsonConverter;
+    private final JsonSerializer jsonConverter;
     private final int timeoutMs;
     private final String authorization;
 
@@ -38,13 +38,13 @@ public class ClusterClient {
     public static class Factory {
 
         private final OurServer ourServer;
-        private final JsonConverter jsonConverter;
+        private final JsonSerializer jsonConverter;
         private final String clusterName;
         private final String clusterPassword;
         private final int clusterTimeoutMs;
 
         @Inject
-        public Factory(OurServer ourServer, JsonConverter jsonConverter,
+        public Factory(OurServer ourServer, JsonSerializer jsonConverter,
                    @Named("clusterName") String clusterName,
                    @Named("clusterPassword") String clusterPassword,
                    @Named("clusterTimeoutMs") int clusterTimeoutMs) {
@@ -60,7 +60,7 @@ public class ClusterClient {
         }
     }
 
-    public ClusterClient(OurServer ourServer, JsonConverter jsonConverter, Server server, String username,
+    public ClusterClient(OurServer ourServer, JsonSerializer jsonConverter, Server server, String username,
                 String password, int timeoutMs) {
         this.referer = ourServer.getId();
         this.jsonConverter = jsonConverter;

@@ -3,7 +3,8 @@ package io.qdb.server.controller.cluster;
 import io.qdb.server.controller.Call;
 import io.qdb.server.controller.CrudController;
 import io.qdb.server.controller.JsonService;
-import io.qdb.server.repo.StandaloneRepository;
+import io.qdb.server.repo.RepositoryImpl;
+import io.qdb.server.repo.RepositoryImpl;
 import org.simpleframework.http.Response;
 
 import javax.inject.Inject;
@@ -19,21 +20,22 @@ import java.util.zip.GZIPOutputStream;
 @Singleton
 public class SnapshotController extends CrudController {
 
-    private final StandaloneRepository repo;
+    private final RepositoryImpl repo;
 
     @Inject
-    public SnapshotController(JsonService jsonService, StandaloneRepository repo) {
+    public SnapshotController(JsonService jsonService, RepositoryImpl repo) {
         super(jsonService);
         this.repo = repo;
     }
 
+/*
     @Override
     protected void show(Call call, String id) throws IOException {
         if (!"latest".equals(id)) {
             call.setCode(404);
             return;
         }
-        StandaloneRepository.Snapshot snapshot = repo.createSnapshot();
+        RepositoryImpl.Snapshot snapshot = repo.createSnapshot();
 
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         GZIPOutputStream out = new GZIPOutputStream(bos);
@@ -47,4 +49,5 @@ public class SnapshotController extends CrudController {
         response.setContentLength(data.length);
         response.getOutputStream().write(data);
     }
+*/
 }

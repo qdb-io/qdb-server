@@ -3,13 +3,16 @@ package io.qdb.server;
 import com.google.common.eventbus.EventBus;
 import com.google.inject.AbstractModule;
 import com.google.inject.Key;
+import com.google.inject.TypeLiteral;
 import com.google.inject.name.Named;
 import com.google.inject.name.Names;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigValue;
+import io.qdb.kvstore.KeyValueStore;
 import io.qdb.server.controller.Router;
 import io.qdb.server.controller.cluster.ClusterRouter;
+import io.qdb.server.model.ModelObject;
 import io.qdb.server.model.Repository;
 import io.qdb.server.repo.*;
 import io.qdb.server.repo.cluster.*;
@@ -39,13 +42,14 @@ public class QdbServerModule extends AbstractModule {
         bind(Connection.class).toProvider(ConnectionProvider.class);
         if (!cfg.getBoolean("clustered")) {
             bind(Container.class).to(Router.class);
-            bind(Repository.class).to(StandaloneRepository.class);
+            bind(Repository.class).to(RepositoryImpl.class);
+            bind(new TypeLiteral<KeyValueStore<String, ModelObject>>(){}).toProvider(KeyValueStoreProvider.class);
         } else {
-            bind(Container.class).to(ClusterRouter.class);
-            bind(Repository.class).to(ClusteredRepository.class);
-            bind(ServerRegistry.class).toProvider(ServerRegistryProvider.class);
-            bind(MasterStrategy.class).toProvider(MasterStrategyProvider.class);
-            bind(ScheduledExecutorService.class).toProvider(ScheduledExecutorServiceProvider.class);
+//            bind(Container.class).to(ClusterRouter.class);
+//            bind(Repository.class).to(ClusteredRepository.class);
+//            bind(ServerRegistry.class).toProvider(ServerRegistryProvider.class);
+//            bind(MasterStrategy.class).toProvider(MasterStrategyProvider.class);
+//            bind(ScheduledExecutorService.class).toProvider(ScheduledExecutorServiceProvider.class);
         }
     }
 

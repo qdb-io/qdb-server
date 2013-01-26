@@ -3,7 +3,7 @@ package io.qdb.server.controller.cluster;
 import com.google.common.eventbus.EventBus;
 import io.qdb.server.controller.Call;
 import io.qdb.server.controller.Controller;
-import io.qdb.server.repo.JsonConverter;
+import io.qdb.server.repo.JsonSerializer;
 import io.qdb.server.repo.cluster.PaxosMasterStrategy;
 
 import javax.inject.Inject;
@@ -19,10 +19,10 @@ import java.nio.channels.Channels;
 public class PaxosController implements Controller {
 
     private final EventBus eventBus;
-    private final JsonConverter jsonConverter;
+    private final JsonSerializer jsonConverter;
 
     @Inject
-    public PaxosController(EventBus eventBus, JsonConverter jsonConverter) {
+    public PaxosController(EventBus eventBus, JsonSerializer jsonConverter) {
         this.eventBus = eventBus;
         this.jsonConverter = jsonConverter;
     }

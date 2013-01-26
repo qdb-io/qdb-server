@@ -4,7 +4,8 @@ import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import io.qdb.server.OurServer;
 import io.qdb.server.model.Server;
-import io.qdb.server.repo.StandaloneRepository;
+import io.qdb.server.repo.RepositoryImpl;
+import io.qdb.server.repo.RepositoryImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,7 +42,7 @@ public class PaxosMasterStrategy implements MasterStrategy {
 
     @Inject
     public PaxosMasterStrategy(final ScheduledExecutorService pool, final EventBus eventBus, ServerRegistry serverRegistry,
-                final OurServer ourServer, final StandaloneRepository local, final ClusterClient.Factory clientFactory) {
+                final OurServer ourServer, final RepositoryImpl local, final ClusterClient.Factory clientFactory) {
         this.pool = pool;
         this.eventBus = eventBus;
         this.serverRegistry = serverRegistry;
@@ -51,11 +52,11 @@ public class PaxosMasterStrategy implements MasterStrategy {
         Paxos.SequenceNoFactory<SequenceNo> seqNofactory = new Paxos.SequenceNoFactory<SequenceNo>() {
             @Override
             public SequenceNo next(SequenceNo n) {
-                try {
-                    return new SequenceNo(local.getNextTxId(), n == null ? 1 : n.seq + 1, ourServer.getId());
-                } catch (IOException e) {
-                    throw new IllegalStateException(e);
-                }
+//                try {
+                    return new SequenceNo(); //local.getNextTxId(), n == null ? 1 : n.seq + 1, ourServer.getId());
+//                } catch (IOException e) {
+//                    throw new IllegalStateException(e);
+//                }
             }
         };
 

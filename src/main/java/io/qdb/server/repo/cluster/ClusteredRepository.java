@@ -28,16 +28,17 @@ import java.util.zip.GZIPInputStream;
  * Cluster membership?
  */
 @Singleton
-public class ClusteredRepository extends RepositoryBase {
+public abstract class ClusteredRepository implements Repository {
 
-    private final StandaloneRepository local;
+/*
+    private final RepositoryImpl local;
     private final ServerRegistry serverRegistry;
     private final MasterStrategy masterStrategy;
     private final ClusterClient.Factory clientFactory;
     private final EventBus eventBus;
     private final OurServer ourServer;
     private final ScheduledExecutorService executorService;
-    private final JsonConverter jsonConverter;
+    private final JsonSerializer jsonConverter;
     private final SlaveRegistry slaveRegistry;
     private final BackoffPolicy slaveTxDownloadBackoff;
     private final BackoffPolicy slaveTxExecBackoff;
@@ -52,9 +53,9 @@ public class ClusteredRepository extends RepositoryBase {
     private TxDownloader txDownloader;
 
     @Inject
-    public ClusteredRepository(StandaloneRepository local, EventBus eventBus, OurServer ourServer,
+    public ClusteredRepository(RepositoryImpl local, EventBus eventBus, OurServer ourServer,
                ServerRegistry serverRegistry, MasterStrategy masterStrategy, ClusterClient.Factory clientFactory,
-               ScheduledExecutorService executorService, JsonConverter jsonConverter, SlaveRegistry slaveRegistry,
+               ScheduledExecutorService executorService, JsonSerializer jsonConverter, SlaveRegistry slaveRegistry,
                @Named("clusterName") String clusterName,
                @Named("slaveTxDownloadBackoff") BackoffPolicy slaveTxDownloadBackoff,
                @Named("slaveTxExecBackoff") BackoffPolicy slaveTxExecBackoff
@@ -172,18 +173,22 @@ public class ClusteredRepository extends RepositoryBase {
         masterStrategy.chooseMaster();
     }
 
-    /**
+    */
+/**
      * Append tx to our tx log and apply it to our in memory model. This is used to append transactions from slaves.
      * Throws an exception if we are not the master. Returns the transaction id to be sent back to the client.
-     */
+     *//*
+
     public synchronized long appendTxFromSlave(RepoTx tx) throws IOException, ModelException {
         if (!isMaster()) throw new ClusterException.NotMaster();
         return local.exec(tx);
     }
 
-    /**
+    */
+/**
      * Open a cursor to our tx log for slaves to receive transactions.
-     */
+     *//*
+
     public synchronized MessageCursor openTxCursor(long id) throws IOException {
         if (!isMaster()) throw new ClusterException.NotMaster();
         return local.openTxCursor(id);
@@ -196,7 +201,7 @@ public class ClusteredRepository extends RepositoryBase {
             if (isMaster()) return local.exec(tx);
         }
 
-        StandaloneRepository.TxMonitor txMonitor = local.createTxMonitor();
+        RepositoryImpl.TxMonitor txMonitor = local.createTxMonitor();
         try {
             long id;
             try {
@@ -313,9 +318,11 @@ public class ClusteredRepository extends RepositoryBase {
         return local.countQueues();
     }
 
-    /**
+    */
+/**
      * Initializes our (empty) repository using a snapshot downloaded from the master.
-     */
+     *//*
+
     private class SnapshotDownloader extends StoppableTask {
 
         @Override
@@ -325,11 +332,11 @@ public class ClusteredRepository extends RepositoryBase {
 
             log.info("Downloading meta-data from master " + m);
 
-            StandaloneRepository.Snapshot snapshot = null;
+            RepositoryImpl.Snapshot snapshot = null;
             InputStream ins = null;
             try {
                 ins  = new GZIPInputStream(m.GET("cluster/snapshots/latest"));
-                snapshot = jsonConverter.readValue(ins, StandaloneRepository.Snapshot.class);
+                snapshot = jsonConverter.readValue(ins, RepositoryImpl.Snapshot.class);
             } catch (IOException x) {
                 log.error("Error downloading meta-data from master " + m + ": " + x);
                 slaveTxDownloadBackoff.sleep(2);
@@ -356,9 +363,11 @@ public class ClusteredRepository extends RepositoryBase {
         }
     }
 
-    /**
+    */
+/**
      * Streams transactions from the master to us when we are acting as a slave.
-     */
+     *//*
+
     private class TxDownloader extends StoppableTask {
 
         public synchronized ClusterClient getMaster() {
@@ -454,4 +463,5 @@ public class ClusteredRepository extends RepositoryBase {
             }
         }
     }
+*/
 }
