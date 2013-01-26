@@ -1,5 +1,7 @@
 package io.qdb.server.model;
 
+import io.qdb.kvstore.KeyValueStore;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Date;
@@ -94,4 +96,25 @@ public interface Repository extends Closeable {
 
     public int countQueues() throws IOException;
 
+    /**
+     * A change to one of the objects we store. These are published on the shared
+     * {@link com.google.common.eventbus.EventBus}.
+     */
+    public static class ObjectEvent {
+
+        public enum Type { CREATED, UPDATED, DELETED }
+
+        public final Type type;
+        public final ModelObject value;
+
+        public ObjectEvent(Type type, ModelObject value) {
+            this.type = type;
+            this.value = value;
+        }
+
+        @Override
+        public String toString() {
+            return type + " " + value;
+        }
+    }
 }

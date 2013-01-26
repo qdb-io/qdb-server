@@ -5,9 +5,7 @@ import com.google.common.eventbus.Subscribe;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.qdb.buffer.MessageBuffer;
 import io.qdb.buffer.PersistentMessageBuffer;
-import io.qdb.kvstore.KeyValueStore;
 import io.qdb.server.OurServer;
-import io.qdb.server.model.ModelObject;
 import io.qdb.server.model.Queue;
 import io.qdb.server.model.Repository;
 import org.slf4j.Logger;
@@ -68,8 +66,8 @@ public class QueueManager implements Closeable, Thread.UncaughtExceptionHandler 
     }
 
     @Subscribe
-    public void handleQueueEvent(KeyValueStore.Event<String, ModelObject> ev) {
-        if ("queues".equals(ev.map) && ev.type != KeyValueStore.Event.Type.DELETED) syncQueue((Queue)ev.value);
+    public void handleQueueEvent(Repository.ObjectEvent ev) {
+        if (ev.value instanceof Queue && ev.type != Repository.ObjectEvent.Type.DELETED) syncQueue((Queue)ev.value);
         // todo handle deleted queues
     }
 
