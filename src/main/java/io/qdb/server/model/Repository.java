@@ -1,7 +1,5 @@
 package io.qdb.server.model;
 
-import io.qdb.kvstore.KeyValueStore;
-
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Date;
