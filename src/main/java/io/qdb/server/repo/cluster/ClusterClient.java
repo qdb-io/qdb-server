@@ -12,6 +12,7 @@ import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import javax.xml.bind.DatatypeConverter;
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
@@ -21,7 +22,7 @@ import java.net.URL;
 /**
  * Manages communication with a server in a QDB cluster over http.
  */
-public class ClusterClient {
+public class ClusterClient implements Closeable {
 
     private static final Logger log = LoggerFactory.getLogger(ClusterClient.class);
 
@@ -91,56 +92,33 @@ public class ClusterClient {
     }
 
     /**
-     * GET from path. Convert the JSON response to an object of cls.
-     * @exception ResponseCodeException if the response code is not 200
+     * Send msg to the endpoint at path and return the response data (or empty array if none).
+     *
+     * @exception IOException if the response code is not 201
      */
-    public <T> T GET(String path, Class<T> response) throws IOException {
-        return call("GET", path, null, response, 200);
-    }
-
-    /**
-     * GET an input stream from path.
-     * @exception ResponseCodeException if the response code is not 200
-     */
-    public InputStream GET(String path) throws IOException {
-        return call("GET", path, null, InputStream.class, 200);
-    }
-
-    /**
-     * Convert data to JSON and POST to path. Convert the JSON response to an object of cls.
-     * @exception ResponseCodeException if the response code is not 201
-     */
-    public <T> T POST(String path, Object data, Class<T> response) throws IOException {
-        return call("POST", path, data, response, 201);
-    }
-
-    @SuppressWarnings("unchecked")
-    private <T> T call(String method, String path, Object data, Class<T> response, int expectedCode) throws IOException {
+    public byte[] send(String path, byte[] msg) throws IOException {
         URL url = new URL(server.getId() + path);
-        if (log.isDebugEnabled()) log.debug(method  + " " + url + (data != null ? " " + data : ""));
+        if (log.isDebugEnabled()) log.debug("POST " + url + " " + msg.length + " byte(s)");
 
         HttpURLConnection con = (HttpURLConnection)url.openConnection();
-        con.setRequestMethod(method);
+        con.setRequestMethod("POST");
         con.setConnectTimeout(timeoutMs);
         con.setReadTimeout(timeoutMs);
         con.setRequestProperty("Authorization", authorization);
         con.setRequestProperty("Referer", referer);
 
-        if (data != null) {
-            con.setRequestProperty("Content-Type", "application/json");
-            con.setDoOutput(true);
-            jsonConverter.writeValue(con.getOutputStream(), data);
-        }
+        con.setRequestProperty("Content-Type", "application/octet-stream");
+        con.setDoOutput(true);
+        jsonConverter.writeValue(con.getOutputStream(), msg);
 
         int rc = con.getResponseCode();
-        if (rc == expectedCode) {
+        if (rc == 200 || rc == 201) {
             updateLastContact();
             InputStream ins = con.getInputStream();
-            if (response == null) {
-                ins.close();
-                return null;
-            } else {
-                return response == InputStream.class ? (T)ins : jsonConverter.readValue(ins, response);
+            try {
+                return ByteStreams.toByteArray(ins);
+            } finally {
+                close(ins);
             }
         } else {
             // always read the error stream so the underlying TCP connection can be re-used
@@ -150,18 +128,34 @@ public class ClusterClient {
                 if (es != null) {
                     byte[] bytes = ByteStreams.toByteArray(es);
                     es.close();
+                    // assume the response is UTF8 text for an error of some kind
                     text = new String(bytes, "UTF8");
                 }
             } catch (Exception e) {
                 log.error("Error reading response from ErrorStream: " + e);
             }
-            throw new ResponseCodeException(method + " " + url + (data != null ? " " + data : "") + " returned " + rc +
-                    (text == null ? "" : ": " + text), rc, text);
+            throw new IOException("POST " + url + " " + msg.length + " byte(s) returned " + rc +
+                    (text == null ? "" : ": " + text));
         }
     }
 
     @Override
     public String toString() {
         return server.toString();
+    }
+
+    private void close(Closeable c) {
+        if (c != null) {
+            try {
+                c.close();
+            } catch (IOException e) {
+                log.debug("Error closing " + c + ": " + e.toString());
+            }
+        }
+    }
+
+    @Override
+    public void close() throws IOException {
+        // nothing to do yet
     }
 }

@@ -33,4 +33,8 @@ public class KeyValueStoreListener implements KeyValueStore.Listener<String, Mod
         }
         eventBus.post(new Repository.ObjectEvent(type, ev.value));
     }
+
+    @Override
+    public void onStatusChange(KeyValueStore.Status status) {
+    }
 }

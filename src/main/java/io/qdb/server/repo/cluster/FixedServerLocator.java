@@ -11,22 +11,25 @@ import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import java.io.IOException;
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * All servers in the cluster are specified in the configuration.
  */
 @Singleton
-public class FixedServerRegistry implements ServerRegistry {
+public class FixedServerLocator implements ServerLocator {
 
-    private static Logger log = LoggerFactory.getLogger(FixedServerRegistry.class);
+    @SuppressWarnings("UnusedDeclaration")
+    private static Logger log = LoggerFactory.getLogger(FixedServerLocator.class);
 
     private final EventBus eventBus;
     private final List<Server> servers;
 
     @SuppressWarnings("unchecked")
     @Inject
-    public FixedServerRegistry(EventBus eventBus, OurServer ourServer, @Named("servers") String servers) {
+    public FixedServerLocator(EventBus eventBus, OurServer ourServer, @Named("servers") String servers) {
         this.eventBus = eventBus;
 
         if (servers != null && servers.trim().length() > 0) {
@@ -53,12 +56,7 @@ public class FixedServerRegistry implements ServerRegistry {
 
     @Override
     public void lookForServers() {
-        eventBus.post(new ServersFound(servers));
-    }
-
-    @Override
-    public String getStatus() {
-        return null;    // nothing to report - we always know our servers
+        eventBus.post(new ServersFound(servers.toArray(new Server[servers.size()])));
     }
 
     @Override

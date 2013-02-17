@@ -10,6 +10,7 @@ import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigValue;
 import io.qdb.kvstore.KeyValueStore;
+import io.qdb.kvstore.cluster.Transport;
 import io.qdb.server.controller.Router;
 import io.qdb.server.controller.cluster.ClusterRouter;
 import io.qdb.server.model.ModelObject;
@@ -40,16 +41,15 @@ public class QdbServerModule extends AbstractModule {
         bindProperties();
         bind(EventBus.class).toInstance(new EventBus());
         bind(Connection.class).toProvider(ConnectionProvider.class);
-        if (!cfg.getBoolean("clustered")) {
-            bind(Container.class).to(Router.class);
-            bind(Repository.class).to(RepositoryImpl.class);
-            bind(new TypeLiteral<KeyValueStore<String, ModelObject>>(){}).toProvider(KeyValueStoreProvider.class);
+        bind(Repository.class).to(RepositoryImpl.class);
+        bind(new TypeLiteral<KeyValueStore<String, ModelObject>>(){}).toProvider(KeyValueStoreProvider.class);
+        if (cfg.getBoolean("clustered")) {
+            bind(Container.class).to(ClusterRouter.class);
+            bind(ServerLocator.class).toProvider(ServerLocatorProvider.class);
+            bind(Transport.class).to(KvStoreTransport.class);
+            bind(ScheduledExecutorService.class).toProvider(ScheduledExecutorServiceProvider.class);
         } else {
-//            bind(Container.class).to(ClusterRouter.class);
-//            bind(Repository.class).to(ClusteredRepository.class);
-//            bind(ServerRegistry.class).toProvider(ServerRegistryProvider.class);
-//            bind(MasterStrategy.class).toProvider(MasterStrategyProvider.class);
-//            bind(ScheduledExecutorService.class).toProvider(ScheduledExecutorServiceProvider.class);
+            bind(Container.class).to(Router.class);
         }
     }
 
