@@ -16,6 +16,7 @@ import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * Sends messages to servers in our cluster for kvstore.
@@ -34,8 +35,8 @@ public class KvStoreTransport implements Transport {
     private Map<String, ClusterClient> clients = new HashMap<String, ClusterClient>();
 
     @Inject
-    public KvStoreTransport(OurServer ourServer, ServerLocator serverLocator, ExecutorService executorService,
-                            EventBus eventBus, ClusterClient.Factory clientFactory) {
+    public KvStoreTransport(OurServer ourServer, ServerLocator serverLocator,
+                ScheduledExecutorService executorService, EventBus eventBus, ClusterClient.Factory clientFactory) {
         this.ourServer = ourServer;
         this.serverLocator = serverLocator;
         this.executorService = executorService;
@@ -91,7 +92,7 @@ public class KvStoreTransport implements Transport {
         try {
             client.send("/cluster/kvstore", msg);
         } catch (IOException e) {
-            log.error("Error POSTing " + msg.length + " byte(s) to " + to + ": " + e, e);
+            log.error("Error POSTing " + msg.length + " byte(s) to " + to + ": " + e);
         }
     }
 

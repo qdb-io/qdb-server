@@ -36,9 +36,7 @@ public class RepositoryInit {
 
     @Subscribe
     public void handleRepoStatusChange(Repository.Status status) {
-        if (status.isUp() && (status.clusterName == null || ourServer.getId().equals(status.master.id))) {
-            ensureAdminUser();
-        }
+        if (status.isUp()) ensureAdminUser();
     }
 
     private void ensureAdminUser() {
