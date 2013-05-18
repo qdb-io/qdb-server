@@ -16,13 +16,12 @@ class TestServer implements Closeable {
     private Injector injector
     private Connection qdb
 
-    TestServer(String dir = "build/test-data", int instance = 0) {
+    TestServer(String dir = "build/test-data") {
         File dataDir = new File(dir)
         if (dataDir.exists() && dataDir.isDirectory()) FileUtils.deleteDirectory(dataDir)
         if (!dataDir.mkdirs()) throw new IOException("Unable to create [" + dataDir.absolutePath + "]")
 
-        injector = Guice.createInjector(Modules.override(new QdbServerModule()).with(
-                instance ? new ClusteredTestModule(dataDir, instance) : new StandaloneTestModule(dataDir)))
+        injector = Guice.createInjector(Modules.override(new QdbServerModule()).with(new StandaloneTestModule(dataDir)))
         injector.getInstance(RepositoryInit)
         qdb = injector.getInstance(Connection)
     }
