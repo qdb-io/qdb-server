@@ -8,14 +8,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
+import javax.inject.Named;
 import javax.inject.Singleton;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentMap;
 
 /**
- * Keeps our meta data in maps in memory with periodic snapshots written to disk. Uses a MessageBuffer as a tx log
- * for replay from the last snapshot after a crash.
+ * Uses a {@link KeyValueStore} to keep our meta data in memory with periodic snapshots written to disk.
  */
 @Singleton
 public class RepositoryImpl implements Repository {
@@ -28,32 +28,28 @@ public class RepositoryImpl implements Repository {
     private final ConcurrentMap<String, Database> databases;
     private final ConcurrentMap<String, Queue> queues;
 
-    private Date upSince;
-
     @Inject
-    public RepositoryImpl(KeyValueStore<String, ModelObject> store) throws IOException {
+    public RepositoryImpl(KeyValueStore<String, ModelObject> store,
+                @Named("initialAdminPassword") String initialAdminPassword) throws IOException {
         this.store = store;
         users = store.getMap("users", User.class);
         databases = store.getMap("databases", Database.class);
         queues = store.getMap("queues", Queue.class);
-        upSince = new Date();
+
+        if (findUser("admin") == null) {
+            User admin = new User();
+            admin.setId("admin");
+            admin.setPassword(initialAdminPassword);
+            admin.setAdmin(true);
+            createUser(admin);
+            log.info("Created initial admin user");
+            store.saveSnapshot();
+        }
     }
 
     @Override
     public void close() throws IOException {
         store.close();
-    }
-
-    @Override
-    public String getRepositoryId() {
-        return store.getStoreId();
-    }
-
-    @Override
-    public Status getStatus() {
-        Status s = new Status();
-        s.upSince = upSince;
-        return s;
     }
 
     @Override

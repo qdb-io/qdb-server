@@ -10,19 +10,15 @@ import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigValue;
 import io.qdb.kvstore.KeyValueStore;
-import io.qdb.kvstore.cluster.Transport;
 import io.qdb.server.controller.Router;
-import io.qdb.server.controller.cluster.ClusterRouter;
 import io.qdb.server.model.ModelObject;
 import io.qdb.server.model.Repository;
 import io.qdb.server.repo.*;
-import io.qdb.server.repo.cluster.*;
 import org.simpleframework.http.core.Container;
 import org.simpleframework.transport.connect.Connection;
 
 import java.io.File;
 import java.util.Map;
-import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * Standard server configuration.
@@ -43,14 +39,7 @@ public class QdbServerModule extends AbstractModule {
         bind(Connection.class).toProvider(ConnectionProvider.class);
         bind(Repository.class).to(RepositoryImpl.class);
         bind(new TypeLiteral<KeyValueStore<String, ModelObject>>(){}).toProvider(KeyValueStoreProvider.class);
-        if (cfg.getBoolean("clustered")) {
-            bind(Container.class).to(ClusterRouter.class);
-            bind(ServerLocator.class).toProvider(ServerLocatorProvider.class);
-            bind(Transport.class).to(KvStoreTransport.class);
-            bind(ScheduledExecutorService.class).toProvider(ScheduledExecutorServiceProvider.class);
-        } else {
-            bind(Container.class).to(Router.class);
-        }
+        bind(Container.class).to(Router.class);
     }
 
     /**

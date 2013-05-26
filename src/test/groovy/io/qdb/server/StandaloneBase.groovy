@@ -10,7 +10,6 @@ class StandaloneBase extends Specification {
     @Shared Client client = new Client("http://127.0.0.1:9554")
 
     def setupSpec() {
-        server.waitForRepo()
     }
 
     def cleanupSpec() {

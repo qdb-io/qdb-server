@@ -22,15 +22,7 @@ class TestServer implements Closeable {
         if (!dataDir.mkdirs()) throw new IOException("Unable to create [" + dataDir.absolutePath + "]")
 
         injector = Guice.createInjector(Modules.override(new QdbServerModule()).with(new StandaloneTestModule(dataDir)))
-        injector.getInstance(RepositoryInit)
         qdb = injector.getInstance(Connection)
-    }
-
-    void waitForRepo() {
-        Repository repo = injector.getInstance(Repository)
-        synchronized (repo) {
-            for (int i = 0; i < 3 && !repo.getStatus().up; i++) repo.wait(1000);
-        }
     }
 
     @Override

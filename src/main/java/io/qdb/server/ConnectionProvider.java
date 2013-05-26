@@ -23,25 +23,32 @@ public class ConnectionProvider implements Provider<Connection> {
     private static final Logger log = LoggerFactory.getLogger(ConnectionProvider.class);
 
     private final Container container;
-    private final OurServer ourServer;
+    private final String host;
+    private final int port;
+    private final boolean https;
 
     private Connection connection;
 
     @Inject
-    public ConnectionProvider(Container container, OurServer ourServer) {
+    public ConnectionProvider(Container container,
+                @Named("host") String host,
+                @Named("port") int port,
+                @Named("https") boolean https) {
         this.container = container;
-        this.ourServer = ourServer;
+        this.host = host;
+        this.port = port;
+        this.https = https;
     }
 
     @Override
     public Connection get() {
-        if (ourServer.isHttps()) throw new IllegalStateException("https = true not implemented");
+        if (https) throw new IllegalStateException("https = true not implemented");
         try {
             if (connection == null) {
-                SocketAddress address = new InetSocketAddress(ourServer.getHost(), ourServer.getPort());
+                SocketAddress address = new InetSocketAddress(host, port);
                 connection = new SocketConnection(container);
                 connection.connect(address);
-                log.info("QDB Server listening on " + ourServer);
+                log.info("QDB Server listening on " + host + ":" + port);
             }
             return connection;
         } catch (IOException e) {

@@ -18,7 +18,7 @@ import java.io.OutputStream;
  * Converts repository related objects to/from JSON.
  */
 @Singleton
-public class JsonSerializer implements KeyValueStore.Serializer {
+public class JsonSerializer {
 
     private final ObjectMapper mapper = new ObjectMapper();
 
@@ -55,12 +55,10 @@ public class JsonSerializer implements KeyValueStore.Serializer {
         mapper.writeValue(out, value);
     }
 
-    @Override
     public void serialize(Object value, OutputStream out) throws IOException {
         mapper.writeValue(out, value);
     }
 
-    @Override
     public <T> T deserialize(InputStream in, Class<T> cls) throws IOException {
         return mapper.readValue(in, cls);
     }

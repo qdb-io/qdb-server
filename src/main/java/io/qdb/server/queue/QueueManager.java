@@ -5,7 +5,6 @@ import com.google.common.eventbus.Subscribe;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.qdb.buffer.MessageBuffer;
 import io.qdb.buffer.PersistentMessageBuffer;
-import io.qdb.server.OurServer;
 import io.qdb.server.model.Queue;
 import io.qdb.server.model.Repository;
 import org.slf4j.Logger;
@@ -30,21 +29,19 @@ public class QueueManager implements Closeable, Thread.UncaughtExceptionHandler 
 
     private final Repository repo;
     private final QueueStorageManager queueStorageManager;
-    private final String ourServerId;
     private final Map<String, MessageBuffer> buffers = new ConcurrentHashMap<String, MessageBuffer>();
     private final ExecutorService threadPool;
 
     @Inject
-    public QueueManager(EventBus eventBus, Repository repo, QueueStorageManager queueStorageManager, OurServer ourServer) {
+    public QueueManager(EventBus eventBus, Repository repo, QueueStorageManager queueStorageManager) {
         this.repo = repo;
         this.queueStorageManager = queueStorageManager;
-        this.ourServerId = ourServer.getId();
         this.threadPool = new ThreadPoolExecutor(2, Integer.MAX_VALUE,
                 60L, TimeUnit.SECONDS,
                 new SynchronousQueue<Runnable>(),
                 new ThreadFactoryBuilder().setNameFormat("queue-manager-%d").setUncaughtExceptionHandler(this).build());
         eventBus.register(this);
-        if (repo.getStatus().isUp()) syncQueues();
+        syncQueues();
     }
 
     @Override
@@ -58,11 +55,6 @@ public class QueueManager implements Closeable, Thread.UncaughtExceptionHandler 
                 log.error("Error closing " + mb);
             }
         }
-    }
-
-    @Subscribe
-    public void handleRepoStatusChange(Repository.Status status) {
-        if (status.isUp()) syncQueues();
     }
 
     @Subscribe
@@ -80,36 +72,23 @@ public class QueueManager implements Closeable, Thread.UncaughtExceptionHandler 
     }
 
     private synchronized void syncQueue(Queue q) {
-        boolean master = q.isMaster(ourServerId);
-        boolean slave = q.isSlave(ourServerId);
         MessageBuffer mb = buffers.get(q.getId());
-        if (master || slave) {
-            boolean newBuffer = mb == null;
-            if (newBuffer) {
-                File dir = queueStorageManager.findDir(q);
-                try {
-                    mb = new PersistentMessageBuffer(dir);
-                } catch (IOException e) {
-                    log.error("Error creating buffer for queue " + q + ": " + e, e);
-                    return;
-                }
-                if (log.isDebugEnabled()) log.debug("Opened " + mb);
-            } else if (log.isDebugEnabled()) {
-                log.debug("Updating " + mb);
-            }
-            mb.setExecutor(threadPool);
-            updateBufferProperties(mb, q);
-            if (newBuffer) buffers.put(q.getId(), mb);
-            // todo schedule replication if we are slave
-        } else if (mb != null) {
-            if (log.isDebugEnabled()) log.debug("Closing queue " + q + " as we are not master or slave");
+        boolean newBuffer = mb == null;
+        if (newBuffer) {
+            File dir = queueStorageManager.findDir(q);
             try {
-                mb.close();
+                mb = new PersistentMessageBuffer(dir);
             } catch (IOException e) {
-                log.error("Error closing " + mb + ": " + e, e);
+                log.error("Error creating buffer for queue " + q + ": " + e, e);
+                return;
             }
-            buffers.remove(q.getId());
+            if (log.isDebugEnabled()) log.debug("Opened " + mb);
+        } else if (log.isDebugEnabled()) {
+            log.debug("Updating " + mb);
         }
+        mb.setExecutor(threadPool);
+        updateBufferProperties(mb, q);
+        if (newBuffer) buffers.put(q.getId(), mb);
     }
 
     private void updateBufferProperties(MessageBuffer mb, Queue q) {

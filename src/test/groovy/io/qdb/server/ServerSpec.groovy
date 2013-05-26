@@ -7,8 +7,6 @@ class ServerSpec extends StandaloneBase {
 
         expect:
         ans.code == 200
-        ans.json.id != null
-        ans.json.up == true
         ans.json.upSince != null
     }
 

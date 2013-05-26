@@ -1,7 +1,6 @@
 package io.qdb.server.controller;
 
 import io.qdb.kvstore.OptimisticLockingException;
-import io.qdb.server.OurServer;
 import io.qdb.server.model.*;
 import io.qdb.server.model.Queue;
 
@@ -18,7 +17,6 @@ public class QueueController extends CrudController {
     private final Repository repo;
     private final MessageController messageController;
     private final TimelineController timelineController;
-    private final String ourServerId;
 
     private static final SecureRandom RND = new SecureRandom();
 
@@ -28,8 +26,6 @@ public class QueueController extends CrudController {
         public String qid;
         public Integer version;
         public String database;
-        public String master;
-        public String[] slaves;
         public Long maxSize;
         public Integer maxPayloadSize;
         public String contentType;
@@ -41,8 +37,6 @@ public class QueueController extends CrudController {
             this.id = id;
             this.qid = queue.getId();
             this.version = queue.getVersion();
-            this.master = queue.getMaster();
-            this.slaves = queue.getSlaves();
             this.maxSize = queue.getMaxSize();
             this.maxPayloadSize = queue.getMaxPayloadSize();
             this.contentType = queue.getContentType();
@@ -58,12 +52,11 @@ public class QueueController extends CrudController {
 
     @Inject
     public QueueController(JsonService jsonService, Repository repo, MessageController messageController,
-                           TimelineController timelineController, OurServer ourServer) {
+                TimelineController timelineController) {
         super(jsonService);
         this.repo = repo;
         this.messageController = messageController;
         this.timelineController = timelineController;
-        this.ourServerId = ourServer.getId();
     }
 
     @SuppressWarnings("unchecked")
@@ -138,8 +131,6 @@ public class QueueController extends CrudController {
         q.setContentType("application/json; charset=utf-8");
         if (!updateAttributes(q, dto, call)) return;
         q.setDatabase(db.getId());
-        // todo use master from the dto if specified
-        q.setMaster(ourServerId);
 
         for (int attempt = 0; ; ) {
             q.setId(generateQueueId());

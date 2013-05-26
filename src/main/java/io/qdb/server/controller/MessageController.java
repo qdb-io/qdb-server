@@ -2,7 +2,6 @@ package io.qdb.server.controller;
 
 import io.qdb.buffer.MessageBuffer;
 import io.qdb.buffer.MessageCursor;
-import io.qdb.server.OurServer;
 import io.qdb.server.model.Queue;
 import io.qdb.server.queue.QueueManager;
 import org.simpleframework.http.Request;
@@ -21,7 +20,6 @@ public class MessageController extends CrudController {
     private static final Logger log = LoggerFactory.getLogger(MessageController.class);
 
     private final QueueManager queueManager;
-    private final String ourServerId;
 
     public static class CreateDTO {
 
@@ -55,21 +53,14 @@ public class MessageController extends CrudController {
     }
 
     @Inject
-    public MessageController(JsonService jsonService, QueueManager queueManager, OurServer ourServer) {
+    public MessageController(JsonService jsonService, QueueManager queueManager) {
         super(jsonService);
         this.queueManager = queueManager;
-        this.ourServerId = ourServer.getId();
     }
 
     @Override
     protected void create(Call call) throws IOException {
-        Queue q = call.getQueue();
-        if (!q.isMaster(ourServerId)) {
-            // todo proxy POST to master and set Location header
-            call.setCode(500, "Create message on non-master not implemented");
-            return;
-        }
-        MessageBuffer mb = queueManager.getBuffer(q);
+        MessageBuffer mb = queueManager.getBuffer(call.getQueue());
         if (mb == null || !mb.isOpen()) {
             // probably we are busy starting up and haven't synced this queue yet or are shutting down
             call.setCode(503, "Queue is not available, please try again later");
@@ -134,11 +125,6 @@ public class MessageController extends CrudController {
     @Override
     protected void list(Call call, int offset, int limit) throws IOException {
         Queue q = call.getQueue();
-        if (!q.isMaster(ourServerId) && !q.isSlave(ourServerId)) {
-            // todo set Location header and send a 302 or proxy the master
-            call.setCode(500, "Get messages from non-master non-slave not implemented");
-            return;
-        }
         MessageBuffer mb = queueManager.getBuffer(q);
         if (mb == null || !mb.isOpen()) {
             // probably we are busy starting up and haven't synced this queue yet or are shutting down

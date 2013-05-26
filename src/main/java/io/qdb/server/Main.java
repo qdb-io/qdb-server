@@ -15,7 +15,6 @@ public class Main {
     public static void main(String[] args) {
         try {
             Injector injector = Guice.createInjector(new QdbServerModule());
-            injector.getInstance(RepositoryInit.class);
             injector.getInstance(Connection.class);
         } catch (Exception e) {
             log.error(e.getMessage(), e);
