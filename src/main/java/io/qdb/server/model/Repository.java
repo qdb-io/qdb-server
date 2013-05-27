@@ -12,9 +12,7 @@ public interface Repository extends Closeable {
 
     public User findUser(String id) throws IOException;
 
-    public User createUser(User user) throws IOException;
-
-    public User updateUser(User user) throws IOException;
+    public void updateUser(User user) throws IOException;
 
     public List<User> findUsers(int offset, int limit) throws IOException;
 
@@ -23,9 +21,7 @@ public interface Repository extends Closeable {
 
     public Database findDatabase(String id) throws IOException;
 
-    public Database createDatabase(Database db) throws IOException;
-
-    public Database updateDatabase(Database db) throws IOException;
+    public void updateDatabase(Database db) throws IOException;
 
     public List<Database> findDatabasesVisibleTo(User user, int offset, int limit) throws IOException;
 

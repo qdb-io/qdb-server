@@ -6,7 +6,7 @@ import spock.lang.Stepwise
 class UsersSpec extends StandaloneBase {
 
     def setupSpec() {
-        assert POST("/databases", [id: "foo"]).code == 201
+        assert POST("/databases/foo", [:]).code == 201
     }
 
     def "List users"() {
@@ -38,7 +38,9 @@ class UsersSpec extends StandaloneBase {
     }
 
     def "Create user"() {
-        def ans = POST("/users", [id: "david", password: "secret", admin: false, databases: ["foo"]])
+        def map = [password: "secret", admin: false, databases: ["foo"]]
+        def ans = POST("/users/david", map)
+        def ans2 = POST("/users/david", map)
 
         expect:
         ans.code == 201
@@ -46,6 +48,7 @@ class UsersSpec extends StandaloneBase {
         ans.json.passwordHash == null
         ans.json.admin == false
         ans.json.databases == ["foo"]
+        ans2.code == 200
     }
 
     def "Update user"() {

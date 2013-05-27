@@ -7,6 +7,7 @@ import io.qdb.server.model.User;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 
 @Singleton
@@ -76,54 +77,53 @@ public class UserController extends CrudController {
     }
 
     @Override
-    protected void create(Call call) throws IOException {
+    protected void createOrUpdate(Call call, String id) throws IOException {
         if (call.getUser().isAdmin()) {
             UserDTO dto = getBodyObject(call, UserDTO.class);
-            User u = new User();
-            u.setId(dto.id);
-            u.setPassword(dto.password);
-            if (dto.admin != null) u.setAdmin(dto.admin);
-            u.setDatabases(dto.databases);
-            call.setCode(201, new UserDTO(repo.createUser(u)));
-        } else {
-            call.setCode(403);
-        }
-    }
-
-    @Override
-    protected void update(Call call, String id) throws IOException {
-        if (call.getUser().isAdmin()) {
-            User u = repo.findUser(id);
-            if (u == null) call.setCode(404);
-            else update(u, getBodyObject(call, UserDTO.class), call);
-        } else {
-            call.setCode(403);
-        }
-    }
-
-    private void update(User u, UserDTO dto, Call call) throws IOException {
-        if (dto.version != null && !dto.version.equals(u.getVersion())) {
-            call.setCode(409, new UserDTO(u));
-            return;
-        }
-        if (dto.admin != null) u.setAdmin(dto.admin);
-        if (dto.databases != null) {
-            for (int i = 0; i < dto.databases.length; i++) {
-                String db = dto.databases[i];
-                if (repo.findDatabase(db) == null) {
-                    call.setCode(400, "database [" + db + "] does not exist");
-                    return;
+            User u;
+            boolean create;
+            synchronized (repo) {
+                u = repo.findUser(id);
+                if (create = u == null) {
+                    if (call.isPut()) {
+                        call.setCode(404);
+                        return;
+                    }
+                    u = new User(id);
+                } else {
+                    if (dto.version != null && !dto.version.equals(u.getVersion())) {
+                        call.setCode(409, new UserDTO(u));
+                        return;
+                    }
+                    u = (User)u.clone();
                 }
+
+                boolean changed = create;
+                if (dto.password != null && !u.doesPasswordMatch(dto.password)) {
+                    u.setPassword(dto.password);
+                    changed = true;
+                }
+                if (dto.admin != null && dto.admin != u.isAdmin()) {
+                    u.setAdmin(dto.admin);
+                    changed = true;
+                }
+                if (dto.databases != null && !Arrays.equals(dto.databases, u.getDatabases())) {
+                    for (int i = 0; i < dto.databases.length; i++) {
+                        String db = dto.databases[i];
+                        if (repo.findDatabase(db) == null) {
+                            call.setCode(400, "database [" + db + "] does not exist");
+                            return;
+                        }
+                    }
+                    u.setDatabases(dto.databases);
+                    changed = true;
+                }
+
+                if (changed) repo.updateUser(u);
             }
-            u.setDatabases(dto.databases);
-        }
-        try {
-            call.setJson(new UserDTO(repo.updateUser(u)));
-        } catch (OptimisticLockingException e) {
-            u = repo.findUser(u.getId());
-            if (u == null) call.setCode(410);
-            else call.setCode(409, new UserDTO(u));
+            call.setCode(create ? 201 : 200, new UserDTO(u));
+        } else {
+            call.setCode(403);
         }
     }
-
 }

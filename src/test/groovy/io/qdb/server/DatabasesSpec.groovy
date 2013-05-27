@@ -6,16 +6,18 @@ import spock.lang.Stepwise
 class DatabasesSpec extends StandaloneBase {
 
     def setupSpec() {
-        assert POST("/users", [id: "david", password: "secret"]).code == 201
-        assert POST("/users", [id: "gimp", password: "secret"]).code == 201
+        assert POST("/users/david", [password: "secret"]).code == 201
+        assert POST("/users/gimp", [password: "secret"]).code == 201
     }
 
     def "Create database"() {
-        def ans = POST("/databases", [id: "foo"])
+        def ans = POST("/databases/foo", [:])
+        def ans2 = POST("/databases/foo", [:])
 
         expect:
         ans.code == 201
         ans.json.id == "foo"
+        ans2.code == 200
     }
 
     def "List databases for admin"() {

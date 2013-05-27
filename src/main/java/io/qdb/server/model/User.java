@@ -14,6 +14,10 @@ public class User extends ModelObject {
     public User() {
     }
 
+    public User(String id) {
+        setId(id);
+    }
+
     public String getPasswordHash() {
         return passwordHash;
     }
@@ -35,7 +39,7 @@ public class User extends ModelObject {
     }
 
     public boolean doesPasswordMatch(String password) {
-        return PasswordTools.checkPassword(password, passwordHash);
+        return passwordHash != null && PasswordTools.checkPassword(password, passwordHash);
     }
 
     public String[] getDatabases() {

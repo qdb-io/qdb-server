@@ -41,7 +41,7 @@ public class RepositoryImpl implements Repository {
             admin.setId("admin");
             admin.setPassword(initialAdminPassword);
             admin.setAdmin(true);
-            createUser(admin);
+            updateUser(admin);
             log.info("Created initial admin user");
             store.saveSnapshot();
         }
@@ -69,15 +69,8 @@ public class RepositoryImpl implements Repository {
     }
 
     @Override
-    public User createUser(User user) throws IOException {
-        create(users, user);
-        return user;
-    }
-
-    @Override
-    public User updateUser(User user) throws IOException {
-        update(users, user);
-        return user;
+    public void updateUser(User user) throws IOException {
+        users.put(user.getId(), user);
     }
 
     @Override
@@ -114,15 +107,8 @@ public class RepositoryImpl implements Repository {
     }
 
     @Override
-    public Database createDatabase(Database db) throws IOException {
-        create(databases, db);
-        return db;
-    }
-
-    @Override
-    public Database updateDatabase(Database db) throws IOException {
-        update(databases, db);
-        return db;
+    public void updateDatabase(Database db) throws IOException {
+        databases.put(db.getId(), db);
     }
 
     @Override
@@ -175,6 +161,11 @@ public class RepositoryImpl implements Repository {
         if (map.replace(o.getId(), o) == null) {
             throw new OptimisticLockingException(tos(o) + " not found");
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void createOrUpdate(ConcurrentMap map, ModelObject o) throws IOException {
+        map.replace(o.getId(), o);
     }
 
     private static String tos(ModelObject o) {

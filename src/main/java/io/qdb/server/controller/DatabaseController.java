@@ -1,12 +1,15 @@
 package io.qdb.server.controller;
 
+import com.sun.tools.javac.resources.version;
 import io.qdb.kvstore.OptimisticLockingException;
 import io.qdb.server.model.Database;
 import io.qdb.server.model.Repository;
+import io.qdb.server.model.User;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 
 @Singleton
@@ -64,47 +67,42 @@ public class DatabaseController extends CrudController {
     }
 
     @Override
-    protected void create(Call call) throws IOException {
+    protected void createOrUpdate(Call call, String id) throws IOException {
         if (call.getUser().isAdmin()) {
             DatabaseDTO dto = getBodyObject(call, DatabaseDTO.class);
-            Database db = new Database();
-            db.setId(dto.id);
-            db.setOwner(dto.owner);
-            call.setCode(201, new DatabaseDTO(repo.createDatabase(db)));
-        } else {
-            call.setCode(403);
-        }
-    }
+            Database db;
+            boolean create;
+            synchronized (repo) {
+                db = repo.findDatabase(id);
+                if (create = db == null) {
+                    if (call.isPut()) {
+                        call.setCode(404);
+                        return;
+                    }
+                    db = new Database(id);
+                } else {
+                    if (dto.version != null && !dto.version.equals(db.getVersion())) {
+                        call.setCode(409, new DatabaseDTO(db));
+                        return;
+                    }
+                    db = (Database)db.clone();
+                }
 
-    @Override
-    protected void update(Call call, String id) throws IOException {
-        Database db = repo.findDatabase(id);
-        if (call.getUser().isAdmin() || db != null && call.getUser().getId().equals(db.getOwner())) {
-            if (db == null) call.setCode(404);
-            else update(db, getBodyObject(call, DatabaseDTO.class), call);
-        } else {
-            call.setCode(403);
-        }
-    }
+                boolean changed = create;
+                if (dto.owner != null && !dto.owner.equals(db.getOwner())) {
+                    if (repo.findUser(dto.owner) == null) {
+                        call.setCode(400, "owner [" + dto.owner + "] does not exist");
+                        return;
+                    }
+                    db.setOwner(dto.owner);
+                    changed = true;
+                }
 
-    private void update(Database db, DatabaseDTO dto, Call call) throws IOException {
-        if (dto.version != null && !dto.version.equals(db.getVersion())) {
-            call.setCode(409, new DatabaseDTO(db));
-            return;
-        }
-        if (dto.owner != null) {
-            if (repo.findUser(dto.owner) == null) {
-                call.setCode(400, "owner [" + dto.owner + "] does not exist");
-                return;
+                if (changed) repo.updateDatabase(db);
             }
-            db.setOwner(dto.owner);
-        }
-        try {
-            call.setJson(new DatabaseDTO(repo.updateDatabase(db)));
-        } catch (OptimisticLockingException e) {
-            db = repo.findDatabase(db.getId());
-            if (db == null) call.setCode(410);
-            else call.setCode(409, new DatabaseDTO(db));
+            call.setCode(create ? 201 : 200, new DatabaseDTO(db));
+        } else {
+            call.setCode(403);
         }
     }
 

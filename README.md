@@ -19,16 +19,12 @@ HTTP Basic authentication is used. The only endpoint that does not require authe
 This outputs:
 
     {
-      "startTime": "2012-12-02T10:49:21.872+0000",
       "upSince": "2012-12-02T10:49:21.908+0000",
-      "status": "UP"
     }
-
-Authenticated users using this endpoint receive a lot more information about the server.
 
 You can also POST and PUT json data to the server using curl. This example creates a new user:
 
-    curl -s -X POST -H "Content-Type: application/json" --user admin:admin http://127.0.0.1:9554/users -d @user.json
+    curl -s -X POST -H "Content-Type: application/json" --user admin:admin http://127.0.0.1:9554/users/david -d @user.json
 
 It is important to specify the content type.
 
@@ -46,6 +42,9 @@ Endpoints
 List endpoints (e.g. /users) accept optional offset and limit parameters to page the returned data. PUT requests
 only update fields included in the JSON i.e. you don't have to send a complete representation of the object. POST
 and PUT request return a complete representation of the new/updated object.
+
+POST requests are idempotent i.e. a POST for an already existing object updates it instead of creating it. A POST
+that creates a new object returns a 200 and one that is an update returns a 201.
 
 
 ### Users ###
@@ -137,13 +136,13 @@ Running Tests
 
 Use `gradle check` to run all tests (unit and functional).
 
-Use `gradle test -Dtest.single=Paxos*` to run matching test specs (all the Paxos* specs in this example).
+Use `gradle test -Dtest.single=Queues*` to run matching test specs.
 
 
 License
 -------
 
-Copyright 2012 David Tinker
+Copyright 2013 David Tinker
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.

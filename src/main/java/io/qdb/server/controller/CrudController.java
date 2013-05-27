@@ -28,8 +28,6 @@ public abstract class CrudController implements Controller {
                         int offset = call.getInt("offset", 0);
                         list(call, offset, call.getInt("limit", Integer.MAX_VALUE - offset));
                     }
-                } else if (call.isPost()) {
-                    create(call);
                 } else {
                     call.setCode(400);
                 }
@@ -37,7 +35,7 @@ public abstract class CrudController implements Controller {
                 String resource = call.nextSegment();
                 if (resource == null) {
                     if (call.isGet()) show(call, id);
-                    else if (call.isPut()) update(call, id);
+                    else if (call.isPost() || call.isPut()) createOrUpdate(call, id);
                     else if (call.isDelete()) delete(call, id);
                     else call.setCode(400);
                 } else {
@@ -62,6 +60,10 @@ public abstract class CrudController implements Controller {
     }
 
     protected void create(Call call) throws IOException {
+        call.setCode(400, "Create not supported");
+    }
+
+    protected void createOrUpdate(Call call, String id) throws IOException {
         call.setCode(400, "Create not supported");
     }
 

@@ -13,6 +13,10 @@ public class Database extends ModelObject {
     public Database() {
     }
 
+    public Database(String id) {
+        setId(id);
+    }
+
     public String getOwner() {
         return owner;
     }
