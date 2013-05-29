@@ -182,4 +182,11 @@ class MessagesSpec extends StandaloneBase {
         ans.code == 200
         ans.text.substring(0, 3) == "\n\n{"     // 2 keep-alive chars sent
     }
+
+    def "GET?count=true gives 400"() {
+        def ans = GET("/databases/foo/queues/bar/messages?count=true")
+
+        expect:
+        ans.code == 400
+    }
 }

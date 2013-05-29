@@ -69,4 +69,11 @@ class DatabasesSpec extends StandaloneBase {
         ans.code == 403
     }
 
+    def "Bogus resource gives 404"() {
+        def ans = GET("/databases/foo/wibble")
+
+        expect:
+        ans.code == 404
+    }
+
 }
