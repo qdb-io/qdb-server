@@ -28,6 +28,11 @@ class Client {
                 json = new JsonSlurper().parseText(text)
             }
         }
+
+        @Override
+        String toString() {
+            return "${code} ${text}"
+        }
     }
 
     Client(String serverUrl) {

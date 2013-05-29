@@ -1,7 +1,6 @@
 package io.qdb.server.repo;
 
 import io.qdb.kvstore.KeyValueStore;
-import io.qdb.kvstore.OptimisticLockingException;
 import io.qdb.server.model.*;
 import io.qdb.server.model.Queue;
 import org.slf4j.Logger;
@@ -128,15 +127,8 @@ public class RepositoryImpl implements Repository {
     }
 
     @Override
-    public Queue createQueue(Queue queue) throws IOException {
-        create(queues, queue);
-        return queue;
-    }
-
-    @Override
-    public Queue updateQueue(Queue queue) throws IOException {
-        update(queues, queue);
-        return queue;
+    public void updateQueue(Queue queue) throws IOException {
+        queues.put(queue.getId(), queue);
     }
 
     @SuppressWarnings("unchecked")
@@ -147,28 +139,5 @@ public class RepositoryImpl implements Repository {
         int n = list.size();
         if (offset == 0 && limit >= n) return list;
         return offset >= n ? Collections.EMPTY_LIST : list.subList(offset, Math.min(limit, n));
-    }
-
-    @SuppressWarnings("unchecked")
-    private void create(ConcurrentMap map, ModelObject o) throws IOException {
-        if (map.putIfAbsent(o.getId(), o) != null) {
-            throw new DuplicateIdException("Duplicate id: " + tos(o));
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    private void update(ConcurrentMap map, ModelObject o) throws IOException {
-        if (map.replace(o.getId(), o) == null) {
-            throw new OptimisticLockingException(tos(o) + " not found");
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    private void createOrUpdate(ConcurrentMap map, ModelObject o) throws IOException {
-        map.replace(o.getId(), o);
-    }
-
-    private static String tos(ModelObject o) {
-        return o == null ? "null" : o.getClass().getSimpleName() + ":" + o.getId();
     }
 }

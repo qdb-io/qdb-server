@@ -6,37 +6,29 @@ import spock.lang.Shared
 @Stepwise
 class QueuesSpec extends StandaloneBase {
 
-    @Shared
-    private String serverId
-
     def setupSpec() {
-        serverId = GET("/").json.id
-        assert POST("/users", [id: "david", password: "secret"]).code == 201
-        assert POST("/databases", [id: "foo", owner: "david"]).code == 201
+        assert POST("/users/david", [password: "secret"]).code == 201
+        assert POST("/databases/foo", [owner: "david"]).code == 201
     }
 
     def "Create queue"() {
-        def ans = POST("/databases/foo/queues", [id: "bar", maxSize: 10000000], "david", "secret")
+        def data = [maxSize: 10000000]
+        def ans = POST("/databases/foo/queues/bar", data, "david", "secret")
+        println(ans)
+        def ans2 = POST("/databases/foo/queues/bar", data, "david", "secret")
 
         expect:
         ans.code == 201
         ans.json.id == "bar"
         ans.json.qid.length() > 0
-        ans.json.master == serverId
         ans.json.maxSize == 10000000
         ans.json.maxPayloadSize == 128 * 1024
         ans.json.contentType == "application/json; charset=utf-8"
-    }
-
-    def "Duplicate queue not allowed"() {
-        def ans = POST("/databases/foo/queues", [id: "bar"], "david", "secret")
-
-        expect:
-        ans.code == 400
+        ans2.code == 200
     }
 
     def "Queue id validation"() {
-        def ans = POST("/databases/foo/queues", [id: "a?b"], "david", "secret")
+        def ans = POST("/databases/foo/queues/a?b", [:], "david", "secret")
 
         expect:
         ans.code == 400
@@ -50,7 +42,6 @@ class QueuesSpec extends StandaloneBase {
         ans.json.size() == 1
         ans.json[0].id == "bar"
         ans.json[0].qid.length() > 0
-        ans.json[0].master == serverId
     }
 
     def "Count queues"() {
@@ -68,7 +59,6 @@ class QueuesSpec extends StandaloneBase {
         ans.code == 200
         ans.json.id == "bar"
         ans.json.qid.length() > 0
-        ans.json.master == serverId
     }
 
     def "Update queue"() {

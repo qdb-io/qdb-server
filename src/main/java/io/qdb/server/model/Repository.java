@@ -30,9 +30,7 @@ public interface Repository extends Closeable {
 
     public Queue findQueue(String id) throws IOException;
 
-    public Queue createQueue(Queue queue) throws IOException;
-
-    public Queue updateQueue(Queue queue) throws IOException;
+    public void updateQueue(Queue queue) throws IOException;
 
     public List<Queue> findQueues(int offset, int limit) throws IOException;
 
