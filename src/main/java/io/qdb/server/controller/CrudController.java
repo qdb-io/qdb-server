@@ -28,6 +28,8 @@ public abstract class CrudController implements Controller {
                         int offset = call.getInt("offset", 0);
                         list(call, offset, call.getInt("limit", Integer.MAX_VALUE - offset));
                     }
+                } else if (call.isPost()) {
+                    create(call);
                 } else {
                     call.setCode(400);
                 }
