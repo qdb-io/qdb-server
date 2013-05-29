@@ -50,7 +50,7 @@ public class Router implements Container {
                     serverStatusController.handle(call);
                 } else if (call.getAuth().isAnonymous()) {
                     authService.sendChallenge(resp);
-                } else if ("db".equals(seg)) {
+                } else if ("databases".equals(seg)) {
                     databaseController.handle(call);
                 } else if ("users".equals(seg)) {
                     userController.handle(call);
