@@ -6,8 +6,8 @@ import spock.lang.Stepwise
 class TimelineSpec extends StandaloneBase {
 
     def setupSpec() {
-        assert POST("/databases", [id: "foo", owner: "admin"]).code == 201
-        assert POST("/databases/foo/queues", [id: "bar", maxSize: 10000000]).code == 201
+        assert POST("/databases/foo", [owner: "admin"]).code == 201
+        assert POST("/databases/foo/queues/bar", [maxSize: 10000000]).code == 201
     }
 
     def "Get timeline for empty queue"() {

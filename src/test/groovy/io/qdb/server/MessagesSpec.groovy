@@ -16,9 +16,9 @@ class MessagesSpec extends StandaloneBase {
     @Shared long startTime = System.currentTimeMillis()
 
     def setupSpec() {
-        assert POST("/users", [id: "david", password: "secret"]).code == 201
-        assert POST("/databases", [id: "foo", owner: "david"]).code == 201
-        assert POST("/databases/foo/queues", [id: "bar", maxSize: 10000000], "david", "secret").code == 201
+        assert POST("/users/david", [password: "secret"]).code == 201
+        assert POST("/databases/foo", [owner: "david"]).code == 201
+        assert POST("/databases/foo/queues/bar", [maxSize: 10000000], "david", "secret").code == 201
     }
 
     def cleanupSpec() {
