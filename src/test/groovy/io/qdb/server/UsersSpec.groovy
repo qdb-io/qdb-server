@@ -6,7 +6,7 @@ import spock.lang.Stepwise
 class UsersSpec extends StandaloneBase {
 
     def setupSpec() {
-        assert POST("/databases/foo", [:]).code == 201
+        assert POST("/db/foo", [:]).code == 201
     }
 
     def "List users"() {
@@ -74,7 +74,7 @@ class UsersSpec extends StandaloneBase {
     }
 
     def "List databases for non-admin user"() {
-        def ans = GET("/databases", "david", "secret")
+        def ans = GET("/db", "david", "secret")
 
         expect:
         ans.code == 200

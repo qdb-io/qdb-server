@@ -11,8 +11,8 @@ class DatabasesSpec extends StandaloneBase {
     }
 
     def "Create database"() {
-        def ans = POST("/databases/foo", [:])
-        def ans2 = POST("/databases/foo", [:])
+        def ans = POST("/db/foo", [:])
+        def ans2 = POST("/db/foo", [:])
 
         expect:
         ans.code == 201
@@ -21,7 +21,7 @@ class DatabasesSpec extends StandaloneBase {
     }
 
     def "List databases for admin"() {
-        def ans = GET("/databases")
+        def ans = GET("/db")
 
         expect:
         ans.code == 200
@@ -30,7 +30,7 @@ class DatabasesSpec extends StandaloneBase {
     }
 
     def "Count databases"() {
-        def ans = GET("/databases?count=true")
+        def ans = GET("/db?count=true")
 
         expect:
         ans.code == 200
@@ -38,7 +38,7 @@ class DatabasesSpec extends StandaloneBase {
     }
 
     def "Get database"() {
-        def ans = GET("/databases/foo")
+        def ans = GET("/db/foo")
 
         expect:
         ans.code == 200
@@ -46,7 +46,7 @@ class DatabasesSpec extends StandaloneBase {
     }
 
     def "Update database"() {
-        def ans = PUT("/databases/foo", [owner: "david"])
+        def ans = PUT("/db/foo", [owner: "david"])
 
         expect:
         ans.code == 200
@@ -55,7 +55,7 @@ class DatabasesSpec extends StandaloneBase {
     }
 
     def "Get database as owner"() {
-        def ans = GET("/databases/foo", "david", "secret")
+        def ans = GET("/db/foo", "david", "secret")
 
         expect:
         ans.code == 200
@@ -63,7 +63,7 @@ class DatabasesSpec extends StandaloneBase {
     }
 
     def "Get database as arb user"() {
-        def ans = GET("/databases/foo", "gimp", "secret")
+        def ans = GET("/db/foo", "gimp", "secret")
 
         expect:
         ans.code == 403

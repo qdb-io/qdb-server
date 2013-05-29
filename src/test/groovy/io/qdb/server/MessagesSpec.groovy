@@ -17,8 +17,8 @@ class MessagesSpec extends StandaloneBase {
 
     def setupSpec() {
         assert POST("/users/david", [password: "secret"]).code == 201
-        assert POST("/databases/foo", [owner: "david"]).code == 201
-        assert POST("/databases/foo/queues/bar", [maxSize: 10000000], "david", "secret").code == 201
+        assert POST("/db/foo", [owner: "david"]).code == 201
+        assert POST("/db/foo/queues/bar", [maxSize: 10000000], "david", "secret").code == 201
     }
 
     def cleanupSpec() {
@@ -27,8 +27,8 @@ class MessagesSpec extends StandaloneBase {
 
     def "Append message"() {
         long now = System.currentTimeMillis()
-        def ans = POST("/databases/foo/queues/bar/messages?routingKey=abc", [hello: "world"], "david", "secret")
-        def ans2 = POST("/databases/foo/queues/bar/messages", [hello: "2nd world"], "david", "secret")
+        def ans = POST("/db/foo/queues/bar/messages?routingKey=abc", [hello: "world"], "david", "secret")
+        def ans2 = POST("/db/foo/queues/bar/messages", [hello: "2nd world"], "david", "secret")
 
         expect:
         ans.code == 201
@@ -42,7 +42,7 @@ class MessagesSpec extends StandaloneBase {
     }
 
     def "Append message with chunked transfer encoding"() {
-        def url = new URL(client.serverUrl + "/databases/foo/queues/bar/messages")
+        def url = new URL(client.serverUrl + "/db/foo/queues/bar/messages")
         HttpURLConnection con = url.openConnection() as HttpURLConnection
         con.doOutput = true
         con.requestMethod = "POST"
@@ -59,7 +59,7 @@ class MessagesSpec extends StandaloneBase {
     }
 
     def "Get single message"() {
-        def ans = GET("/databases/foo/queues/bar/messages?id=0&single=true")
+        def ans = GET("/db/foo/queues/bar/messages?id=0&single=true")
 
         expect:
         ans.code == 200
@@ -71,7 +71,7 @@ class MessagesSpec extends StandaloneBase {
     }
 
     def "Get 2 messages streamed"() {
-        def ans = GET("/databases/foo/queues/bar/messages?id=0&limit=2")
+        def ans = GET("/db/foo/queues/bar/messages?id=0&limit=2")
         def r = new StringReader(ans.text)
 
         def h1 = new JsonSlurper().parseText(r.readLine())
@@ -99,7 +99,7 @@ class MessagesSpec extends StandaloneBase {
     }
 
     def "Get message by timestamp"() {
-        def ans = GET("/databases/foo/queues/bar/messages?timestamp=${startTime}&single=true")
+        def ans = GET("/db/foo/queues/bar/messages?timestamp=${startTime}&single=true")
 
         expect:
         ans.code == 200
@@ -112,12 +112,12 @@ class MessagesSpec extends StandaloneBase {
         def ans = null
         pool.execute({
             ready.countDown()
-            ans = GET("/databases/foo/queues/bar/messages?single=true")
+            ans = GET("/db/foo/queues/bar/messages?single=true")
             done.countDown()
         })
         ready.await(200, TimeUnit.MILLISECONDS)
         Thread.sleep(50)    // give background GET time to block waiting for message
-        POST("/databases/foo/queues/bar/messages?routingKey=abc", [hello: "3rd world"])
+        POST("/db/foo/queues/bar/messages?routingKey=abc", [hello: "3rd world"])
         done.await(200, TimeUnit.MILLISECONDS)
 
         expect:
@@ -131,12 +131,12 @@ class MessagesSpec extends StandaloneBase {
         def ans = null
         pool.execute({
             ready.countDown()
-            ans = GET("/databases/foo/queues/bar/messages?single=true&timeoutMs=1000")
+            ans = GET("/db/foo/queues/bar/messages?single=true&timeoutMs=1000")
             done.countDown()
         })
         ready.await(200, TimeUnit.MILLISECONDS)
         Thread.sleep(50)    // give background GET time to block waiting for message
-        POST("/databases/foo/queues/bar/messages", [hello: "4th world"])
+        POST("/db/foo/queues/bar/messages", [hello: "4th world"])
         done.await(200, TimeUnit.MILLISECONDS)
 
         expect:
@@ -146,7 +146,7 @@ class MessagesSpec extends StandaloneBase {
 
     def "Wait for new message with timeout expiry"() {
         long now = System.currentTimeMillis()
-        def ans = GET("/databases/foo/queues/bar/messages?timeoutMs=50")
+        def ans = GET("/db/foo/queues/bar/messages?timeoutMs=50")
         def ms = System.currentTimeMillis() - now
 
         expect:
@@ -157,7 +157,7 @@ class MessagesSpec extends StandaloneBase {
 
     def "Keep-alive chars sent with timeout"() {
         // time for one keep-alive \n to be sent
-        def ans = GET("/databases/foo/queues/bar/messages?timeoutMs=75&keepAliveMs=50")
+        def ans = GET("/db/foo/queues/bar/messages?timeoutMs=75&keepAliveMs=50")
 
         expect:
         ans.code == 200
@@ -170,12 +170,12 @@ class MessagesSpec extends StandaloneBase {
         def ans = null
         pool.execute({
             ready.countDown()
-            ans = GET("/databases/foo/queues/bar/messages?keepAliveMs=50&limit=1")
+            ans = GET("/db/foo/queues/bar/messages?keepAliveMs=50&limit=1")
             done.countDown()
         })
         ready.await(200, TimeUnit.MILLISECONDS)
         Thread.sleep(120)    // give background GET time to block waiting for message and 2 keep-alive chars sent
-        assert POST("/databases/foo/queues/bar/messages", [hello: "5th world"]).code == 201
+        assert POST("/db/foo/queues/bar/messages", [hello: "5th world"]).code == 201
         done.await(200, TimeUnit.MILLISECONDS)
 
         expect:
