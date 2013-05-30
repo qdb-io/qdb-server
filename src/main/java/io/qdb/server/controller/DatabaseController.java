@@ -1,15 +1,11 @@
 package io.qdb.server.controller;
 
-import com.sun.tools.javac.resources.version;
-import io.qdb.kvstore.OptimisticLockingException;
 import io.qdb.server.model.Database;
 import io.qdb.server.model.Repository;
-import io.qdb.server.model.User;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.List;
 
 @Singleton

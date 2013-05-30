@@ -1,6 +1,8 @@
 package io.qdb.server.controller;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.*;
 import com.google.inject.Inject;
 
@@ -56,9 +58,13 @@ public class JsonService {
     }
 
     /**
-     * Converts content to an instance of a particular type.
+     * Converts content to an instance of a particular type. Throws IllegalArgumentException if JSON is invalid.
      */
     public <T> T fromJson(InputStream ins, Class<T> klass) throws IOException {
-        return mapper.readValue(ins, klass);
+        try {
+            return mapper.readValue(ins, klass);
+        } catch (JsonProcessingException e) {
+            throw new IllegalArgumentException(e.getMessage());
+        }
     }
 }
