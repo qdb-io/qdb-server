@@ -14,7 +14,6 @@ class QueuesSpec extends StandaloneBase {
     def "Create queue"() {
         def data = [maxSize: 10000000]
         def ans = POST("/databases/foo/queues/bar", data, "david", "secret")
-        println(ans)
         def ans2 = POST("/databases/foo/queues/bar", data, "david", "secret")
 
         expect:

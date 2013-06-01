@@ -7,6 +7,7 @@ public class Output extends ModelObject {
 
     private String queue;
     private String type;
+    private String url;
     private boolean enabled;
     private long messageId;
 
@@ -27,6 +28,14 @@ public class Output extends ModelObject {
 
     public void setType(String type) {
         this.type = type;
+    }
+
+    public String getUrl() {
+        return url;
+    }
+
+    public void setUrl(String url) {
+        this.url = url;
     }
 
     public boolean isEnabled() {

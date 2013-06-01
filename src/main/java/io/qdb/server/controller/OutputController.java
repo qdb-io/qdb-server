@@ -31,8 +31,9 @@ public class OutputController extends CrudController {
         public Integer version;
         public String queue;
         public String type;
-        public boolean enabled;
-        public long messageId;
+        public String url;
+        public Boolean enabled;
+        public Long messageId;
 
         @SuppressWarnings("UnusedDeclaration")
         public OutputDTO() { }
@@ -43,6 +44,7 @@ public class OutputController extends CrudController {
             this.version = o.getVersion();
             this.queue = o.getQueue();
             this.type = o.getType();
+            this.url = o.getUrl();
             this.enabled = o.isEnabled();
             this.messageId = o.getMessageId();
         }
@@ -160,6 +162,16 @@ public class OutputController extends CrudController {
                     return;
                 }
                 o.setType(dto.type);
+                changed = true;
+            }
+
+            if (dto.url != null && !dto.url.equals(o.getUrl())) {
+                o.setUrl(dto.url);
+                changed = true;
+            }
+
+            if (dto.enabled != null && dto.enabled != o.isEnabled()) {
+                o.setEnabled(dto.enabled);
                 changed = true;
             }
 
