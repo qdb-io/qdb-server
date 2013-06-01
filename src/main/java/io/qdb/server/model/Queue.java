@@ -1,5 +1,7 @@
 package io.qdb.server.model;
 
+import java.util.Map;
+
 /**
  * A queue.
  */
@@ -9,6 +11,7 @@ public class Queue extends ModelObject {
     private long maxSize;
     private int maxPayloadSize;
     private String contentType;
+    private Map<String, String> outputs;
 
     public Queue() {
     }
@@ -43,6 +46,18 @@ public class Queue extends ModelObject {
 
     public void setContentType(String contentType) {
         this.contentType = contentType;
+    }
+
+    public Map<String, String> getOutputs() {
+        return outputs;
+    }
+
+    public void setOutputs(Map<String, String> outputs) {
+        this.outputs = outputs;
+    }
+
+    public String getOid(String id) {
+        return outputs == null ? null : outputs.get(id);
     }
 
     @Override

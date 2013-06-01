@@ -26,6 +26,7 @@ public class RepositoryImpl implements Repository {
     private final ConcurrentMap<String, User> users;
     private final ConcurrentMap<String, Database> databases;
     private final ConcurrentMap<String, Queue> queues;
+    private final ConcurrentMap<String, Output> outputs;
 
     @Inject
     public RepositoryImpl(KeyValueStore<String, ModelObject> store,
@@ -34,6 +35,7 @@ public class RepositoryImpl implements Repository {
         users = store.getMap("users", User.class);
         databases = store.getMap("databases", Database.class);
         queues = store.getMap("queues", Queue.class);
+        outputs = store.getMap("outputs", Output.class);
 
         if (findUser("admin") == null) {
             User admin = new User();
@@ -129,6 +131,27 @@ public class RepositoryImpl implements Repository {
     @Override
     public void updateQueue(Queue queue) throws IOException {
         queues.put(queue.getId(), queue);
+    }
+
+    @Override
+    public Output findOutput(String id) throws IOException {
+        return outputs.get(id);
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public List<Output> findOutputs(int offset, int limit) throws IOException {
+        return find(outputs, offset, limit);
+    }
+
+    @Override
+    public int countOutputs() throws IOException {
+        return outputs.size();
+    }
+
+    @Override
+    public void updateOutput(Output output) throws IOException {
+        outputs.put(output.getId(), output);
     }
 
     @SuppressWarnings("unchecked")

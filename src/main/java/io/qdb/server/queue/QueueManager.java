@@ -19,8 +19,7 @@ import java.util.Map;
 import java.util.concurrent.*;
 
 /**
- * Manages our queues. Keeps our local queues in sync with the repository by responding to events and periodically
- * syncing all queues.
+ * Keeps our local queues in sync with the repository by responding to events and periodically syncing all queues.
  */
 @Singleton
 public class QueueManager implements Closeable, Thread.UncaughtExceptionHandler {

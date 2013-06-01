@@ -95,7 +95,7 @@ public abstract class CrudController implements Controller {
     protected <T> T getBodyObject(Call call, Class<T> cls) throws IOException {
         Request req = call.getRequest();
         if ("application/json".equals(req.getValue("Content-Type"))) {
-            InputStream ins = Channels.newInputStream(req.getByteChannel());
+            InputStream ins = req.getInputStream();
             try {
                 return jsonService.fromJson(ins, cls);
             } catch (IllegalArgumentException x) {

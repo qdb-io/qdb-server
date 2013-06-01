@@ -18,6 +18,7 @@ public class QueueController extends CrudController {
     private final Repository repo;
     private final MessageController messageController;
     private final TimelineController timelineController;
+    private final OutputController outputController;
 
     private static final SecureRandom RND = new SecureRandom();
 
@@ -55,11 +56,12 @@ public class QueueController extends CrudController {
 
     @Inject
     public QueueController(JsonService jsonService, Repository repo, MessageController messageController,
-                TimelineController timelineController) {
+                TimelineController timelineController, OutputController outputController) {
         super(jsonService);
         this.repo = repo;
         this.messageController = messageController;
         this.timelineController = timelineController;
+        this.outputController = outputController;
     }
 
     @SuppressWarnings("unchecked")
@@ -110,7 +112,7 @@ public class QueueController extends CrudController {
         boolean create;
         Queue q;
         synchronized (repo) {
-            // re-lookup db instead sync block in case we need to update it
+            // re-lookup db inside sync block in case we need to update it
             Database db = repo.findDatabase(call.getDatabase().getId());
             if (db == null) {   // this isn't likely but isn't impossible either
                 call.setCode(404);
@@ -138,7 +140,7 @@ public class QueueController extends CrudController {
             } else {
                 q = repo.findQueue(qid);
                 if (q == null) {    // this shouldn't happen
-                    String msg = "Queue /db/" + db.getId() + "/q/" + id + " qid [" + qid +
+                    String msg = "Queue /databases/" + db.getId() + "/queues/" + id + " qid [" + qid +
                             "] not found";
                     log.error(msg);
                     call.setCode(500, msg);
@@ -226,6 +228,7 @@ public class QueueController extends CrudController {
         if (q != null) {
             call.setQueue(q);
             if ("messages".equals(resource)) return messageController;
+            if ("outputs".equals(resource)) return outputController;
             if ("timeline".equals(resource)) return timelineController;
         }
         return StatusCodeController.SC_404;

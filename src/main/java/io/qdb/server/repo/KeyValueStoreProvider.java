@@ -3,10 +3,7 @@ package io.qdb.server.repo;
 import com.google.inject.Inject;
 import io.qdb.kvstore.KeyValueStore;
 import io.qdb.kvstore.KeyValueStoreBuilder;
-import io.qdb.server.model.Database;
-import io.qdb.server.model.ModelObject;
-import io.qdb.server.model.Queue;
-import io.qdb.server.model.User;
+import io.qdb.server.model.*;
 
 import javax.inject.Named;
 import javax.inject.Provider;
@@ -58,6 +55,7 @@ public class KeyValueStoreProvider implements Provider<KeyValueStore<String, Mod
                         .alias("user", User.class)
                         .alias("database", Database.class)
                         .alias("queue", Queue.class)
+                        .alias("output", Output.class)
                         .create();
             } catch (IOException e) {
                 throw new IllegalStateException(e.toString(), e);

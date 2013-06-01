@@ -36,6 +36,15 @@ public interface Repository extends Closeable {
 
     public int countQueues() throws IOException;
 
+
+    public Output findOutput(String id) throws IOException;
+
+    public void updateOutput(Output output) throws IOException;
+
+    public List<Output> findOutputs(int offset, int limit) throws IOException;
+
+    public int countOutputs() throws IOException;
+
     /**
      * A change to one of the objects we store. These are published on the shared
      * {@link com.google.common.eventbus.EventBus}.
