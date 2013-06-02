@@ -225,18 +225,11 @@ public class OutputController extends CrudController {
 
     @Override
     protected void delete(Call call, String id) throws IOException {
-        synchronized (repo) {
-            Queue q = repo.findQueue(call.getQueue().getId());
-            if (q == null) {   // this isn't likely but isn't impossible either
-                call.setCode(404);
-                return;
-            }
-            String oid = q.getOidForOutput(id);
-            if (oid == null) {
-                call.setCode(404);
-                return;
-            }
-            repo.deleteOutput(oid);
+        String oid = call.getQueue().getOidForOutput(id);
+        if (oid == null) {
+            call.setCode(404);
+            return;
         }
+        repo.deleteOutput(oid);
     }
 }

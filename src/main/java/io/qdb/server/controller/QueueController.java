@@ -224,20 +224,12 @@ public class QueueController extends CrudController {
 
     @Override
     protected void delete(Call call, String id) throws IOException {
-        synchronized (repo) {
-            // re-lookup db inside sync block as we need to update it
-            Database db = repo.findDatabase(call.getDatabase().getId());
-            if (db == null) {   // this isn't likely but isn't impossible either
-                call.setCode(404);
-                return;
-            }
-            String qid = db.getQidForQueue(id);
-            if (qid == null) {
-                call.setCode(404);
-                return;
-            }
-            repo.deleteQueue(qid);
+        String qid = call.getDatabase().getQidForQueue(id);
+        if (qid == null) {
+            call.setCode(404);
+            return;
         }
+        repo.deleteQueue(qid);
     }
 
     @Override
