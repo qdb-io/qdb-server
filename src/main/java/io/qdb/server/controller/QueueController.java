@@ -223,6 +223,34 @@ public class QueueController extends CrudController {
     }
 
     @Override
+    protected void delete(Call call, String id) throws IOException {
+        synchronized (repo) {
+            // re-lookup db inside sync block as we need to update it
+            Database db = repo.findDatabase(call.getDatabase().getId());
+            if (db == null) {   // this isn't likely but isn't impossible either
+                call.setCode(404);
+                return;
+            }
+            String qid = db.getQidForQueue(id);
+            if (qid == null) {
+                call.setCode(404);
+                return;
+            }
+            Queue q = repo.findQueue(qid);
+            if (q != null) {
+                Map<String, String> outputs = q.getOutputs();
+                if (outputs != null) {
+                    for (Map.Entry<String, String> e : outputs.entrySet()) repo.deleteOutput(e.getValue());
+                }
+            }
+            repo.deleteQueue(qid);
+            db = (Database)db.clone();
+            db.getQueues().remove(id);
+            repo.updateDatabase(db);
+        }
+    }
+
+    @Override
     protected Controller getController(Call call, String id, String resource) throws IOException {
         String qid = call.getDatabase().getQidForQueue(id);
         Queue q = qid == null ? null : repo.findQueue(qid);

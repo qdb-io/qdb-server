@@ -75,4 +75,11 @@ class OutputsSpec extends StandaloneBase {
         expect:
         ans.code == 400
     }
+
+    def "Delete output"() {
+        def ans = DELETE("/databases/foo/queues/bar/outputs/rabbit")
+
+        expect:
+        ans.code == 200
+    }
 }

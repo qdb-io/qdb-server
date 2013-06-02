@@ -134,6 +134,11 @@ public class RepositoryImpl implements Repository {
     }
 
     @Override
+    public void deleteQueue(String id) throws IOException {
+        queues.remove(id);
+    }
+
+    @Override
     public Output findOutput(String id) throws IOException {
         return outputs.get(id);
     }
@@ -152,6 +157,11 @@ public class RepositoryImpl implements Repository {
     @Override
     public void updateOutput(Output output) throws IOException {
         outputs.put(output.getId(), output);
+    }
+
+    @Override
+    public void deleteOutput(String id) throws IOException {
+        outputs.remove(id);
     }
 
     @SuppressWarnings("unchecked")

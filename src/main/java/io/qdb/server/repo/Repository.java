@@ -38,6 +38,8 @@ public interface Repository extends Closeable {
 
     public int countQueues() throws IOException;
 
+    public void deleteQueue(String id) throws IOException;
+
 
     public Output findOutput(String id) throws IOException;
 
@@ -46,6 +48,8 @@ public interface Repository extends Closeable {
     public List<Output> findOutputs(int offset, int limit) throws IOException;
 
     public int countOutputs() throws IOException;
+
+    public void deleteOutput(String id) throws IOException;
 
     /**
      * A change to one of the objects we store. These are published on the shared

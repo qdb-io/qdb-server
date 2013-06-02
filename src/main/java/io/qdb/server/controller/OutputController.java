@@ -222,4 +222,24 @@ public class OutputController extends CrudController {
     private String generateOutputId() {
         return Integer.toString(Math.abs(RND.nextInt()), 36);
     }
+
+    @Override
+    protected void delete(Call call, String id) throws IOException {
+        synchronized (repo) {
+            Queue q = repo.findQueue(call.getQueue().getId());
+            if (q == null) {   // this isn't likely but isn't impossible either
+                call.setCode(404);
+                return;
+            }
+            String oid = q.getOidForOutput(id);
+            if (oid == null) {
+                call.setCode(404);
+                return;
+            }
+            repo.deleteOutput(oid);
+            q = (Queue)q.clone();
+            q.getOutputs().remove(id);
+            repo.updateQueue(q);
+        }
+    }
 }

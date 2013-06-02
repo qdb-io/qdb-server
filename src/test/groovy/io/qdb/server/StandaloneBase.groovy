@@ -31,4 +31,8 @@ class StandaloneBase extends Specification {
     Client.Response PUT(String path, Object data, String user = "admin", String password = "admin") {
         return client.PUT(path, data, user, password)
     }
+
+    Client.Response DELETE(String path, String user = "admin", String password = "admin") {
+        return client.DELETE(path, user, password)
+    }
 }

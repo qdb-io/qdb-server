@@ -84,4 +84,26 @@ class QueuesSpec extends StandaloneBase {
         expect:
         ans.code == 400
     }
+
+    def "Delete queue"() {
+        def ans = DELETE("/databases/foo/queues/bar", "david", "secret")
+        def ans2 = GET("/databases/foo/queues/bar")
+
+        expect:
+        ans.code == 200
+        ans2.code == 404
+    }
+
+    def "Delete queue with outputs"() {
+        assert POST("/databases/foo/queues/bar", [maxSize: 1000000]).code == 201
+        assert POST("/databases/foo/queues/bar/outputs/rabbit", [type: "rabbitmq"]).code == 201
+        def ans = DELETE("/databases/foo/queues/bar")
+        def ans2 = GET("/databases/foo/queues/bar/outputs/rabbit")
+        def ans3 = GET("/databases/foo/queues/bar")
+
+        expect:
+        ans.code == 200
+        ans2.code == 404
+        ans3.code == 404
+    }
 }

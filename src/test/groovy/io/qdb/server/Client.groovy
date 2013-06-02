@@ -75,4 +75,11 @@ class Client {
         return new Response(con)
     }
 
+    Response DELETE(String path, String user = "admin", String password = "admin") {
+        def url = new URL(serverUrl + path)
+        HttpURLConnection con = url.openConnection() as HttpURLConnection
+        con.requestMethod = "DELETE"
+        if (user) con.setRequestProperty("Authorization", toBasicAuth(user, password))
+        return new Response(con)
+    }
 }
