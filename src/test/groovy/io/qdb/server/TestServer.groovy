@@ -5,7 +5,6 @@ import org.simpleframework.transport.connect.Connection
 import org.apache.commons.io.FileUtils
 import com.google.inject.Guice
 import com.google.inject.util.Modules
-import io.qdb.server.model.Repository
 import io.qdb.server.queue.QueueManager
 
 /**

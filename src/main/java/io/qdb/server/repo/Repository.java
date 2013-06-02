@@ -1,4 +1,6 @@
-package io.qdb.server.model;
+package io.qdb.server.repo;
+
+import io.qdb.server.model.*;
 
 import java.io.Closeable;
 import java.io.IOException;

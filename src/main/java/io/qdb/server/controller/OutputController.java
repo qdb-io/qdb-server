@@ -2,7 +2,7 @@ package io.qdb.server.controller;
 
 import io.qdb.server.model.Output;
 import io.qdb.server.model.Queue;
-import io.qdb.server.model.Repository;
+import io.qdb.server.repo.Repository;
 import io.qdb.server.output.OutputHandlerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -122,7 +122,7 @@ public class OutputController extends CrudController {
                 return;
             }
 
-            String oid = q.getOid(id);
+            String oid = q.getOidForOutput(id);
             if (create = oid == null) {
                 if (call.isPut()) {
                     call.setCode(404);
@@ -140,6 +140,7 @@ public class OutputController extends CrudController {
                 o.setQueue(q.getId());
                 o.setEnabled(true);
                 o.setUpdateIntervalMs(1000);
+                o.setMessageId(-1);
             } else {
                 o = repo.findOutput(oid);
                 if (o == null) {    // this shouldn't happen
@@ -187,7 +188,7 @@ public class OutputController extends CrudController {
             // user can set the timestamp (to start/restart processing from that time) or messageId but not both
             if (dto.timestamp != null && dto.timestamp != o.getTimestamp()) {
                 o.setTimestamp(dto.timestamp);
-                o.setMessageId(-1);
+                o.setMessageId(-2);
                 changed = true;
             } else if (dto.messageId != null && dto.messageId != o.getMessageId()) {
                 o.setTimestamp(0);

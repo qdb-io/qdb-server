@@ -3,7 +3,6 @@ package io.qdb.server.repo;
 import com.google.common.eventbus.EventBus;
 import io.qdb.kvstore.KeyValueStore;
 import io.qdb.server.model.ModelObject;
-import io.qdb.server.model.Repository;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;

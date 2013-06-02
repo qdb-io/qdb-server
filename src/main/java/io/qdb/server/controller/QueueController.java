@@ -2,6 +2,7 @@ package io.qdb.server.controller;
 
 import io.qdb.server.model.*;
 import io.qdb.server.model.Queue;
+import io.qdb.server.repo.Repository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -119,7 +120,7 @@ public class QueueController extends CrudController {
                 return;
             }
 
-            String qid = db.getQid(id);
+            String qid = db.getQidForQueue(id);
             if (create = qid == null) {
                 if (call.isPut()) {
                     call.setCode(404);
@@ -223,7 +224,7 @@ public class QueueController extends CrudController {
 
     @Override
     protected Controller getController(Call call, String id, String resource) throws IOException {
-        String qid = call.getDatabase().getQid(id);
+        String qid = call.getDatabase().getQidForQueue(id);
         Queue q = qid == null ? null : repo.findQueue(qid);
         if (q != null) {
             call.setQueue(q);

@@ -126,9 +126,9 @@ Building
 Running From Source
 -------------------
 
-Use `gradle run` to run a non-clustered instance.
+Use `gradle run` to start the server.
 
-Use `gradle run -Pinstance=1` to run a clustered instance (use 2 and 3 for the other nodes in the cluster).
+Use `gradle run-debug` to start the server in debug mode.
 
 
 Running Tests

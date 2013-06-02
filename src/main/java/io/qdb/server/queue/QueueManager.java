@@ -6,7 +6,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.qdb.buffer.MessageBuffer;
 import io.qdb.buffer.PersistentMessageBuffer;
 import io.qdb.server.model.Queue;
-import io.qdb.server.model.Repository;
+import io.qdb.server.repo.Repository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,21 +26,19 @@ public class QueueManager implements Closeable, Thread.UncaughtExceptionHandler 
 
     private static final Logger log = LoggerFactory.getLogger(QueueManager.class);
 
-    private final Repository repo;
     private final QueueStorageManager queueStorageManager;
     private final Map<String, MessageBuffer> buffers = new ConcurrentHashMap<String, MessageBuffer>();
     private final ExecutorService threadPool;
 
     @Inject
-    public QueueManager(EventBus eventBus, Repository repo, QueueStorageManager queueStorageManager) {
-        this.repo = repo;
+    public QueueManager(EventBus eventBus, Repository repo, QueueStorageManager queueStorageManager) throws IOException {
         this.queueStorageManager = queueStorageManager;
         this.threadPool = new ThreadPoolExecutor(2, Integer.MAX_VALUE,
                 60L, TimeUnit.SECONDS,
                 new SynchronousQueue<Runnable>(),
                 new ThreadFactoryBuilder().setNameFormat("queue-manager-%d").setUncaughtExceptionHandler(this).build());
         eventBus.register(this);
-        syncQueues();
+        for (Queue queue : repo.findQueues(0, -1)) syncQueue(queue);
     }
 
     @Override
@@ -60,14 +58,6 @@ public class QueueManager implements Closeable, Thread.UncaughtExceptionHandler 
     public void handleQueueEvent(Repository.ObjectEvent ev) {
         if (ev.value instanceof Queue && ev.type != Repository.ObjectEvent.Type.DELETED) syncQueue((Queue)ev.value);
         // todo handle deleted queues
-    }
-
-    private void syncQueues() {
-        try {
-            for (Queue queue : repo.findQueues(0, -1)) syncQueue(queue);
-        } catch (IOException e) {
-            log.error("Error syncing queues: " + e, e);
-        }
     }
 
     private synchronized void syncQueue(Queue q) {

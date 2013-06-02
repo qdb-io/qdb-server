@@ -1,7 +1,6 @@
 package io.qdb.server.controller;
 
-import io.qdb.kvstore.OptimisticLockingException;
-import io.qdb.server.model.Repository;
+import io.qdb.server.repo.Repository;
 import io.qdb.server.model.User;
 
 import javax.inject.Inject;

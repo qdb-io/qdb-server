@@ -1,5 +1,6 @@
 package io.qdb.server.model;
 
+import java.util.Iterator;
 import java.util.Map;
 
 /**
@@ -56,8 +57,17 @@ public class Queue extends ModelObject {
         this.outputs = outputs;
     }
 
-    public String getOid(String id) {
-        return outputs == null ? null : outputs.get(id);
+    public String getOidForOutput(String output) {
+        return outputs == null ? null : outputs.get(output);
+    }
+
+    public String getOutputForOid(String oid) {
+        if (outputs != null) {
+            for (Map.Entry<String, String> e : outputs.entrySet()) {
+                if (oid.equals(e.getValue())) return e.getKey();
+            }
+        }
+        return null;
     }
 
     @Override

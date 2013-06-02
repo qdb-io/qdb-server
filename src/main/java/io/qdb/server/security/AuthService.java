@@ -1,6 +1,6 @@
 package io.qdb.server.security;
 
-import io.qdb.server.model.Repository;
+import io.qdb.server.repo.Repository;
 import io.qdb.server.model.User;
 import org.simpleframework.http.Request;
 import org.simpleframework.http.Response;

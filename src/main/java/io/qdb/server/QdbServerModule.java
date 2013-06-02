@@ -12,7 +12,7 @@ import com.typesafe.config.ConfigValue;
 import io.qdb.kvstore.KeyValueStore;
 import io.qdb.server.controller.Router;
 import io.qdb.server.model.ModelObject;
-import io.qdb.server.model.Repository;
+import io.qdb.server.repo.Repository;
 import io.qdb.server.repo.*;
 import org.simpleframework.http.core.Container;
 import org.simpleframework.transport.connect.Connection;

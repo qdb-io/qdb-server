@@ -37,7 +37,16 @@ public class Database extends ModelObject {
         this.queues = queues;
     }
 
-    public String getQid(String id) {
-        return queues == null ? null : queues.get(id);
+    public String getQidForQueue(String queue) {
+        return queues == null ? null : queues.get(queue);
+    }
+
+    public String getQueueForQid(String qid) {
+        if (queues != null) {
+            for (Map.Entry<String, String> e : queues.entrySet()) {
+                if (qid.equals(e.getValue())) return e.getKey();
+            }
+        }
+        return null;
     }
 }

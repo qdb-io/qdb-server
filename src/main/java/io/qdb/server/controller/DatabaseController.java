@@ -1,7 +1,7 @@
 package io.qdb.server.controller;
 
 import io.qdb.server.model.Database;
-import io.qdb.server.model.Repository;
+import io.qdb.server.repo.Repository;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
