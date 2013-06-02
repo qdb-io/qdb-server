@@ -29,6 +29,8 @@ public interface Repository extends Closeable {
 
     public int countDatabasesVisibleTo(User user) throws IOException;
 
+    public void deleteDatabase(String id) throws IOException;
+
 
     public Queue findQueue(String id) throws IOException;
 

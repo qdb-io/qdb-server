@@ -104,31 +104,17 @@ public class DatabaseController extends CrudController {
         }
     }
 
-//    @Override
-//    protected void delete(Call call, String id) throws IOException {
-//        synchronized (repo) {
-//            Database db = repo.findDatabase(id);
-//            if (db == null) {
-//                call.setCode(404);
-//                return;
-//            }
-//            Map<String,String> queues = db.getQueues();
-//            if (queues != null && !queues.isEmpty()) {
-//                call.setCode(401, "");
-//                return;
-//            }
-//
-//            String oid = db.getOidForOutput(id);
-//            if (oid == null) {
-//                call.setCode(404);
-//                return;
-//            }
-//            repo.deleteOutput(oid);
-//            db = (Queue)db.clone();
-//            db.getOutputs().remove(id);
-//            repo.updateQueue(db);
-//        }
-//    }
+    @Override
+    protected void delete(Call call, String id) throws IOException {
+        synchronized (repo) {
+            Database db = repo.findDatabase(id);
+            if (db == null) {
+                call.setCode(404);
+                return;
+            }
+            repo.deleteDatabase(id);
+        }
+    }
 
     @Override
     protected Controller getController(Call call, String id, String resource) throws IOException {

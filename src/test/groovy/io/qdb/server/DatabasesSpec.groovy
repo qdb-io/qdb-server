@@ -76,13 +76,24 @@ class DatabasesSpec extends StandaloneBase {
         ans.code == 404
     }
 
-//    def "Delete database"() {
-//        def ans = DELETE("/databases/foo")
-//        def ans2 = GET("/databases/foo")
-//
-//        expect:
-//        ans.code == 200
-//        ans2.code == 404
-//    }
+    def "Delete database"() {
+        def ans = DELETE("/databases/foo")
+        def ans2 = GET("/databases/foo")
+
+        expect:
+        ans.code == 200
+        ans2.code == 404
+    }
+
+    def "Delete database with queues"() {
+        assert POST("/databases/foo", [:]).code == 201
+        assert POST("/databases/foo/queues/bar", [maxSize: 1000000]).code == 201
+        def ans = DELETE("/databases/foo")
+        def ans2 = GET("/databases/foo")
+
+        expect:
+        ans.code == 200
+        ans2.code == 404
+    }
 
 }

@@ -113,6 +113,17 @@ public class RepositoryImpl implements Repository {
     }
 
     @Override
+    public synchronized void deleteDatabase(String id) throws IOException {
+        Database db = databases.get(id);
+        if (db == null) return;
+        Map<String, String> queues = db.getQueues();
+        if (queues != null) {
+            for (String qid : queues.values()) deleteQueueImpl(qid, true);
+        }
+        databases.remove(id);
+    }
+
+    @Override
     public Queue findQueue(String id) throws IOException {
         return queues.get(id);
     }
@@ -135,15 +146,21 @@ public class RepositoryImpl implements Repository {
 
     @Override
     public synchronized void deleteQueue(String id) throws IOException {
+        deleteQueueImpl(id, false);
+    }
+
+    private void deleteQueueImpl(String id, boolean ignoreDatabase) {
         Queue q = queues.get(id);
         if (q == null) return;
-        Database db = databases.get(q.getDatabase());
-        if (db != null) {
-            String dq = db.getQueueForQid(id);
-            if (dq != null) {
-                db = (Database)db.clone();
-                db.getQueues().remove(dq);
-                databases.put(db.getId(), db);
+        if (!ignoreDatabase) {
+            Database db = databases.get(q.getDatabase());
+            if (db != null) {
+                String dq = db.getQueueForQid(id);
+                if (dq != null) {
+                    db = (Database)db.clone();
+                    db.getQueues().remove(dq);
+                    databases.put(db.getId(), db);
+                }
             }
         }
         Map<String, String> outputs = q.getOutputs();
