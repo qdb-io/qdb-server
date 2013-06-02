@@ -34,6 +34,8 @@ public class OutputController extends CrudController {
         public String url;
         public Boolean enabled;
         public Long messageId;
+        public Long timestamp;
+        public Integer updateIntervalMs;
 
         @SuppressWarnings("UnusedDeclaration")
         public OutputDTO() { }
@@ -47,6 +49,7 @@ public class OutputController extends CrudController {
             this.url = o.getUrl();
             this.enabled = o.isEnabled();
             this.messageId = o.getMessageId();
+            this.timestamp = o.getTimestamp();
         }
 
         @Override
@@ -136,6 +139,7 @@ public class OutputController extends CrudController {
                 o = new Output();
                 o.setQueue(q.getId());
                 o.setEnabled(true);
+                o.setUpdateIntervalMs(1000);
             } else {
                 o = repo.findOutput(oid);
                 if (o == null) {    // this shouldn't happen
@@ -172,6 +176,22 @@ public class OutputController extends CrudController {
 
             if (dto.enabled != null && dto.enabled != o.isEnabled()) {
                 o.setEnabled(dto.enabled);
+                changed = true;
+            }
+
+            if (dto.updateIntervalMs != null && dto.updateIntervalMs != o.getUpdateIntervalMs()) {
+                o.setUpdateIntervalMs(dto.updateIntervalMs);
+                changed = true;
+            }
+
+            // user can set the timestamp (to start/restart processing from that time) or messageId but not both
+            if (dto.timestamp != null && dto.timestamp != o.getTimestamp()) {
+                o.setTimestamp(dto.timestamp);
+                o.setMessageId(-1);
+                changed = true;
+            } else if (dto.messageId != null && dto.messageId != o.getMessageId()) {
+                o.setTimestamp(0);
+                o.setMessageId(dto.messageId);
                 changed = true;
             }
 

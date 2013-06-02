@@ -10,6 +10,8 @@ public class Output extends ModelObject {
     private String url;
     private boolean enabled;
     private long messageId;
+    private long timestamp;
+    private int updateIntervalMs;
 
     public Output() {
     }
@@ -52,6 +54,22 @@ public class Output extends ModelObject {
 
     public void setMessageId(long messageId) {
         this.messageId = messageId;
+    }
+
+    public long getTimestamp() {
+        return timestamp;
+    }
+
+    public void setTimestamp(long timestamp) {
+        this.timestamp = timestamp;
+    }
+
+    public int getUpdateIntervalMs() {
+        return updateIntervalMs;
+    }
+
+    public void setUpdateIntervalMs(int updateIntervalMs) {
+        this.updateIntervalMs = updateIntervalMs;
     }
 
     @Override

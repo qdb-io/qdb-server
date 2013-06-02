@@ -3,10 +3,7 @@ package io.qdb.server.output;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import io.qdb.buffer.MessageBuffer;
-import io.qdb.buffer.PersistentMessageBuffer;
 import io.qdb.server.model.Output;
-import io.qdb.server.model.Queue;
 import io.qdb.server.model.Repository;
 import io.qdb.server.queue.QueueManager;
 import org.slf4j.Logger;
@@ -15,13 +12,12 @@ import org.slf4j.LoggerFactory;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.io.Closeable;
-import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.*;
 
 /**
- * Ensures that each enabled output has a corresponding {@link OutputHandler} instance running to process its queue.
+ * Ensures that each enabled output has a corresponding {@link OutputJob} instance running to process its queue.
  * Detects changes to outputs by listening to repository events.
  */
 @Singleton
@@ -32,7 +28,7 @@ public class OutputManager implements Closeable, Thread.UncaughtExceptionHandler
     private final Repository repo;
     private final OutputHandlerFactory handlerFactory;
     private final QueueManager queueManager;
-    private final Map<String, OutputHandler> handlers = new ConcurrentHashMap<String, OutputHandler>();
+    private final Map<String, OutputJob> jobs = new ConcurrentHashMap<String, OutputJob>(); // queue id -> job
     private final ExecutorService threadPool;
 
     @Inject
@@ -41,7 +37,7 @@ public class OutputManager implements Closeable, Thread.UncaughtExceptionHandler
         this.repo = repo;
         this.handlerFactory = handlerFactory;
         this.queueManager = queueManager;
-        this.threadPool = new ThreadPoolExecutor(2, Integer.MAX_VALUE,
+        this.threadPool = new ThreadPoolExecutor(1, Integer.MAX_VALUE,
                 60L, TimeUnit.SECONDS,
                 new SynchronousQueue<Runnable>(),
                 new ThreadFactoryBuilder().setNameFormat("output-manager-%d").setUncaughtExceptionHandler(this).build());
@@ -51,15 +47,7 @@ public class OutputManager implements Closeable, Thread.UncaughtExceptionHandler
 
     @Override
     public void close() throws IOException {
-        threadPool.shutdown();
-        for (Map.Entry<String, OutputHandler> e : handlers.entrySet()) {
-            OutputHandler h = e.getValue();
-            try {
-                h.close();
-            } catch (IOException x) {
-                log.error("Error closing " + h);
-            }
-        }
+        threadPool.shutdownNow();
     }
 
     @Subscribe
