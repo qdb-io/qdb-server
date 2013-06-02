@@ -237,9 +237,6 @@ public class OutputController extends CrudController {
                 return;
             }
             repo.deleteOutput(oid);
-            q = (Queue)q.clone();
-            q.getOutputs().remove(id);
-            repo.updateQueue(q);
         }
     }
 }

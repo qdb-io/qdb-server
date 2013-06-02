@@ -236,17 +236,7 @@ public class QueueController extends CrudController {
                 call.setCode(404);
                 return;
             }
-            Queue q = repo.findQueue(qid);
-            if (q != null) {
-                Map<String, String> outputs = q.getOutputs();
-                if (outputs != null) {
-                    for (Map.Entry<String, String> e : outputs.entrySet()) repo.deleteOutput(e.getValue());
-                }
-            }
             repo.deleteQueue(qid);
-            db = (Database)db.clone();
-            db.getQueues().remove(id);
-            repo.updateDatabase(db);
         }
     }
 

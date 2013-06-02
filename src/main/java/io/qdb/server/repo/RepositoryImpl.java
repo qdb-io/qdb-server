@@ -134,7 +134,22 @@ public class RepositoryImpl implements Repository {
     }
 
     @Override
-    public void deleteQueue(String id) throws IOException {
+    public synchronized void deleteQueue(String id) throws IOException {
+        Queue q = queues.get(id);
+        if (q == null) return;
+        Database db = databases.get(q.getDatabase());
+        if (db != null) {
+            String dq = db.getQueueForQid(id);
+            if (dq != null) {
+                db = (Database)db.clone();
+                db.getQueues().remove(dq);
+                databases.put(db.getId(), db);
+            }
+        }
+        Map<String, String> outputs = q.getOutputs();
+        if (outputs != null) {
+            for (Map.Entry<String, String> e : outputs.entrySet()) outputs.remove(e.getValue());
+        }
         queues.remove(id);
     }
 
@@ -160,7 +175,18 @@ public class RepositoryImpl implements Repository {
     }
 
     @Override
-    public void deleteOutput(String id) throws IOException {
+    public synchronized void deleteOutput(String id) throws IOException {
+        Output o = outputs.get(id);
+        if (o == null) return;
+        Queue q = queues.get(o.getQueue());
+        if (q != null) {
+            String qo = q.getOutputForOid(id);
+            if (qo != null) {
+                q = (Queue)q.clone();
+                q.getOutputs().remove(qo);
+                queues.put(q.getId(), q);
+            }
+        }
         outputs.remove(id);
     }
 
