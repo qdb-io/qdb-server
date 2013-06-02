@@ -20,6 +20,8 @@ public interface Repository extends Closeable {
 
     public int countUsers() throws IOException;
 
+    public void deleteUser(String id) throws IOException;
+
 
     public Database findDatabase(String id) throws IOException;
 

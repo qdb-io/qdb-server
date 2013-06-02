@@ -75,6 +75,11 @@ public class RepositoryImpl implements Repository {
     }
 
     @Override
+    public synchronized void deleteUser(String id) throws IOException {
+        users.remove(id);
+    }
+
+    @Override
     public Database findDatabase(String id) throws IOException {
         return databases.get(id);
     }

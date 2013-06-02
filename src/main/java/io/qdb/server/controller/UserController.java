@@ -125,4 +125,16 @@ public class UserController extends CrudController {
             call.setCode(403);
         }
     }
+
+    @Override
+    protected void delete(Call call, String id) throws IOException {
+        synchronized (repo) {
+            User u = repo.findUser(id);
+            if (u == null) {
+                call.setCode(404);
+                return;
+            }
+            repo.deleteUser(id);
+        }
+    }
 }

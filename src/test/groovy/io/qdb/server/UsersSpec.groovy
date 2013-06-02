@@ -82,4 +82,11 @@ class UsersSpec extends StandaloneBase {
         ans.json[0].id == "foo"
     }
 
+    def "Delete user"() {
+        def ans = DELETE("/users/david")
+
+        expect:
+        ans.code == 200
+    }
+
 }
