@@ -1,5 +1,7 @@
 package io.qdb.server.model;
 
+import java.util.Map;
+
 /**
  * A queue output. Outputs push messages coming into a queue somewhere else (e.g. to RabbitMQ).
  */
@@ -12,6 +14,7 @@ public class Output extends ModelObject {
     private long messageId;
     private long timestamp;
     private int updateIntervalMs;
+    private Map<String, Object> params;
 
     public Output() {
     }
@@ -70,6 +73,14 @@ public class Output extends ModelObject {
 
     public void setUpdateIntervalMs(int updateIntervalMs) {
         this.updateIntervalMs = updateIntervalMs;
+    }
+
+    public Map<String, Object> getParams() {
+        return params;
+    }
+
+    public void setParams(Map<String, Object> params) {
+        this.params = params;
     }
 
     @Override

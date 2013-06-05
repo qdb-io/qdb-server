@@ -6,16 +6,17 @@ import io.qdb.server.model.Queue;
 import java.io.Closeable;
 
 /**
- * Processes messages from a queue.
+ * Processes messages from a queue. Public fields are automatically populated with parameters from the output
+ * before message processing starts.
  */
 public interface OutputHandler extends Closeable {
 
     /**
      * This is called once before the first call to {@link #processMessage(long, String, long, byte[])}. Note that
      * the output instance will become stale i.e. once processing has started it will no longer reflect the current
-     * state of the output.
+     * state of the output. Throw IllegalArgumentException if parameters are missing etc.
      */
-    public void init(Queue q, Output output);
+    public void init(Queue q, Output output) throws IllegalArgumentException;
 
     /**
      * Process the message and return the id of the message that processing should start after. This will usually

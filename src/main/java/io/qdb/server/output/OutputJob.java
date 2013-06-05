@@ -35,10 +35,14 @@ public class OutputJob {
         return oid;
     }
 
+    public OutputHandler getHandler() {
+        return handler;
+    }
+
     /**
      * Feed messages to our handler until we are closed or our output is changed by someone else.
      */
-    public void processMessages(Output o, Queue q, MessageBuffer buffer) throws IOException {
+    public void processMessages(Output o, MessageBuffer buffer) throws IOException {
         this.output = o;
         synchronized (this) {
             thread = Thread.currentThread();
@@ -46,8 +50,6 @@ public class OutputJob {
         }
         MessageCursor cursor = null;
         try {
-            handler.init(q, output);
-
             long messageId = output.getMessageId();
             if (messageId == -2) {
                 cursor = buffer.cursorByTimestamp(output.getTimestamp());
@@ -59,7 +61,6 @@ public class OutputJob {
             long timestamp = 0;
             long lastUpdate = System.currentTimeMillis();
             int updateIntervalMs = output.getUpdateIntervalMs();
-            Thread thread = Thread.currentThread();
             while (!stopFlag && !thread.isInterrupted()) {
                 boolean haveMsg;
                 try {

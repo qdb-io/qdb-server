@@ -2,6 +2,9 @@ package io.qdb.server.controller;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import io.qdb.kvstore.KeyValueStoreException;
+import io.qdb.server.Util;
+import io.qdb.server.databind.DataBinder;
+import io.qdb.server.databind.DataBindingException;
 import org.simpleframework.http.Form;
 import org.simpleframework.http.Request;
 
@@ -49,8 +52,10 @@ public abstract class CrudController implements Controller {
                     getController(call, id, resource).handle(call);
                 }
             }
+        } catch (DataBindingException e) {
+            call.setCode(422, e.getErrors());
         } catch (BadRequestException e) {
-            call.setCode(400, e.getMessage());
+            call.setCode(e.getStatus(), e.getMessage());
         } catch (KeyValueStoreException e) {
             call.setCode(400, e.getMessage());
         }
@@ -90,49 +95,29 @@ public abstract class CrudController implements Controller {
 
     /**
      * Create an instance of cls from the body (if it is JSON) or the form parameters otherwise.
-     * Throws BadRequestException for invalid fields or JSON.
+     * Throws BadRequestException or DataBindingException for invalid fields or JSON.
      */
     protected <T> T getBodyObject(Call call, Class<T> cls) throws IOException {
         Request req = call.getRequest();
+        T dto;
         if ("application/json".equals(req.getValue("Content-Type"))) {
             InputStream ins = req.getInputStream();
             try {
-                return jsonService.fromJson(ins, cls);
+                dto = jsonService.fromJson(ins, cls);
             } catch (IllegalArgumentException x) {
-                throw new BadRequestException(x.getMessage());
+                throw new BadRequestException(400, x.getMessage());
             } finally {
                 ins.close();
             }
-        } else {    // assume form data and populate instance with params that match field names of the dto
-            T dto;
+        } else { // assume form data and populate instance with params that match field names of the dto
             try {
                 dto = cls.newInstance();
             } catch (Exception x) {
                 throw new RuntimeException(x.toString(), x);
             }
-            Form form = req.getForm();
-            for (Map.Entry<String, String> e : form.entrySet()) {
-                Field f;
-                try {
-                    f = cls.getField(e.getKey());
-                } catch (NoSuchFieldException x) {
-                    throw new BadRequestException("Unknown field: " + e.getKey() + "=" + e.getValue());
-                }
-                Class<?> t = f.getType();
-                Object v = e.getValue();
-                try {
-                    if (t == Integer.TYPE || t == Integer.class) v = Integer.parseInt((String) v);
-                    else if (t == Long.TYPE || t == Long.class) v = Long.parseLong((String) v);
-                    else if (t == Boolean.TYPE || t == Boolean.class) v = "true".equals(v);
-                    else if (t != String.class) continue;
-                    f.set(dto, v);
-                } catch (Exception x) {
-                    throw new BadRequestException("Invalid field value, expected " + t.getSimpleName() + ": " +
-                            e.getKey() + "=" + e.getValue());
-                }
-            }
-            return dto;
+            new DataBinder().bind(req.getForm(), dto).check();
         }
+        return dto;
     }
 
     public static class Count {

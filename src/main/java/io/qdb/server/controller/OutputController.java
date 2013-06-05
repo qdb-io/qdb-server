@@ -1,7 +1,12 @@
 package io.qdb.server.controller;
 
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.annotation.JsonAnySetter;
+import io.qdb.server.databind.DataBinder;
+import io.qdb.server.databind.HasAnySetter;
 import io.qdb.server.model.Output;
 import io.qdb.server.model.Queue;
+import io.qdb.server.output.OutputHandler;
 import io.qdb.server.repo.Repository;
 import io.qdb.server.output.OutputHandlerFactory;
 import org.slf4j.Logger;
@@ -24,7 +29,7 @@ public class OutputController extends CrudController {
 
     private static final Logger log = LoggerFactory.getLogger(OutputController.class);
 
-    public static class OutputDTO implements Comparable<OutputDTO> {
+    public static class OutputDTO implements Comparable<OutputDTO>, HasAnySetter {
 
         public String id;
         public String oid;
@@ -36,6 +41,7 @@ public class OutputController extends CrudController {
         public Long messageId;
         public Long timestamp;
         public Integer updateIntervalMs;
+        public transient Map<String, Object> params;
 
         @SuppressWarnings("UnusedDeclaration")
         public OutputDTO() { }
@@ -50,6 +56,19 @@ public class OutputController extends CrudController {
             this.enabled = o.isEnabled();
             this.messageId = o.getMessageId();
             this.timestamp = o.getTimestamp();
+            this.params = o.getParams();
+        }
+
+        @JsonAnySetter
+        public void set(String key, Object value) {
+            if (params == null) params = new HashMap<String, Object>();
+            if (value == null) params.remove(key);
+            else params.put(key, value);
+        }
+
+        @JsonAnyGetter
+        public Map<String, Object> getParams() {
+            return params;
         }
 
         @Override
@@ -194,6 +213,26 @@ public class OutputController extends CrudController {
                 o.setTimestamp(0);
                 o.setMessageId(dto.messageId);
                 changed = true;
+            }
+
+            if (dto.params != null) {
+                OutputHandler h = handlerFactory.createHandler(o.getType());
+                new DataBinder().bind(dto.params, h).check();
+                Map<String, Object> op = o.getParams();
+                if (op == null) {
+                    o.setParams(dto.params);
+                    changed = true;
+                } else {
+                    for (Map.Entry<String, Object> e : dto.params.entrySet()) {
+                        String key = e.getKey();
+                        Object v = e.getValue();
+                        Object existing = op.get(key);
+                        if (!v.equals(existing)) {
+                            op.put(key, v);
+                            changed = true;
+                        }
+                    }
+                }
             }
 
             if (create) {

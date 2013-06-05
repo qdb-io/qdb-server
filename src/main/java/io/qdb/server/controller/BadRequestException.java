@@ -1,12 +1,22 @@
 package io.qdb.server.controller;
 
 /**
- * Results in a 400 being sent back to the client.
+ * Results in a 422 (default) or other status code being sent back to the client.
  */
 public class BadRequestException extends RuntimeException {
 
-    public BadRequestException(String message) {
+    private int status;
+
+    public BadRequestException(int status, String message) {
         super(message);
+        this.status = status;
     }
 
+    public BadRequestException(String message) {
+        this(422, message);
+    }
+
+    public int getStatus() {
+        return status;
+    }
 }

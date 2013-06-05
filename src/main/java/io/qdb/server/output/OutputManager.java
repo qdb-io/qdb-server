@@ -4,6 +4,7 @@ import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.qdb.buffer.MessageBuffer;
+import io.qdb.server.databind.DataBinder;
 import io.qdb.server.model.Database;
 import io.qdb.server.model.Output;
 import io.qdb.server.model.Queue;
@@ -83,21 +84,25 @@ public class OutputManager implements Closeable, Thread.UncaughtExceptionHandler
         try {
             handler = handlerFactory.createHandler(o.getType());
         } catch (IllegalArgumentException e) {
-            log.error("Error creating handler for " + tos(o) + " type [" + o.getType() + "]: " + e.getMessage(), e);
+            log.error("Error creating handler for " + tos(o) + ": " + e.getMessage(), e);
             return;
         }
+
         final OutputJob job = new OutputJob(repo, oid, handler);
         jobs.put(oid, job);
-        pool.submit(new Callable() {
+        pool.execute(new Runnable() {
             @Override
-            public Object call() throws Exception {
-                execJob(job);
-                return null;
+            public void run() {
+                try {
+                    execJob(job);
+                } catch (Exception e) {
+                    log.error(e.toString(), e);
+                }
             }
         });
     }
 
-    private void execJob(OutputJob job) throws IOException {
+    private void execJob(OutputJob job) throws Exception {
         final String oid = job.getOid();
         int reSyncDelayMs = 1000;
         try {
@@ -113,12 +118,26 @@ public class OutputManager implements Closeable, Thread.UncaughtExceptionHandler
                 reSyncDelayMs = -1;
                 return;
             }
+            try {
+                OutputHandler h = job.getHandler();
+                Map<String, Object> p = output.getParams();
+                if (p != null) new DataBinder().ignoreInvalidFields(true).bind(p, h).check();
+                h.init(q, output);
+            } catch (IllegalArgumentException e) {
+                String msg = "Output " + tos(output) + ": " +
+                        (e instanceof IllegalArgumentException ? e.getMessage() : e.toString());
+                if (e instanceof IllegalArgumentException) log.error(msg);
+                else log.error(msg, e);
+                reSyncDelayMs = -1;
+                return;
+            }
+
             MessageBuffer buffer = queueManager.getBuffer(q);
             if (buffer == null) {   // we might be busy starting up or something
                 if (log.isDebugEnabled()) log.debug("Queue [" + q.getId() + "] does not have a buffer");
                 return;
             }
-            job.processMessages(output, q, buffer);
+            job.processMessages(output, buffer);
             reSyncDelayMs = 0;
         } finally {
             jobs.remove(oid);
@@ -127,13 +146,23 @@ public class OutputManager implements Closeable, Thread.UncaughtExceptionHandler
     }
 
     private void syncOutputLater(final int delayMs, final String oid) {
-        pool.submit(new Callable() {
+        pool.execute(new Runnable() {
             @Override
-            public Object call() throws Exception {
-                if (delayMs > 0) Thread.sleep(delayMs);
-                Output output = repo.findOutput(oid);
-                if (output != null) outputChanged(output);
-                return null;
+            public void run() {
+                if (delayMs > 0) {
+                    try {
+                        Thread.sleep(delayMs);
+                    } catch (InterruptedException e) {
+                        return; // someone trying to get us to stop
+                    }
+                }
+                try {
+                    Output output = repo.findOutput(oid);
+                    if (output != null) outputChanged(output);
+                } catch (Exception e) {
+                    log.error(e.toString(), e);
+                    syncOutputLater(1000, oid);
+                }
             }
         });
     }
@@ -150,7 +179,9 @@ public class OutputManager implements Closeable, Thread.UncaughtExceptionHandler
                     if (s != null) {
                         b.append("/queues/").append(s);
                         s = q.getOutputForOid(o.getId());
-                        if (s != null) return b.append("/outputs/").append(s).toString();
+                        if (s != null) {
+                            return b.append("/outputs/").append(s).append('(').append(o.getType()).append(')').toString();
+                        }
                     }
                 }
             }

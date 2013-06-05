@@ -12,7 +12,7 @@ import java.io.IOException;
 public abstract class OutputHandlerAdapter implements OutputHandler {
 
     @Override
-    public void init(Queue q, Output output) {
+    public void init(Queue q, Output output) throws IllegalArgumentException {
     }
 
     @Override
