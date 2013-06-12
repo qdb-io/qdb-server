@@ -12,7 +12,7 @@ import java.io.IOException;
 public class TestOutputHandler implements OutputHandler {
 
     @Override
-    public void init(Queue q, Output output) {
+    public void init(Queue q, Output output, String outputPath) {
     }
 
     @Override

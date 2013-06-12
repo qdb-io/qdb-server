@@ -1,48 +1,61 @@
 package io.qdb.server.output;
 
-import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.ConnectionFactory;
+import com.rabbitmq.client.*;
 import io.qdb.server.model.Output;
 import io.qdb.server.model.Queue;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.Map;
 
 /**
  * Published messages to a RabbitMQ server.
  */
-public class RabbitMQOutputHandler extends OutputHandlerAdapter {
-
-    private static final Logger log = LoggerFactory.getLogger(RabbitMQOutputHandler.class);
+public class RabbitMQOutputHandler extends OutputHandlerAdapter implements ShutdownListener {
 
     public String exchange;
     public String[] queues;
+    public int heartbeat = 30;
 
-    private Output output;
-    private Channel channel;
+    protected Output output;
+    protected String outputPath;
+    protected ConnectionFactory connectionFactory;
+    protected Connection con;
+    protected Channel channel;
 
     @SuppressWarnings("unchecked")
     @Override
-    public void init(Queue q, Output output) {
+    public void init(Queue q, Output output, String outputPath) throws Exception {
         this.output = output;
+        this.outputPath = outputPath;
+
         if (output.getUrl() == null) throw new IllegalArgumentException("url is required");
         if (exchange == null) throw new IllegalArgumentException("exchange is required");
-        queues = new String[]{exchange};
+
+        connectionFactory = new ConnectionFactory();
+        connectionFactory.setUri(output.getUrl());
+        connectionFactory.setRequestedHeartbeat(heartbeat);
+        ensureChannel();
     }
 
     @Override
     public long processMessage(long messageId, String routingKey, long timestamp, byte[] payload) throws Exception {
-        log.debug("Processing " + messageId);
-        if (channel == null) {
-            ConnectionFactory cf = new ConnectionFactory();
-            cf.setUri(output.getUrl());
-            initChannel(channel = cf.newConnection().createChannel());
-        }
-        channel.basicPublish(exchange, routingKey, null, payload);
+        ensureChannel().basicPublish(exchange, routingKey, null, payload);
         return messageId;
+    }
+
+    @Override
+    public synchronized void close() throws IOException {
+        if (con != null) con.close();
+    }
+
+    protected synchronized Channel ensureChannel() throws Exception {
+        if (channel == null) {
+            con = connectionFactory.newConnection();
+            channel = con.createChannel();
+            if (log.isInfoEnabled()) log.info(outputPath + ": Connected to " + getConnectionInfo());
+            channel.addShutdownListener(this);
+            initChannel(channel);
+        }
+        return channel;
     }
 
     protected void initChannel(Channel channel) throws IOException {
@@ -53,5 +66,26 @@ public class RabbitMQOutputHandler extends OutputHandlerAdapter {
                 channel.queueBind(q, exchange, "");
             }
         }
+    }
+
+    @Override
+    public synchronized void shutdownCompleted(ShutdownSignalException cause) {
+        channel = null;
+        if (!cause.isInitiatedByApplication()) {
+            log.error(outputPath + ": Channel closed unexpectedly: " + cause.getMessage());
+            try {
+                if (con.isOpen()) con.close();
+            } catch (Exception ignore) {
+            }
+            con = null;
+        }
+    }
+
+    protected String getConnectionInfo() {
+        if (connectionFactory == null) return "(null)";
+        String host = connectionFactory.getHost();
+        if (host.length() == 0) host="127.0.0.1";
+        return "amqp" + (connectionFactory.isSSL() ? "s" : "") + "://" + connectionFactory.getUsername() +
+                "@" + host + ":" + connectionFactory.getPort() + connectionFactory.getVirtualHost();
     }
 }

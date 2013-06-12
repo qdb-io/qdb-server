@@ -14,9 +14,11 @@ public interface OutputHandler extends Closeable {
     /**
      * This is called once before the first call to {@link #processMessage(long, String, long, byte[])}. Note that
      * the output instance will become stale i.e. once processing has started it will no longer reflect the current
-     * state of the output. Throw IllegalArgumentException if parameters are missing etc.
+     * state of the output. Throw IllegalArgumentException for permanent errors (e.g. missing or invalid parameters)
+     * which will cause the output to stop until it is updated. Throwing other exceptions will cause the output
+     * to be retried after a delay defined by its backoff policy.
      */
-    public void init(Queue q, Output output) throws IllegalArgumentException;
+    public void init(Queue q, Output output, String outputPath) throws Exception;
 
     /**
      * Process the message and return the id of the message that processing should start after. This will usually

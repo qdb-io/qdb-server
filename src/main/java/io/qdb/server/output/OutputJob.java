@@ -91,26 +91,33 @@ public class OutputJob implements Runnable {
                 return;
             }
 
+            boolean initOk = false;
             try {
                 Map<String, Object> p = output.getParams();
                 if (p != null) new DataBinder().ignoreInvalidFields(true).bind(p, handler).check();
-                handler.init(q, output);
+                handler.init(q, output, outputPath);
+                initOk = true;
             } catch (IllegalArgumentException e) {
                 log.error(outputPath + ": " + e.getMessage());
                 return;
+            } catch (Exception e) {
+                log.error(outputPath + ": " + e.getMessage(), e);
+                ++errorCount;
             }
 
             try {
-                MessageBuffer buffer = queueManager.getBuffer(q);
-                if (buffer == null) {   // we might be busy starting up or something
-                    if (log.isDebugEnabled()) log.debug("Queue [" + q.getId() + "] does not have a buffer");
-                    ++errorCount;
-                } else {
-                    try {
-                        processMessages(buffer, handler);
-                    } catch (Exception e) {
+                if (initOk) {
+                    MessageBuffer buffer = queueManager.getBuffer(q);
+                    if (buffer == null) {   // we might be busy starting up or something
+                        if (log.isDebugEnabled()) log.debug("Queue [" + q.getId() + "] does not have a buffer");
                         ++errorCount;
-                        log.error(outputPath + ": " + e.getMessage(), e);
+                    } else {
+                        try {
+                            processMessages(buffer, handler);
+                        } catch (Exception e) {
+                            ++errorCount;
+                            log.error(outputPath + ": " + e.getMessage(), e);
+                        }
                     }
                 }
             } finally {
@@ -136,6 +143,7 @@ public class OutputJob implements Runnable {
      * Feed messages to our handler until we are closed or our output is changed by someone else.
      */
     public void processMessages(MessageBuffer buffer, OutputHandler handler) throws Exception {
+        if (log.isDebugEnabled()) log.debug(outputPath + ": processing messages");
         MessageCursor cursor = null;
         try {
             long messageId = output.getMessageId();
@@ -154,7 +162,7 @@ public class OutputJob implements Runnable {
             while (!exitLoop && !isStopFlag()) {
                 boolean haveMsg;
                 try {
-                    haveMsg = cursor.next(100);
+                    haveMsg = cursor.next(1000);
                 } catch (IOException e) {
                     haveMsg = false;
                     exitLoop = true;
@@ -232,7 +240,7 @@ public class OutputJob implements Runnable {
             b.append("/queues/").append(s);
             s = q.getOutputForOid(o.getId());
             if (s != null) {
-                return b.append("/outputs/").append(s).append(" [").append(o.getType()).append(']').toString();
+                return b.append("/outputs/").append(s).toString();
             }
         }
         return o.toString();
