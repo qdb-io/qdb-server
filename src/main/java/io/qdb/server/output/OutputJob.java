@@ -2,52 +2,140 @@ package io.qdb.server.output;
 
 import io.qdb.buffer.MessageBuffer;
 import io.qdb.buffer.MessageCursor;
+import io.qdb.server.databind.DataBinder;
+import io.qdb.server.model.Database;
 import io.qdb.server.model.Output;
 import io.qdb.server.model.Queue;
+import io.qdb.server.queue.QueueManager;
 import io.qdb.server.repo.Repository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.Map;
 
 /**
  * Watches a queue for new messages and processes them.
  */
-public class OutputJob {
+public class OutputJob implements Runnable {
 
     private static final Logger log = LoggerFactory.getLogger(OutputJob.class);
 
+    private final OutputManager outputManager;
+    private final OutputHandlerFactory handlerFactory;
+    private final QueueManager queueManager;
     private final Repository repo;
     private final String oid;
-    private final OutputHandler handler;
 
     private Thread thread;
-    private boolean stopFlag;
+    private String outputPath;
     private Output output;
+    private int errorCount;
+    private boolean stopFlag;
 
-    public OutputJob(Repository repo, String oid, OutputHandler handler) {
+    public OutputJob(OutputManager outputManager, OutputHandlerFactory handlerFactory, QueueManager queueManager,
+                Repository repo, String oid) {
+        this.outputManager = outputManager;
+        this.handlerFactory = handlerFactory;
+        this.queueManager = queueManager;
         this.repo = repo;
         this.oid = oid;
-        this.handler = handler;
     }
 
     public String getOid() {
         return oid;
     }
 
-    public OutputHandler getHandler() {
-        return handler;
+    @Override
+    public void run() {
+        thread = Thread.currentThread();
+        try {
+            mainLoop();
+        } catch (Exception x) {
+            log.error(this + ": " + x, x);
+        } finally {
+            if (log.isDebugEnabled()) log.debug(this + " exit");
+            outputManager.onOutputJobExit(this);
+        }
+    }
+
+    private void mainLoop() throws Exception {
+        while (!isStopFlag()) {
+
+            output = repo.findOutput(oid);
+            if (output == null) {
+                if (log.isDebugEnabled()) log.debug("Output [" + oid + "] does not exist");
+                return;
+            }
+            if (!output.isEnabled()) return;
+
+            Queue q = repo.findQueue(output.getQueue());
+            if (q == null) {
+                if (log.isDebugEnabled()) log.debug("Queue [" + output.getQueue() + "] does not exist");
+                return;
+            }
+
+            Database db = repo.findDatabase(q.getDatabase());
+            if (db == null) {
+                if (log.isDebugEnabled()) log.debug("Database [" + q.getDatabase() + "] does not exist");
+                return;
+            }
+
+            outputPath = toPath(db, q, output);
+
+            OutputHandler handler;
+            try {
+                handler = handlerFactory.createHandler(output.getType());
+            } catch (IllegalArgumentException e) {
+                log.error("Error creating handler for " + outputPath + ": " + e.getMessage(), e);
+                return;
+            }
+
+            try {
+                Map<String, Object> p = output.getParams();
+                if (p != null) new DataBinder().ignoreInvalidFields(true).bind(p, handler).check();
+                handler.init(q, output);
+            } catch (IllegalArgumentException e) {
+                log.error(outputPath + ": " + e.getMessage());
+                return;
+            }
+
+            try {
+                MessageBuffer buffer = queueManager.getBuffer(q);
+                if (buffer == null) {   // we might be busy starting up or something
+                    if (log.isDebugEnabled()) log.debug("Queue [" + q.getId() + "] does not have a buffer");
+                    ++errorCount;
+                } else {
+                    try {
+                        processMessages(buffer, handler);
+                    } catch (Exception e) {
+                        ++errorCount;
+                        log.error(outputPath + ": " + e.getMessage(), e);
+                    }
+                }
+            } finally {
+                try {
+                    handler.close();
+                } catch (IOException e) {
+                    log.error(outputPath + ": Error closing handler: " + e, e);
+                }
+            }
+
+            // todo use backoff policy from output
+            int sleepMs = errorCount * 1000;
+            if (sleepMs > 0) {
+                try {
+                    Thread.sleep(sleepMs);
+                } catch (InterruptedException ignore) {
+                }
+            }
+        }
     }
 
     /**
      * Feed messages to our handler until we are closed or our output is changed by someone else.
      */
-    public void processMessages(Output o, MessageBuffer buffer) throws IOException {
-        this.output = o;
-        synchronized (this) {
-            thread = Thread.currentThread();
-            if (stopFlag) return; // someone already stopped us
-        }
+    public void processMessages(MessageBuffer buffer, OutputHandler handler) throws Exception {
         MessageCursor cursor = null;
         try {
             long messageId = output.getMessageId();
@@ -61,32 +149,39 @@ public class OutputJob {
             long timestamp = 0;
             long lastUpdate = System.currentTimeMillis();
             int updateIntervalMs = output.getUpdateIntervalMs();
-            while (!stopFlag && !thread.isInterrupted()) {
+
+            boolean exitLoop = false;
+            while (!exitLoop && !isStopFlag()) {
                 boolean haveMsg;
                 try {
                     haveMsg = cursor.next(100);
                 } catch (IOException e) {
                     haveMsg = false;
-                    stopFlag = true;
-                    log.error(e.toString(), e);
+                    exitLoop = true;
+                    log.error(outputPath + ": " + e, e);
                 } catch (InterruptedException e) {
                     haveMsg = false;
-                    stopFlag = true;
+                    exitLoop = true;
                 }
                 if (haveMsg) {
                     try {
                         completedId = handler.processMessage(cursor.getId(), cursor.getRoutingKey(),
                                 timestamp = cursor.getTimestamp(), cursor.getPayload());
+                        errorCount = 0; // we successfully processed a message
                     } catch (Exception e) {
-                        stopFlag =  true;
-                        log.error(e.toString(), e);
+                        exitLoop = true;
+                        ++errorCount;
+                        log.error(outputPath + ": " + e, e);
                     }
                 }
 
-                o = repo.findOutput(oid);
-                if (o != output) stopFlag = true; // output has been changed by someone else
+                Output o = repo.findOutput(oid);
+                if (o != output) {
+                    exitLoop = true; // output has been changed by someone else
+                    errorCount = 0;
+                }
 
-                if (completedId != messageId && (stopFlag || updateIntervalMs <= 0
+                if (completedId != messageId && (exitLoop || updateIntervalMs <= 0
                         || System.currentTimeMillis() - lastUpdate >= updateIntervalMs)) {
                     synchronized (repo) {
                         o = repo.findOutput(oid);
@@ -105,13 +200,9 @@ public class OutputJob {
             if (cursor != null) {
                 try {
                     cursor.close();
-                } catch (IOException ignore) {
+                } catch (IOException e) {
+                    log.error(outputPath + ": Error closing cursor: " + e);
                 }
-            }
-            try {
-                handler.close();
-            } catch (IOException e) {
-                log.error("Error closing handler: " + e, e);
             }
         }
     }
@@ -124,5 +215,31 @@ public class OutputJob {
     public synchronized void stop() {
         stopFlag = true;
         if (thread != null) thread.interrupt();
+    }
+
+    private synchronized boolean isStopFlag() {
+        return stopFlag;
+    }
+
+    /**
+     * Create user friendly identifier for the output for error messages and so on.
+     */
+    private String toPath(Database db, Queue q, Output o) {
+        StringBuilder b = new StringBuilder();
+        b.append("/databases/").append(db.getId());
+        String s = db.getQueueForQid(q.getId());
+        if (s != null) {
+            b.append("/queues/").append(s);
+            s = q.getOutputForOid(o.getId());
+            if (s != null) {
+                return b.append("/outputs/").append(s).append(" [").append(o.getType()).append(']').toString();
+            }
+        }
+        return o.toString();
+    }
+
+    @Override
+    public String toString() {
+        return outputPath == null ? "output[" + oid + "]" : outputPath;
     }
 }
