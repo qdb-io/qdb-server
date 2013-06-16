@@ -130,12 +130,10 @@ public class QueueController extends CrudController {
                     call.setCode(400, "Queue id must contain only letters, numbers, hyphens and underscores");
                     return;
                 }
-                if (dto.maxSize == null) {
-                    call.setCode(400, "maxSize is required");
-                    return;
-                }
+
                 q = new Queue();
                 q.setDatabase(db.getId());
+                q.setMaxSize(100 * 1024 * 1024);
                 q.setMaxPayloadSize(128 * 1024);
                 q.setContentType("application/json; charset=utf-8");
             } else {

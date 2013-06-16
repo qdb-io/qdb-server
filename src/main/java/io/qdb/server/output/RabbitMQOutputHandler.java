@@ -30,6 +30,8 @@ public class RabbitMQOutputHandler extends OutputHandlerAdapter implements Shutd
         if (output.getUrl() == null) throw new IllegalArgumentException("url is required");
         if (exchange == null) throw new IllegalArgumentException("exchange is required");
 
+        if (queues == null || queues.length == 0) queues = new String[]{exchange};
+
         connectionFactory = new ConnectionFactory();
         connectionFactory.setUri(output.getUrl());
         connectionFactory.setRequestedHeartbeat(heartbeat);
