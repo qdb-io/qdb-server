@@ -56,8 +56,8 @@ public class DataBinder {
                 }
                 continue;
             }
-            Class t;
-            if (v instanceof String && (t = f.getType()) != String.class) {
+            Class t = f.getType();
+            if (v instanceof String && t != String.class) {
                 String s = (String)v;
                 try {
                     if (t == Integer.TYPE || t == Integer.class) v = IntegerParser.INSTANCE.parseInt(s);
@@ -70,6 +70,16 @@ public class DataBinder {
                     continue;
                 }
                 if (updateMap) map.put(key, v);
+            } else if (t.isArray() && v != null) {
+                Class vt = v.getClass();
+                if (vt.isArray() && vt.getComponentType() == Object.class) {
+                    if (t.getComponentType() == String.class) {
+                        Object[] va = (Object[])v;
+                        String[] sa = new String[va.length];
+                        for (int i = 0; i < va.length; i++) sa[i] = (String)va[i];
+                        v = sa;
+                    }
+                }
             }
             try {
                 f.set(dto, v);

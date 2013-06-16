@@ -43,16 +43,6 @@ artifacts {
     archives sourceJar
 }
 
-run {
-    def list = []
-    if (project.hasProperty('dbg')) {
-        list << "-Xdebug"
-        list << "-Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5005"
-    }
-    if (project.hasProperty('server')) list << "-Dqdb.conf=etc/qdb" + project.server
-    jvmArgs = list
-}
-
 task("run-debug", dependsOn: 'classes', type: JavaExec) {
     main = "io.qdb.server.Main"
     classpath = sourceSets.main.runtimeClasspath

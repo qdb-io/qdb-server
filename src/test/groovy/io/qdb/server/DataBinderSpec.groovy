@@ -49,6 +49,14 @@ class DataBinderSpec extends Specification {
         dto2.stringArrayValue == [] as String[]
     }
 
+    def "Object array to string array conversion"() {
+        TypesDTO dto = new TypesDTO()
+        b.bind([stringArrayValue: ["abc","def"] as Object[]], dto);
+
+        expect:
+        dto.stringArrayValue == ["abc", "def"] as String[]
+    }
+
     def "Unknown field error trapped"() {
         when:
         TypesDTO dto = new TypesDTO()
