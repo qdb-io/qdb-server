@@ -2,6 +2,7 @@ package io.qdb.server
 
 import groovy.json.JsonSlurper
 import groovy.json.JsonBuilder
+import sun.reflect.UTF8
 
 /**
  * Manages communication with a QDB server over HTTP for tests.
@@ -51,8 +52,21 @@ class Client {
     }
 
     Response POST(String path, Object data, String user = "admin", String password = "admin") {
-        String json = new JsonBuilder(data).toString()
-        putOrPost("POST", path, "application/json", json.getBytes("UTF8"), user, password)
+        POST(path, data, false, user, password)
+    }
+
+    private String encode(Object v) { URLEncoder.encode(v.toString(), "UTF8") }
+
+    Response POST(String path, Object data, boolean asFormParams, String user = "admin", String password = "admin") {
+        String s, ct
+        if (asFormParams) {
+            s = ((Map)data).collect { k, v -> "${encode(k)}=${encode(v)}" }.join("&");
+            ct = "application/x-www-form-urlencoded"
+        } else {
+            s = new JsonBuilder(data).toString()
+            ct = "application/json"
+        }
+        putOrPost("POST", path, ct, s.getBytes("UTF8"), user, password)
     }
 
     Response POST(String path, String contentType, byte[] data, String user = "admin", String password = "admin") {

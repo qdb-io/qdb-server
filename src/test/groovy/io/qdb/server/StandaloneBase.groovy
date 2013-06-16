@@ -24,6 +24,10 @@ class StandaloneBase extends Specification {
         return client.POST(path, data, user, password)
     }
 
+    Client.Response POST(String path, Object data, boolean asFormParams, String user = "admin", String password = "admin") {
+        return client.POST(path, data, asFormParams, user, password)
+    }
+
     Client.Response POST(String path, String contentType, byte[] data, String user = "admin", String password = "admin") {
         return client.POST(path, contentType, data, user, password)
     }
