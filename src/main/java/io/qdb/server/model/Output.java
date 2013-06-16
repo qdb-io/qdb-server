@@ -12,7 +12,7 @@ public class Output extends ModelObject {
     private String url;
     private boolean enabled;
     private long messageId;
-    private long timestamp;
+    private long at;
     private int updateIntervalMs;
     private Map<String, Object> params;
 
@@ -59,12 +59,12 @@ public class Output extends ModelObject {
         this.messageId = messageId;
     }
 
-    public long getTimestamp() {
-        return timestamp;
+    public long getAt() {
+        return at;
     }
 
-    public void setTimestamp(long timestamp) {
-        this.timestamp = timestamp;
+    public void setAt(long at) {
+        this.at = at;
     }
 
     public int getUpdateIntervalMs() {

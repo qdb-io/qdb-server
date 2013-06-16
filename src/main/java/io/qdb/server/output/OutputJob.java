@@ -148,7 +148,7 @@ public class OutputJob implements Runnable {
         try {
             long messageId = output.getMessageId();
             if (messageId == -2) {
-                cursor = buffer.cursorByTimestamp(output.getTimestamp());
+                cursor = buffer.cursorByTimestamp(output.getAt());
             } else {
                 cursor = buffer.cursor(messageId < 0 ? buffer.getNextMessageId() : messageId);
             }
@@ -194,9 +194,9 @@ public class OutputJob implements Runnable {
                     synchronized (repo) {
                         o = repo.findOutput(oid);
                         // don't record our progress if we are now supposed to be processing from a different point in buffer
-                        if (o.getMessageId() != output.getMessageId() || o.getTimestamp() != output.getTimestamp()) break;
+                        if (o.getMessageId() != output.getMessageId() || o.getAt() != output.getAt()) break;
                         output = (Output)o.clone();
-                        output.setTimestamp(timestamp);
+                        output.setAt(timestamp);
                         handler.updateOutput(output);
                         output.setMessageId(completedId + 1); // +1 so we don't repeat the same message again
                         repo.updateOutput(output);

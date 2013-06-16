@@ -39,7 +39,7 @@ public class OutputController extends CrudController {
         public String url;
         public Boolean enabled;
         public Long messageId;
-        public Date timestamp;
+        public Date at;
         public Integer updateIntervalMs;
         public transient Map<String, Object> params;
 
@@ -55,7 +55,7 @@ public class OutputController extends CrudController {
             this.url = o.getUrl();
             this.enabled = o.isEnabled();
             this.messageId = o.getMessageId();
-            this.timestamp = new Date(o.getTimestamp());
+            this.at = new Date(o.getAt());
             this.params = o.getParams();
         }
 
@@ -205,12 +205,12 @@ public class OutputController extends CrudController {
             }
 
             // user can set the timestamp (to start/restart processing from that time) or messageId but not both
-            if (dto.timestamp != null && dto.timestamp.getTime() != o.getTimestamp()) {
-                o.setTimestamp(dto.timestamp.getTime());
+            if (dto.at != null && dto.at.getTime() != o.getAt()) {
+                o.setAt(dto.at.getTime());
                 o.setMessageId(-2);
                 changed = true;
             } else if (dto.messageId != null && dto.messageId != o.getMessageId()) {
-                o.setTimestamp(0);
+                o.setAt(0);
                 o.setMessageId(dto.messageId);
                 changed = true;
             }
@@ -243,17 +243,15 @@ public class OutputController extends CrudController {
                 }
             }
 
-            if (changed) repo.updateOutput(o);
-
             if (create) {
-                // update the queue after the output to avoid having a queue referencing an output that does not exist if
-                // something goes wrong - better to have an unreferenced output lying around
                 q = (Queue)q.clone();      // make a copy before we modify it
                 Map<String, String> outputs = q.getOutputs();
                 if (outputs == null) q.setOutputs(outputs = new HashMap<String, String>());
                 outputs.put(id, o.getId());
                 repo.updateQueue(q);
             }
+
+            if (changed) repo.updateOutput(o);
         }
         call.setCode(create ? 201 : 200, new OutputDTO(id, o));
     }
