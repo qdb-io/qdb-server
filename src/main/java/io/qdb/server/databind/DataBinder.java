@@ -1,6 +1,7 @@
 package io.qdb.server.databind;
 
 import java.lang.reflect.Field;
+import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -49,6 +50,7 @@ public class DataBinder {
                     if (t == Integer.TYPE || t == Integer.class) v = Integer.parseInt(s);
                     else if (t == Long.TYPE || t == Long.class) v = Long.parseLong(s);
                     else if (t == Boolean.TYPE || t == Boolean.class) v = "true".equals(v);
+                    else if (t == Date.class) v = DateTimeParser.INSTANCE.parse(s);
                 } catch (Exception x) {
                     error(key, "Invalid value, expected " + t.getSimpleName() + ": [" + v + "]");
                     continue;

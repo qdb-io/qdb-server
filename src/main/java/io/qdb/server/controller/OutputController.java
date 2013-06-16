@@ -39,7 +39,7 @@ public class OutputController extends CrudController {
         public String url;
         public Boolean enabled;
         public Long messageId;
-        public Long timestamp;
+        public Date timestamp;
         public Integer updateIntervalMs;
         public transient Map<String, Object> params;
 
@@ -55,7 +55,7 @@ public class OutputController extends CrudController {
             this.url = o.getUrl();
             this.enabled = o.isEnabled();
             this.messageId = o.getMessageId();
-            this.timestamp = o.getTimestamp();
+            this.timestamp = new Date(o.getTimestamp());
             this.params = o.getParams();
         }
 
@@ -205,8 +205,8 @@ public class OutputController extends CrudController {
             }
 
             // user can set the timestamp (to start/restart processing from that time) or messageId but not both
-            if (dto.timestamp != null && dto.timestamp != o.getTimestamp()) {
-                o.setTimestamp(dto.timestamp);
+            if (dto.timestamp != null && dto.timestamp.getTime() != o.getTimestamp()) {
+                o.setTimestamp(dto.timestamp.getTime());
                 o.setMessageId(-2);
                 changed = true;
             } else if (dto.messageId != null && dto.messageId != o.getMessageId()) {

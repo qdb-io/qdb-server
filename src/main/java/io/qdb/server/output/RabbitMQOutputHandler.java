@@ -38,12 +38,14 @@ public class RabbitMQOutputHandler extends OutputHandlerAdapter implements Shutd
 
     @Override
     public long processMessage(long messageId, String routingKey, long timestamp, byte[] payload) throws Exception {
+        if (log.isDebugEnabled()) log.debug(outputPath + ": Publishing " + messageId);
         ensureChannel().basicPublish(exchange, routingKey, null, payload);
         return messageId;
     }
 
     @Override
-    public synchronized void close() throws IOException {
+    public void close() throws IOException {
+        // this method cannot be synchronized or we get deadlock with shutdownCompleted
         if (con != null) con.close();
     }
 

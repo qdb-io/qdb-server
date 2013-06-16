@@ -1,16 +1,24 @@
 package io.qdb.server.controller;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.*;
 import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.databind.ser.std.DateSerializer;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import com.google.inject.Inject;
+import groovy.lang.GString;
+import io.qdb.server.databind.DateTimeParser;
 
 import javax.inject.Named;
 import javax.inject.Singleton;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.TimeZone;
 
 /**
  * Marshaling of objects to/from JSON using Jackson.
@@ -27,6 +35,33 @@ public class JsonService {
         mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
         mapper.configure(SerializationFeature.WRITE_NULL_MAP_VALUES, false);
+
+        SimpleModule module = new SimpleModule("qdb");
+
+        module.addSerializer(Date.class, new JsonSerializer<Date>(){
+            private SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ"); // ISO 8601
+            @Override
+            public void serialize(Date value, JsonGenerator jgen, SerializerProvider provider) throws IOException {
+                jgen.writeString(df.format(value));
+            }
+        });
+
+        module.addDeserializer(Date.class, new JsonDeserializer<Date>() {
+            @Override
+            public Date deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException {
+                if (jp.getCurrentToken() == JsonToken.VALUE_NUMBER_INT) {
+                    return new Date(jp.getLongValue());
+                }
+                String s = jp.getText().trim();
+                try {
+                    return DateTimeParser.INSTANCE.parse(s);
+                } catch (ParseException e) {
+                    throw new IllegalArgumentException("Invalid date: [" + s + "]");
+                }
+            }
+        });
+
+        mapper.registerModule(module);
 
         if (prettyPrint) {
             mapperNoIdentOutput = mapper.copy();
