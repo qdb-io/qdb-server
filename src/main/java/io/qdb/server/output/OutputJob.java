@@ -2,6 +2,7 @@ package io.qdb.server.output;
 
 import io.qdb.buffer.MessageBuffer;
 import io.qdb.buffer.MessageCursor;
+import io.qdb.server.controller.JsonService;
 import io.qdb.server.databind.DataBinder;
 import io.qdb.server.model.Database;
 import io.qdb.server.model.Output;
@@ -25,6 +26,7 @@ public class OutputJob implements Runnable {
     private final OutputHandlerFactory handlerFactory;
     private final QueueManager queueManager;
     private final Repository repo;
+    private final JsonService jsonService;
     private final String oid;
 
     private Thread thread;
@@ -34,11 +36,12 @@ public class OutputJob implements Runnable {
     private boolean stopFlag;
 
     public OutputJob(OutputManager outputManager, OutputHandlerFactory handlerFactory, QueueManager queueManager,
-                Repository repo, String oid) {
+                     Repository repo, JsonService jsonService, String oid) {
         this.outputManager = outputManager;
         this.handlerFactory = handlerFactory;
         this.queueManager = queueManager;
         this.repo = repo;
+        this.jsonService = jsonService;
         this.oid = oid;
     }
 
@@ -94,7 +97,7 @@ public class OutputJob implements Runnable {
             boolean initOk = false;
             try {
                 Map<String, Object> p = output.getParams();
-                if (p != null) new DataBinder().ignoreInvalidFields(true).bind(p, handler).check();
+                if (p != null) new DataBinder(jsonService).ignoreInvalidFields(true).bind(p, handler).check();
                 handler.init(q, output, outputPath);
                 initOk = true;
             } catch (IllegalArgumentException e) {

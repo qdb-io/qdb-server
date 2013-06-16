@@ -217,7 +217,7 @@ public class OutputController extends CrudController {
 
             if (dto.params != null) {
                 OutputHandler h = handlerFactory.createHandler(o.getType());
-                new DataBinder().bind(dto.params, h).check();
+                new DataBinder(jsonService).updateMap(true).bind(dto.params, h).check();
                 Map<String, Object> op = o.getParams();
                 if (op == null) {
                     o.setParams(dto.params);

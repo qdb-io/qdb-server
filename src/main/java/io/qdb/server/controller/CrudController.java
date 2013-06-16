@@ -109,7 +109,7 @@ public abstract class CrudController implements Controller {
             } catch (Exception x) {
                 throw new RuntimeException(x.toString(), x);
             }
-            new DataBinder().bind(req.getForm(), dto).check();
+            new DataBinder(jsonService).bind(req.getForm(), dto).check();
         }
         return dto;
     }

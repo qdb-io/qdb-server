@@ -1,5 +1,9 @@
 package io.qdb.server.databind;
 
+import io.qdb.server.controller.JsonService;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.Date;
 import java.util.LinkedHashMap;
@@ -10,14 +14,22 @@ import java.util.Map;
  */
 public class DataBinder {
 
+    private final JsonService jsonService;
     private boolean ignoreInvalidFields;
+    private boolean updateMap;
     private Map<String, String> errors;
 
-    public DataBinder() {
+    public DataBinder(JsonService jsonService) {
+        this.jsonService = jsonService;
     }
 
     public DataBinder ignoreInvalidFields(boolean on) {
         this.ignoreInvalidFields = on;
+        return this;
+    }
+
+    public DataBinder updateMap(boolean on) {
+        this.updateMap = on;
         return this;
     }
 
@@ -26,6 +38,7 @@ public class DataBinder {
      * from String to these types. If dto implements {@link HasAnySetter} the keys from the map that do not match
      * field names are passed to {@link HasAnySetter#set(String, Object)}.
      */
+    @SuppressWarnings("unchecked")
     public DataBinder bind(Map map, Object dto) {
         Class<?> cls = dto.getClass();
         for (Object o : map.entrySet()) {
@@ -51,10 +64,12 @@ public class DataBinder {
                     else if (t == Long.TYPE || t == Long.class) v = Long.parseLong(s);
                     else if (t == Boolean.TYPE || t == Boolean.class) v = "true".equals(v);
                     else if (t == Date.class) v = DateTimeParser.INSTANCE.parse(s);
+                    else if (t == String[].class) v = parseStringArray(s);
                 } catch (Exception x) {
                     error(key, "Invalid value, expected " + t.getSimpleName() + ": [" + v + "]");
                     continue;
                 }
+                if (updateMap) map.put(key, v);
             }
             try {
                 f.set(dto, v);
@@ -63,6 +78,12 @@ public class DataBinder {
             }
         }
         return this;
+    }
+
+    private String[] parseStringArray(String s) throws IOException {
+        if (s.length() == 0) return new String[0];
+        if (s.charAt(0) == '[') return jsonService.fromJson(new ByteArrayInputStream(s.getBytes("UTF8")), String[].class);
+        return s.split("[/s]*,[/s]*");
     }
 
     private void error(String field, String message) {
