@@ -60,8 +60,8 @@ public class DataBinder {
             if (v instanceof String && (t = f.getType()) != String.class) {
                 String s = (String)v;
                 try {
-                    if (t == Integer.TYPE || t == Integer.class) v = Integer.parseInt(s);
-                    else if (t == Long.TYPE || t == Long.class) v = Long.parseLong(s);
+                    if (t == Integer.TYPE || t == Integer.class) v = IntegerParser.INSTANCE.parseInt(s);
+                    else if (t == Long.TYPE || t == Long.class) v = IntegerParser.INSTANCE.parseLong(s);
                     else if (t == Boolean.TYPE || t == Boolean.class) v = "true".equals(v);
                     else if (t == Date.class) v = DateTimeParser.INSTANCE.parse(s);
                     else if (t == String[].class) v = parseStringArray(s);

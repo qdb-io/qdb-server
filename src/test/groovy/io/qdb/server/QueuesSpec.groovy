@@ -12,7 +12,7 @@ class QueuesSpec extends StandaloneBase {
     }
 
     def "Create queue"() {
-        def data = [maxSize: 10000000]
+        def data = [maxSize: "10m"]
         def ans = POST("/databases/foo/queues/bar", data, "david", "secret")
         def ans2 = POST("/databases/foo/queues/bar", data, "david", "secret")
 
@@ -20,14 +20,14 @@ class QueuesSpec extends StandaloneBase {
         ans.code == 201
         ans.json.id == "bar"
         ans.json.qid.length() > 0
-        ans.json.maxSize == 10000000
-        ans.json.maxPayloadSize == 128 * 1024
+        ans.json.maxSize == 10 * 1024 * 1024
+        ans.json.maxPayloadSize == 1024 * 1024
         ans.json.contentType == "application/json; charset=utf-8"
         ans2.code == 200
     }
 
     def "Queue id validation"() {
-        def ans = POST("/databases/foo/queues/a?b", [:], "david", "secret")
+        def ans = POST("/databases/foo/queues/a@b", [:], "david", "secret")
 
         expect:
         ans.code == 400

@@ -19,12 +19,12 @@ class TimelineSpec extends StandaloneBase {
     }
 
     def "Get timeline"() {
-        long ts1 = POST("/databases/foo/queues/bar/messages", [hello: "a"]).json.getAt
+        long ts1 = POST("/databases/foo/queues/bar/messages", [hello: "a"]).json.timestamp
 
         Thread.sleep(20);
         def json = POST("/databases/foo/queues/bar/messages", [hello: "b"]).json
         long id2 = json.id
-        long ts2 = json.getAt
+        long ts2 = json.timestamp
 
         def ans = GET("/databases/foo/queues/bar/timeline")
 
@@ -33,7 +33,7 @@ class TimelineSpec extends StandaloneBase {
         ans.json.size() == 2
 
         ans.json[0].messageId == 0
-        ans.json[0].getAt == ts1
+        ans.json[0].timestamp == ts1
         ans.json[0].count == 2
         ans.json[0].millis == ts2 - ts1
         ans.json[0].bytes == ans.json[1].messageId

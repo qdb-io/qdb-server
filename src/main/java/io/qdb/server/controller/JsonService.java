@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import com.google.inject.Inject;
 import groovy.lang.GString;
 import io.qdb.server.databind.DateTimeParser;
+import io.qdb.server.databind.IntegerParser;
 
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -49,9 +50,7 @@ public class JsonService {
         module.addDeserializer(Date.class, new JsonDeserializer<Date>() {
             @Override
             public Date deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException {
-                if (jp.getCurrentToken() == JsonToken.VALUE_NUMBER_INT) {
-                    return new Date(jp.getLongValue());
-                }
+                if (jp.getCurrentToken() == JsonToken.VALUE_NUMBER_INT) return new Date(jp.getLongValue());
                 String s = jp.getText().trim();
                 try {
                     return DateTimeParser.INSTANCE.parse(s);
@@ -60,6 +59,26 @@ public class JsonService {
                 }
             }
         });
+
+        JsonDeserializer<Integer> integerJsonDeserializer = new JsonDeserializer<Integer>() {
+            @Override
+            public Integer deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException, JsonProcessingException {
+                if (jp.getCurrentToken() == JsonToken.VALUE_NUMBER_INT) return jp.getIntValue();
+                return IntegerParser.INSTANCE.parseInt(jp.getText().trim());
+            }
+        };
+        module.addDeserializer(Integer.class, integerJsonDeserializer);
+        module.addDeserializer(Integer.TYPE, integerJsonDeserializer);
+
+        JsonDeserializer<Long> longJsonDeserializer = new JsonDeserializer<Long>() {
+            @Override
+            public Long deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException, JsonProcessingException {
+                if (jp.getCurrentToken() == JsonToken.VALUE_NUMBER_INT) return jp.getLongValue();
+                return IntegerParser.INSTANCE.parseLong(jp.getText().trim());
+            }
+        };
+        module.addDeserializer(Long.class, longJsonDeserializer);
+        module.addDeserializer(Long.TYPE, longJsonDeserializer);
 
         mapper.registerModule(module);
 

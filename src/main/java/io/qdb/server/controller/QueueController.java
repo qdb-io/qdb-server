@@ -134,7 +134,7 @@ public class QueueController extends CrudController {
                 q = new Queue();
                 q.setDatabase(db.getId());
                 q.setMaxSize(100 * 1024 * 1024);
-                q.setMaxPayloadSize(128 * 1024);
+                q.setMaxPayloadSize(1024 * 1024);
                 q.setContentType("application/json; charset=utf-8");
             } else {
                 q = repo.findQueue(qid);

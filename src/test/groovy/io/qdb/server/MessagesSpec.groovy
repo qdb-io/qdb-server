@@ -33,12 +33,12 @@ class MessagesSpec extends StandaloneBase {
         expect:
         ans.code == 201
         ans.json.id == 0
-        ans.json.getAt >= now
-        ans.json.getAt < now + 30 * 1000L
+        ans.json.timestamp >= now
+        ans.json.timestamp < now + 30 * 1000L
         ans2.code == 201
         ans2.json.id > ans.json.id
-        ans2.json.getAt >= ans.json.getAt
-        ans2.json.getAt < now + 30 * 1000L
+        ans2.json.timestamp >= ans.json.timestamp
+        ans2.json.timestamp < now + 30 * 1000L
     }
 
     def "Append message with chunked transfer encoding"() {
@@ -86,13 +86,13 @@ class MessagesSpec extends StandaloneBase {
         ans.code == 200
 
         h1.id == 0
-        h1.getAt >= startTime
+        h1.timestamp >= startTime
         h1.payloadSize == m1line.length()
         h1.routingKey == "abc"
         m1.hello == "world"
 
         h2.id > 0
-        h2.getAt >= h1.startTime
+        h2.timestamp >= h1.startTime
         h2.payloadSize == m2line.length()
         h2.routingKey == ""
         m2.hello == "2nd world"
