@@ -16,27 +16,27 @@ class StandaloneBase extends Specification {
         server?.close()
     }
 
-    Client.Response GET(String path, String user = "admin", String password = "admin") {
+    Client.Response GET(String path, String user = "admin", String password = "secret") {
         return client.GET(path, user, password)
     }
 
-    Client.Response POST(String path, Object data, String user = "admin", String password = "admin") {
+    Client.Response POST(String path, Object data, String user = "admin", String password = "secret") {
         return client.POST(path, data, user, password)
     }
 
-    Client.Response POST(String path, Object data, boolean asFormParams, String user = "admin", String password = "admin") {
+    Client.Response POST(String path, Object data, boolean asFormParams, String user = "admin", String password = "secret") {
         return client.POST(path, data, asFormParams, user, password)
     }
 
-    Client.Response POST(String path, String contentType, byte[] data, String user = "admin", String password = "admin") {
+    Client.Response POST(String path, String contentType, byte[] data, String user = "admin", String password = "secret") {
         return client.POST(path, contentType, data, user, password)
     }
 
-    Client.Response PUT(String path, Object data, String user = "admin", String password = "admin") {
+    Client.Response PUT(String path, Object data, String user = "admin", String password = "secret") {
         return client.PUT(path, data, user, password)
     }
 
-    Client.Response DELETE(String path, String user = "admin", String password = "admin") {
+    Client.Response DELETE(String path, String user = "admin", String password = "secret") {
         return client.DELETE(path, user, password)
     }
 }
