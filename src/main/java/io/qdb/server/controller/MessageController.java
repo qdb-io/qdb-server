@@ -38,7 +38,7 @@ public class MessageController extends CrudController {
     public static class MessageHeader {
 
         public long id;
-        public long timestamp;
+        public Date timestamp;
         public int payloadSize;
         public String routingKey;
 
@@ -47,7 +47,7 @@ public class MessageController extends CrudController {
 
         public MessageHeader(MessageCursor c) throws IOException {
             id = c.getId();
-            timestamp = c.getTimestamp();
+            timestamp = new Date(c.getTimestamp());
             payloadSize = c.getPayloadSize();
             routingKey = c.getRoutingKey();
         }

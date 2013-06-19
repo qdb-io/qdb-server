@@ -88,17 +88,19 @@ class MessagesSpec extends StandaloneBase {
         def m2line = r.readLine()
         def m2 = new JsonSlurper().parseText(m2line)
 
+        SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
+
         expect:
         ans.code == 200
 
         h1.id == 0
-        h1.timestamp >= startTime
+        df.parse(h1.timestamp).time >= startTime
         h1.payloadSize == m1line.length()
         h1.routingKey == "abc"
         m1.hello == "world"
 
         h2.id > 0
-        h2.timestamp >= h1.startTime
+        df.parse(h2.timestamp).time >= h1.startTime
         h2.payloadSize == m2line.length()
         h2.routingKey == ""
         m2.hello == "2nd world"
