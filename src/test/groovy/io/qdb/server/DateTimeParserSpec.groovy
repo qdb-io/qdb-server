@@ -74,4 +74,12 @@ class DateTimeParserSpec extends Specification {
         expect:
         df.format(d) == now + " 21:04"
     }
+
+    def "Format timestamp works"() {
+        Date d = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ").parse("2013-06-16T21:04:32.123+0200")
+        String s = DateTimeParser.INSTANCE.formatTimestamp(d)
+
+        expect:
+        s == "2013-06-16T21:04:32.123+0200"
+    }
 }

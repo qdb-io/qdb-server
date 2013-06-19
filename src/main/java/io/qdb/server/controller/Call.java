@@ -1,15 +1,19 @@
 package io.qdb.server.controller;
 
+import io.qdb.server.databind.DateTimeParser;
 import io.qdb.server.model.Database;
 import io.qdb.server.model.Queue;
 import io.qdb.server.model.User;
 import io.qdb.server.security.Auth;
 import org.simpleframework.http.Request;
 import org.simpleframework.http.Response;
+import org.simpleframework.http.parse.DateParser;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
+import java.text.ParseException;
+import java.util.Date;
 
 /**
  * Encapsulates a call to the server. Includes the request, response and authentication information. Adds
@@ -113,6 +117,15 @@ public class Call {
 
     public boolean getBoolean(String param) throws IOException {
         return "true".equals(request.getParameter(param));
+    }
+
+    public Date getDate(String param) throws IOException {
+        String s = request.getParameter(param);
+        try {
+            return s == null ? null : DateTimeParser.INSTANCE.parse(s);
+        } catch (ParseException e) {
+            throw new IllegalArgumentException(param  + "[" + s + "] is invalid: " + e.getMessage());
+        }
     }
 
     public void setCode(int code) throws IOException {

@@ -24,6 +24,13 @@ public class DateTimeParser {
 
     public Date parse(String s) throws ParseException {
         Date ans;
+        if (isAllDigits(s)) {
+            try {
+                return new Date(Long.parseLong(s));
+            } catch (NumberFormatException e) {
+                throw new ParseException(e.getMessage(), 0);
+            }
+        }
         int n = s.length();
         switch (n) {
             case 5:
@@ -55,11 +62,26 @@ public class DateTimeParser {
         return ans;
     }
 
+    private boolean isAllDigits(String s) {
+        for (int i = s.length() - 1; i >= 0; i--) {
+            char c = s.charAt(i);
+            if (c < '0' || c > '9') return false;
+        }
+        return true;
+    }
+
     @SuppressWarnings("deprecation")
     private void timeToToday(Date d) {
         GregorianCalendar gc = new GregorianCalendar();
         d.setYear(gc.get(Calendar.YEAR) - 1900);
         d.setMonth(gc.get(Calendar.MONTH));
         d.setDate(gc.get(Calendar.DAY_OF_MONTH));
+    }
+
+    /**
+     * Format date with milliseconds and timezone.
+     */
+    public String formatTimestamp(Date date) {
+        return millis.format(date);
     }
 }

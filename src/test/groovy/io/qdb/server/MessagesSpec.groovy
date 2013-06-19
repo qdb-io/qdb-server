@@ -107,7 +107,7 @@ class MessagesSpec extends StandaloneBase {
     }
 
     def "Get message by timestamp"() {
-        def ans = GET("/databases/foo/queues/bar/messages?timestamp=${startTime}&single=true")
+        def ans = GET("/databases/foo/queues/bar/messages?at=${startTime}&single=true")
 
         expect:
         ans.code == 200

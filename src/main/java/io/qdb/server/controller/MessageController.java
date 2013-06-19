@@ -2,6 +2,7 @@ package io.qdb.server.controller;
 
 import io.qdb.buffer.MessageBuffer;
 import io.qdb.buffer.MessageCursor;
+import io.qdb.server.databind.DateTimeParser;
 import io.qdb.server.model.Queue;
 import io.qdb.server.queue.QueueManager;
 import org.simpleframework.http.Request;
@@ -137,6 +138,7 @@ public class MessageController extends CrudController {
         byte[] keepAlive = call.getUTF8Bytes("keepAlive", "\n");
         int keepAliveMs = call.getInt("keepAliveMs", 29000);
         byte[] separator = call.getUTF8Bytes("separator", "\n");
+        boolean noHeaders = call.getBoolean("noHeaders");
 
         boolean single = call.getBoolean("single");
         if (single) {
@@ -144,34 +146,33 @@ public class MessageController extends CrudController {
             keepAliveMs = Integer.MAX_VALUE;
         }
 
-        long id = call.getLong("id", -1L);
-        long timestamp = -1;
-        if (id < 0) {
-            timestamp = call.getLong("timestamp", -1L);
-            if (timestamp < 0) id = mb.getNextMessageId();
-        }
+        Date at = call.getDate("at");
+        long id = at != null ? -1 : call.getLong("id", mb.getNextMessageId());
 
         Response response = call.getResponse();
         response.set("Content-Type", single ? q.getContentType() : "text/plain");
         OutputStream out = response.getOutputStream();
 
-        MessageCursor c = id < 0 ? mb.cursorByTimestamp(timestamp) : mb.cursor(id);
+        MessageCursor c = at != null ? mb.cursorByTimestamp(at.getTime()) : mb.cursor(id);
 
+        int nextKeepAliveMs = keepAliveMs;
         for (int sent = 0; limit == 0 || sent < limit; ++sent) {
             try {
                 if (timeoutMs <= 0) {
-                    while (!c.next(single ? 0 : keepAliveMs)) {
+                    while (!c.next(single ? 0 : nextKeepAliveMs)) {
                         out.write(keepAlive);
                         out.flush();
+                        nextKeepAliveMs = keepAliveMs;
                     }
                 } else {
                     int ms = timeoutMs;
                     while (true) {
-                        int waitMs = Math.min(ms, keepAliveMs);
+                        int waitMs = Math.min(ms, nextKeepAliveMs);
                         if (c.next(waitMs)) break;
                         if ((ms -= waitMs) <= 0) break;
                         out.write(keepAlive);
                         out.flush();
+                        nextKeepAliveMs = keepAliveMs;
                     }
                     if (ms <= 0) break;
                 }
@@ -182,14 +183,17 @@ public class MessageController extends CrudController {
             if (single) {
                 response.setContentLength(c.getPayloadSize());
                 response.set("X-QDB-Id", Long.toString(c.getId()));
-                response.set("X-QBD-Timestamp", Long.toString(c.getTimestamp()));
+                response.set("X-QBD-Timestamp", DateTimeParser.INSTANCE.formatTimestamp(new Date(c.getTimestamp())));
                 response.set("X-QDB-RoutingKey", c.getRoutingKey());
                 out.write(c.getPayload());
             } else {
-                out.write(jsonService.toJsonNoIndenting(new MessageHeader(c)));
-                out.write(10);
+                if (!noHeaders) {
+                    out.write(jsonService.toJsonNoIndenting(new MessageHeader(c)));
+                    out.write(10);
+                }
                 out.write(c.getPayload());
                 out.write(separator);
+                nextKeepAliveMs = 100;
             }
         }
     }
