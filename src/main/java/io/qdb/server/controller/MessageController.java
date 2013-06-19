@@ -13,6 +13,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.io.*;
 import java.nio.channels.ReadableByteChannel;
+import java.util.Date;
 
 @Singleton
 public class MessageController extends CrudController {
@@ -24,10 +25,10 @@ public class MessageController extends CrudController {
     public static class CreateDTO {
 
         public long id;
-        public long timestamp;
+        public Date timestamp;
         public int payloadSize;
 
-        public CreateDTO(long id, long timestamp, int payloadSize) {
+        public CreateDTO(long id, Date timestamp, int payloadSize) {
             this.id = id;
             this.timestamp = timestamp;
             this.payloadSize = payloadSize;
@@ -95,7 +96,7 @@ public class MessageController extends CrudController {
         if (err != null) {
             call.setCode(400, err.getMessage());
         } else {
-            call.setCode(201, new CreateDTO(id, timestamp, contentLength));
+            call.setCode(201, new CreateDTO(id, new Date(timestamp), contentLength));
         }
     }
 

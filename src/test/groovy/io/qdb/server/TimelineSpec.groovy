@@ -2,6 +2,8 @@ package io.qdb.server
 
 import spock.lang.Stepwise
 
+import java.text.SimpleDateFormat
+
 @Stepwise
 class TimelineSpec extends StandaloneBase {
 
@@ -19,12 +21,13 @@ class TimelineSpec extends StandaloneBase {
     }
 
     def "Get timeline"() {
-        long ts1 = POST("/databases/foo/queues/bar/messages", [hello: "a"]).json.timestamp
+        SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
+        long ts1 = df.parse(POST("/databases/foo/queues/bar/messages", [hello: "a"]).json.timestamp).time
 
         Thread.sleep(20);
         def json = POST("/databases/foo/queues/bar/messages", [hello: "b"]).json
         long id2 = json.id
-        long ts2 = json.timestamp
+        long ts2 = df.parse(json.timestamp).time
 
         def ans = GET("/databases/foo/queues/bar/timeline")
 

@@ -7,6 +7,23 @@ import java.text.SimpleDateFormat
 
 class DateTimeParserSpec extends Specification {
 
+    def "Millis works"() {
+        Date d = DateTimeParser.INSTANCE.parse("2013-06-16T21:04:32.123+0300")
+        def df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ")
+        df.setTimeZone(TimeZone.getTimeZone("GMT+3"))
+
+        expect:
+        df.format(d) == "2013-06-16T21:04:32.123+0300"
+    }
+
+    def "Millis no timezone works"() {
+        Date d = DateTimeParser.INSTANCE.parse("2013-06-16T21:04:32.123")
+        def df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS")
+
+        expect:
+        df.format(d) == "2013-06-16T21:04:32.123"
+    }
+
     def "Full works"() {
         Date d = DateTimeParser.INSTANCE.parse("2013-06-16T21:04:32+0300")
         def df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ")

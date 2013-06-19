@@ -3,6 +3,8 @@ package io.qdb.server
 import spock.lang.Stepwise
 
 import spock.lang.Shared
+
+import java.text.SimpleDateFormat
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import groovy.json.JsonSlurper
@@ -27,18 +29,22 @@ class MessagesSpec extends StandaloneBase {
 
     def "Append message"() {
         long now = System.currentTimeMillis()
+        now = now - now % 1000
         def ans = POST("/databases/foo/queues/bar/messages?routingKey=abc", [hello: "world"], "david", "secret")
         def ans2 = POST("/databases/foo/queues/bar/messages", [hello: "2nd world"], "david", "secret")
+        SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
+        long ts = df.parse(ans.json.timestamp).time
+        long ts2 = df.parse(ans2.json.timestamp).time
 
         expect:
         ans.code == 201
         ans.json.id == 0
-        ans.json.timestamp >= now
-        ans.json.timestamp < now + 30 * 1000L
+        ts >= now
+        ts < now + 30 * 1000L
         ans2.code == 201
         ans2.json.id > ans.json.id
-        ans2.json.timestamp >= ans.json.timestamp
-        ans2.json.timestamp < now + 30 * 1000L
+        ts2 >= ts
+        ts2 < now + 30 * 1000L
     }
 
     def "Append message with chunked transfer encoding"() {

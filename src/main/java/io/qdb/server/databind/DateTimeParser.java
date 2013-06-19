@@ -11,6 +11,8 @@ import java.util.GregorianCalendar;
  */
 public class DateTimeParser {
 
+    private final SimpleDateFormat millis = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
+    private final SimpleDateFormat millisNoTz = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS");
     private final SimpleDateFormat full = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
     private final SimpleDateFormat noTz = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
     private final SimpleDateFormat noSecs = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm");
@@ -22,7 +24,8 @@ public class DateTimeParser {
 
     public Date parse(String s) throws ParseException {
         Date ans;
-        switch (s.length()) {
+        int n = s.length();
+        switch (n) {
             case 5:
                 synchronized (mins) { ans = mins.parse(s); }
                 timeToToday(ans);
@@ -41,7 +44,13 @@ public class DateTimeParser {
                 synchronized (noTz) { ans = noTz.parse(s); }
                 break;
             default:
-                synchronized (full) { ans = full.parse(s); }
+                if (s.lastIndexOf('.') > 0) {
+                    if (n > 23) synchronized (millis) { ans = millis.parse(s); }
+                    else synchronized (millisNoTz) { ans = millisNoTz.parse(s); }
+                } else {
+                    synchronized (full) { ans = full.parse(s); }
+                }
+
         }
         return ans;
     }

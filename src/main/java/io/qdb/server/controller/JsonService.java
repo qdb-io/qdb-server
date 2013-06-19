@@ -40,7 +40,7 @@ public class JsonService {
         SimpleModule module = new SimpleModule("qdb");
 
         module.addSerializer(Date.class, new JsonSerializer<Date>(){
-            private SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ"); // ISO 8601
+            private SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ"); // ISO 8601
             @Override
             public void serialize(Date value, JsonGenerator jgen, SerializerProvider provider) throws IOException {
                 jgen.writeString(df.format(value));
