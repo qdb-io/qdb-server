@@ -197,4 +197,16 @@ class MessagesSpec extends StandaloneBase {
         expect:
         ans.code == 400
     }
+
+    def "Append many messages"() {
+        int ok = 0;
+        for (int i = 0; i < 100; i++) {
+            def ans = POST("/databases/foo/queues/bar/messages?routingKey=abc" + i,
+                    [hello: "world" + i], "david", "secret")
+            if (ans.code == 201) ++ok
+        }
+
+        expect:
+        ok == 100
+    }
 }

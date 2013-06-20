@@ -57,7 +57,6 @@ public class DateTimeParser {
                 } else {
                     synchronized (full) { ans = full.parse(s); }
                 }
-
         }
         return ans;
     }

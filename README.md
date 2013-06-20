@@ -1,7 +1,7 @@
 qdb-server
 ==========
 
-HTTP interface to qdb message queues with easy clustering.
+HTTP interface to qdb message queues.
 
 
 Usage
@@ -108,8 +108,8 @@ TODO what about posting more than one message at once?
 `GET /databases/foo/queues/tweets/messages` Stream new messages from the queue 'tweets' as they are appended.
 TODO figure out how to separate messages etc.
 
-Specify `id=123456` to get messages from id onwards. Specify `timestamp=1354457617` (millisecond since 1/1/1970) or
-`timestamp=2012-12-02T10:49:21.908+0000` (ISO 8601 format) to get messages from the given time onwards.
+Specify `id=123456` to get messages from id onwards. Specify `at=1354457617` (millisecond since 1/1/1970) or
+`at=2012-12-02T10:49:21.908+0000` (ISO 8601 format) to get messages from the given time onwards.
 
 
 ### Queue Timelines ###
