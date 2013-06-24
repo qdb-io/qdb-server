@@ -120,7 +120,7 @@ public class DatabaseController extends CrudController {
         if (db != null) {
             if (!db.isVisibleTo(call.getUser())) return StatusCodeController.SC_403;
             call.setDatabase(db);
-            if ("queues".equals(resource)) return queueController;
+            if ("q".equals(resource)) return queueController;
         }
         return StatusCodeController.SC_404;
     }

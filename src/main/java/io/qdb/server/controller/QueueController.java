@@ -237,7 +237,7 @@ public class QueueController extends CrudController {
         if (q != null) {
             call.setQueue(q);
             if ("messages".equals(resource)) return messageController;
-            if ("outputs".equals(resource)) return outputController;
+            if ("out".equals(resource)) return outputController;
             if ("timeline".equals(resource)) return timelineController;
         }
         return StatusCodeController.SC_404;

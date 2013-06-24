@@ -6,14 +6,14 @@ import spock.lang.Stepwise
 class OutputsSpec extends StandaloneBase {
 
     def setupSpec() {
-        assert POST("/databases/foo", [:]).code == 201
-        assert POST("/databases/foo/queues/bar", [maxSize: 1000000]).code == 201
+        assert POST("/db/foo", [:]).code == 201
+        assert POST("/db/foo/q/bar", [maxSize: 1000000]).code == 201
     }
 
     def "Create output"() {
         def data = [type: "rabbitmq", url: "amqp://127.0.0.1/"]
-        def ans = POST("/databases/foo/queues/bar/outputs/rabbit", data)
-        def ans2 = POST("/databases/foo/queues/bar/outputs/rabbit", data)
+        def ans = POST("/db/foo/q/bar/out/rabbit", data)
+        def ans2 = POST("/db/foo/q/bar/out/rabbit", data)
 
         expect:
         ans.code == 201
@@ -26,14 +26,14 @@ class OutputsSpec extends StandaloneBase {
     }
 
     def "Output id validation"() {
-        def ans = POST("/databases/foo/queues/bar/outputs/a?b", [:])
+        def ans = POST("/db/foo/q/bar/out/a?b", [:])
 
         expect:
         ans.code == 400
     }
 
     def "List outputs"() {
-        def ans = GET("/databases/foo/queues/bar/outputs")
+        def ans = GET("/db/foo/q/bar/out")
 
         expect:
         ans.code == 200
@@ -43,7 +43,7 @@ class OutputsSpec extends StandaloneBase {
     }
 
     def "Count outputs"() {
-        def ans = GET("/databases/foo/queues/bar/outputs?count=true")
+        def ans = GET("/db/foo/q/bar/out?count=true")
 
         expect:
         ans.code == 200
@@ -51,7 +51,7 @@ class OutputsSpec extends StandaloneBase {
     }
 
     def "Get output"() {
-        def ans = GET("/databases/foo/queues/bar/outputs/rabbit")
+        def ans = GET("/db/foo/q/bar/out/rabbit")
 
         expect:
         ans.code == 200
@@ -60,7 +60,7 @@ class OutputsSpec extends StandaloneBase {
     }
 
     def "Update output"() {
-        def ans = PUT("/databases/foo/queues/bar/outputs/rabbit", [enabled: false])
+        def ans = PUT("/db/foo/q/bar/out/rabbit", [enabled: false])
 
         expect:
         ans.code == 200
@@ -70,14 +70,14 @@ class OutputsSpec extends StandaloneBase {
     }
 
     def "Output type validation"() {
-        def ans = POST("/databases/foo/queues/bar/outputs/piggy", [type: "oinks"])
+        def ans = POST("/db/foo/q/bar/out/piggy", [type: "oinks"])
 
         expect:
         ans.code == 400
     }
 
     def "Delete output"() {
-        def ans = DELETE("/databases/foo/queues/bar/outputs/rabbit")
+        def ans = DELETE("/db/foo/q/bar/out/rabbit")
 
         expect:
         ans.code == 200

@@ -8,12 +8,12 @@ import java.text.SimpleDateFormat
 class TimelineSpec extends StandaloneBase {
 
     def setupSpec() {
-        assert POST("/databases/foo", [owner: "admin"]).code == 201
-        assert POST("/databases/foo/queues/bar", [maxSize: 10000000]).code == 201
+        assert POST("/db/foo", [owner: "admin"]).code == 201
+        assert POST("/db/foo/q/bar", [maxSize: 10000000]).code == 201
     }
 
     def "Get timeline for empty queue"() {
-        def ans = GET("/databases/foo/queues/bar/timeline")
+        def ans = GET("/db/foo/q/bar/timeline")
 
         expect:
         ans.code == 200
@@ -22,14 +22,14 @@ class TimelineSpec extends StandaloneBase {
 
     def "Get timeline"() {
         SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
-        long ts1 = df.parse(POST("/databases/foo/queues/bar/messages", [hello: "a"]).json.timestamp).time
+        long ts1 = df.parse(POST("/db/foo/q/bar/messages", [hello: "a"]).json.timestamp).time
 
         Thread.sleep(20);
-        def json = POST("/databases/foo/queues/bar/messages", [hello: "b"]).json
+        def json = POST("/db/foo/q/bar/messages", [hello: "b"]).json
         long id2 = json.id
         long ts2 = df.parse(json.timestamp).time
 
-        def ans = GET("/databases/foo/queues/bar/timeline")
+        def ans = GET("/db/foo/q/bar/timeline")
 
         expect:
         ans.code == 200
@@ -47,7 +47,7 @@ class TimelineSpec extends StandaloneBase {
     }
 
     def "Get specific timeline"() {
-        def ans = GET("/databases/foo/queues/bar/timeline/0")
+        def ans = GET("/db/foo/q/bar/timeline/0")
         println ans.text
 
         expect:
@@ -58,7 +58,7 @@ class TimelineSpec extends StandaloneBase {
     }
 
     def "Get specific timeline with dodgy id"() {
-        def ans = GET("/databases/foo/queues/bar/timeline/abc")
+        def ans = GET("/db/foo/q/bar/timeline/abc")
 
         expect:
         ans.code == 400

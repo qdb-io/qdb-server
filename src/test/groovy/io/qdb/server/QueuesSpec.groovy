@@ -8,13 +8,13 @@ class QueuesSpec extends StandaloneBase {
 
     def setupSpec() {
         assert POST("/users/david", [password: "secret"]).code == 201
-        assert POST("/databases/foo", [owner: "david"]).code == 201
+        assert POST("/db/foo", [owner: "david"]).code == 201
     }
 
     def "Create queue"() {
         def data = [maxSize: "10m"]
-        def ans = POST("/databases/foo/queues/bar", data, true, "david", "secret")
-        def ans2 = POST("/databases/foo/queues/bar", data, "david", "secret")
+        def ans = POST("/db/foo/q/bar", data, true, "david", "secret")
+        def ans2 = POST("/db/foo/q/bar", data, "david", "secret")
 
         expect:
         ans.code == 201
@@ -27,14 +27,14 @@ class QueuesSpec extends StandaloneBase {
     }
 
     def "Queue id validation"() {
-        def ans = POST("/databases/foo/queues/a@b", [:], "david", "secret")
+        def ans = POST("/db/foo/q/a@b", [:], "david", "secret")
 
         expect:
         ans.code == 400
     }
 
     def "List queues"() {
-        def ans = GET("/databases/foo/queues", "david", "secret")
+        def ans = GET("/db/foo/q", "david", "secret")
 
         expect:
         ans.code == 200
@@ -44,7 +44,7 @@ class QueuesSpec extends StandaloneBase {
     }
 
     def "Count queues"() {
-        def ans = GET("/databases/foo/queues?count=true", "david", "secret")
+        def ans = GET("/db/foo/q?count=true", "david", "secret")
 
         expect:
         ans.code == 200
@@ -52,7 +52,7 @@ class QueuesSpec extends StandaloneBase {
     }
 
     def "Get queue"() {
-        def ans = GET("/databases/foo/queues/bar", "david", "secret")
+        def ans = GET("/db/foo/q/bar", "david", "secret")
 
         expect:
         ans.code == 200
@@ -61,7 +61,7 @@ class QueuesSpec extends StandaloneBase {
     }
 
     def "Update queue"() {
-        def ans = PUT("/databases/foo/queues/bar", [maxSize: 20000000, maxPayloadSize: 100000], "david", "secret")
+        def ans = PUT("/db/foo/q/bar", [maxSize: 20000000, maxPayloadSize: 100000], "david", "secret")
 
         expect:
         ans.code == 200
@@ -72,22 +72,22 @@ class QueuesSpec extends StandaloneBase {
     }
 
     def "Queue maxSize validation"() {
-        def ans = PUT("/databases/foo/queues/bar", [maxSize: 100000], "david", "secret")
+        def ans = PUT("/db/foo/q/bar", [maxSize: 100000], "david", "secret")
 
         expect:
         ans.code == 400
     }
 
     def "Queue maxPayloadSize validation"() {
-        def ans = PUT("/databases/foo/queues/bar", [maxPayloadSize: 20000000 / 3 + 1], "david", "secret")
+        def ans = PUT("/db/foo/q/bar", [maxPayloadSize: 20000000 / 3 + 1], "david", "secret")
 
         expect:
         ans.code == 400
     }
 
     def "Delete queue"() {
-        def ans = DELETE("/databases/foo/queues/bar", "david", "secret")
-        def ans2 = GET("/databases/foo/queues/bar")
+        def ans = DELETE("/db/foo/q/bar", "david", "secret")
+        def ans2 = GET("/db/foo/q/bar")
 
         expect:
         ans.code == 200
@@ -95,11 +95,11 @@ class QueuesSpec extends StandaloneBase {
     }
 
     def "Delete queue with outputs"() {
-        assert POST("/databases/foo/queues/bar", [maxSize: 1000000]).code == 201
-        assert POST("/databases/foo/queues/bar/outputs/rabbit", [type: "rabbitmq"]).code == 201
-        def ans = DELETE("/databases/foo/queues/bar")
-        def ans2 = GET("/databases/foo/queues/bar/outputs/rabbit")
-        def ans3 = GET("/databases/foo/queues/bar")
+        assert POST("/db/foo/q/bar", [maxSize: 1000000]).code == 201
+        assert POST("/db/foo/q/bar/out/rabbit", [type: "rabbitmq"]).code == 201
+        def ans = DELETE("/db/foo/q/bar")
+        def ans2 = GET("/db/foo/q/bar/out/rabbit")
+        def ans3 = GET("/db/foo/q/bar")
 
         expect:
         ans.code == 200

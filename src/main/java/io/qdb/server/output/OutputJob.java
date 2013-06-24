@@ -237,13 +237,13 @@ public class OutputJob implements Runnable {
      */
     private String toPath(Database db, Queue q, Output o) {
         StringBuilder b = new StringBuilder();
-        b.append("/databases/").append(db.getId());
+        b.append("/db/").append(db.getId());
         String s = db.getQueueForQid(q.getId());
         if (s != null) {
-            b.append("/queues/").append(s);
+            b.append("/q/").append(s);
             s = q.getOutputForOid(o.getId());
             if (s != null) {
-                return b.append("/outputs/").append(s).toString();
+                return b.append("/out/").append(s).toString();
             }
         }
         return o.toString();
