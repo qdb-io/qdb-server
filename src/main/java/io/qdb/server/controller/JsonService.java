@@ -20,10 +20,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.*;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.fasterxml.jackson.databind.ser.std.DateSerializer;
-import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import com.google.inject.Inject;
-import groovy.lang.GString;
 import io.qdb.server.databind.DateTimeParser;
 import io.qdb.server.databind.IntegerParser;
 
@@ -35,7 +32,6 @@ import java.io.OutputStream;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.TimeZone;
 
 /**
  * Marshaling of objects to/from JSON using Jackson.

@@ -29,7 +29,7 @@ class EmmaPluginConvention{
 	}
 	
 	EmmaPluginConvention(Project project){
-		reportPath 			= "${project.reportsDir.absolutePath}/emma"
+		reportPath 			= "${project.reporting.baseDir}/emma"
 		coverageFileName	= "coverage"
 		tmpDir				= "${project.buildDir}/tmp/emma"
 		instrDir			= "${tmpDir}/instr"

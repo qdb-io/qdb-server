@@ -39,6 +39,7 @@ public class OutputHandlerFactory {
      * creation fails. The type parameter can be a built in short type name (e.g. rabbitmq) or a fully qualified
      * class name.
      */
+    @SuppressWarnings("unchecked")
     public OutputHandler createHandler(String type) throws IllegalArgumentException {
         Class cls;
         if ("rabbitmq".equals(type)) {

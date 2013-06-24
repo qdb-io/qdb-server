@@ -122,6 +122,8 @@ Specify `id=123456` to get messages from id onwards. Specify `at=1354457617` (mi
 Building
 --------
 
+QDB is built using Gradle (http://www.gradle.org/downloads). If you don't already have it just download, unzip
+it somewhere and put the bin directory on your path. You need version 1.6 or newer.
 
 Running From Source
 -------------------
