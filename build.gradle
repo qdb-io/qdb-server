@@ -59,8 +59,41 @@ artifacts {
     archives sourceJar
 }
 
+tasks.withType(Tar) {
+    compression = Compression.GZIP
+}
+
 task("run-debug", dependsOn: 'classes', type: JavaExec) {
     main = "io.qdb.server.Main"
     classpath = sourceSets.main.runtimeClasspath
     jvmArgs = ["-Xdebug", "-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005"]
+}
+
+// create .deb package - needs fpm installed (gem install fpm)
+task deb(dependsOn: 'distTar') << {
+    delete {
+        file 'build/debian'
+    }
+    copy {
+        from tarTree("build/distributions/${project.name}-${version}.tgz")
+        into 'build/debian/opt'
+    }
+    new File("build/debian/opt/${project.name}-${version}").renameTo("build/debian/opt/qdb")
+    delete {
+        file 'build/debian/opt/qdb/bin/qdb-server.bat'
+    }
+    copy {
+        from fileTree("src/linux/etc/")
+        into 'build/debian/etc'
+    }
+    copy {
+        from file("src/linux/")
+        into 'build/debian/etc/init.d/'
+        include('init-debian.sh')
+        rename ('init-debian.sh', 'qdb')
+    }
+    exec {
+        commandLine(("fpm -s dir -t deb -n qdb -v ${version} -a noarch -d openjdk-7-jdk " +
+                "-C build/debian/ .").split(" "))
+    }
 }
