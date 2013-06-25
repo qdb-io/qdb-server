@@ -92,8 +92,12 @@ task deb(dependsOn: 'distTar') << {
         include('init-debian.sh')
         rename ('init-debian.sh', 'qdb')
     }
+    def fpm = "fpm -s dir -t deb -n qdb -v ${version} -a noarch " +
+            "-d openjdk-7-jdk " +
+            "-d adduser " +
+            "--config-files /etc/qdb.properties " +
+            "-C build/debian/ ."
     exec {
-        commandLine(("fpm -s dir -t deb -n qdb -v ${version} -a noarch -d openjdk-7-jdk " +
-                "-C build/debian/ .").split(" "))
+        commandLine fpm.split(" ")
     }
 }
