@@ -1,0 +1,10 @@
+#!/bin/sh
+
+set -e
+
+if [ "$1" = "configure" ]; then
+	adduser --system --quiet --group --no-create-home --home /var/lib/qdb --shell /bin/bash qdb || :
+	mkdir -p /var/log/qdb
+	mkdir -p /var/run/qdb
+	chown -R qdb:qdb /var/lib/qdb /var/log/qdb /var/run/qdb
+fi

@@ -1,12 +1,15 @@
 #!/bin/bash
 # Stops the QDB server
 
-PIDFILE=qdb.pid
-if [ ! -f $PIDFILE ] ; then
-    echo "$PIDFILE not found"
+QDB_PIDFILE=qdb.pid
+
+[ -f /etc/default/qdb ] && . /etc/default/qdb
+
+if [ ! -f $QDB_PIDFILE ] ; then
+    echo "$QDB_PIDFILE not found"
     exit 1
 fi
 
-PID=`cat $PIDFILE`
+PID=`cat $QDB_PIDFILE`
 echo "Killing ${PID}"
 kill $PID

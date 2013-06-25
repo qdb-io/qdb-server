@@ -76,26 +76,34 @@ task deb(dependsOn: 'distTar') << {
     }
     copy {
         from tarTree("build/distributions/${project.name}-${version}.tgz")
-        into 'build/debian/opt'
+        into 'build/debian/var/lib'
     }
-    new File("build/debian/opt/${project.name}-${version}").renameTo("build/debian/opt/qdb")
+    new File("build/debian/var/lib/${project.name}-${version}").renameTo("build/debian/var/lib/qdb")
     delete {
-        file 'build/debian/opt/qdb/bin/qdb-server.bat'
+        file 'build/debian/var/lib/qdb/bin/qdb-server.bat'
     }
     copy {
         from fileTree("src/linux/etc/")
         into 'build/debian/etc'
     }
     copy {
-        from file("src/linux/")
+        from file("src/linux/debian")
         into 'build/debian/etc/init.d/'
-        include('init-debian.sh')
-        rename ('init-debian.sh', 'qdb')
+        include('init.sh')
+        rename ('init.sh', 'qdb')
+    }
+    copy {
+        from file("src/linux/debian/default")
+        into 'build/debian/etc/default'
+        rename ('default', 'qdb')
     }
     def fpm = "fpm -s dir -t deb -n qdb -v ${version} -a noarch " +
             "-d openjdk-7-jdk " +
             "-d adduser " +
             "--config-files /etc/qdb.properties " +
+            "--after-install src/linux/debian/postinst " +
+            "--deb-user root " +
+            "--deb-group root " +
             "-C build/debian/ ."
     exec {
         commandLine fpm.split(" ")
