@@ -3,6 +3,7 @@ qdb-server
 
 HTTP interface to qdb message queues.
 
+** The info in this file is out of date. http://qdb.io/ will be up soon with complete docs. **
 
 Usage
 -----
