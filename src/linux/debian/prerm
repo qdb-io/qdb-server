@@ -1,0 +1,8 @@
+#!/bin/sh
+
+set -e
+
+if [ "$1" = "remove" ]; then
+    service qdb stop
+    update-rc.d -f qdb remove
+fi

@@ -97,15 +97,19 @@ task deb(dependsOn: 'distTar') << {
         into 'build/debian/etc/default'
         rename ('default', 'qdb')
     }
-    def fpm = "fpm -s dir -t deb -n qdb -v ${version} -a noarch " +
-            "-d openjdk-7-jdk " +
-            "-d adduser " +
+    def fpm = ("fpm -s dir -t deb -n qdb -v ${version} -a noarch " +
+            "-d openjdk-7-jdk -d adduser " +
             "--config-files /etc/qdb.properties " +
+            "--config-files /etc/default/qdb " +
             "--after-install src/linux/debian/postinst " +
-            "--deb-user root " +
-            "--deb-group root " +
-            "-C build/debian/ ."
+            "--before-remove src/linux/debian/prerm " +
+            "--deb-user root --deb-group root " +
+            "-f -p build/qdb_${version}_all.deb " +
+            "-C build/debian/ " +
+            "--description").split(" ") as List
+    fpm.add "QDB persistent message queues with replay"
+    fpm.add "."
     exec {
-        commandLine fpm.split(" ")
+        commandLine fpm
     }
 }

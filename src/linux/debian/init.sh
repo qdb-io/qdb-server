@@ -18,13 +18,13 @@ set -e
 
 start() {
 		log_daemon_msg "Starting qdb"
-        su - qdb /opt/qdb/start.sh
+        su - qdb /var/lib/qdb/start.sh
 		log_end_msg $?
 }
 
 stop() {
 		log_daemon_msg "Stopping qdb"
-        su - qdb /opt/qdb/stop.sh
+        su - qdb /var/lib/qdb/stop.sh
 		log_end_msg $?
 }
 
@@ -46,7 +46,7 @@ case "$1" in
 		;;
 
 	status)
-		status_of_proc -p /opt/qdb/qdb.pid java pork && exit 0 || exit $?
+		status_of_proc -p /var/lib/qdb/qdb.pid java qdb && exit 0 || exit $?
 		status=$?
 
 		if [ $status -eq 0 ]; then
