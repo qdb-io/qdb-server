@@ -35,7 +35,6 @@ class QueuesSpec extends StandaloneBase {
         expect:
         ans.code == 201
         ans.json.id == "bar"
-        ans.json.qid.length() > 0
         ans.json.maxSize == 10 * 1024 * 1024
         ans.json.maxPayloadSize == 1024 * 1024
         ans.json.contentType == "application/json; charset=utf-8"
@@ -66,7 +65,6 @@ class QueuesSpec extends StandaloneBase {
         ans.code == 200
         ans.json.size() == 1
         ans.json[0].id == "bar"
-        ans.json[0].qid.length() > 0
     }
 
     def "List queues in default database"() {
@@ -92,7 +90,6 @@ class QueuesSpec extends StandaloneBase {
         expect:
         ans.code == 200
         ans.json.id == "bar"
-        ans.json.qid.length() > 0
     }
 
     def "Update queue"() {
@@ -101,7 +98,6 @@ class QueuesSpec extends StandaloneBase {
         expect:
         ans.code == 200
         ans.json.id == "bar"
-        ans.json.qid.length() > 0
         ans.json.maxSize == 20000000
         ans.json.maxPayloadSize == 100000
     }

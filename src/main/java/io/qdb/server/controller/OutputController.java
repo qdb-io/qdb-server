@@ -48,9 +48,7 @@ public class OutputController extends CrudController {
     public static class OutputDTO implements Comparable<OutputDTO>, HasAnySetter {
 
         public String id;
-        public String oid;
         public Integer version;
-        public String queue;
         public String type;
         public String url;
         public Boolean enabled;
@@ -64,9 +62,7 @@ public class OutputController extends CrudController {
 
         public OutputDTO(String id, Output o) {
             this.id = id;
-            this.oid = o.getId();
             this.version = o.getVersion();
-            this.queue = o.getQueue();
             this.type = o.getType();
             this.url = o.getUrl();
             this.enabled = o.isEnabled();

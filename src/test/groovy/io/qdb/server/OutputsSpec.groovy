@@ -34,7 +34,6 @@ class OutputsSpec extends StandaloneBase {
         expect:
         ans.code == 201
         ans.json.id == "rabbit"
-        ans.json.oid.length() > 0
         ans.json.type == data.type
         ans.json.url == data.url
         ans.json.enabled == true
@@ -55,7 +54,6 @@ class OutputsSpec extends StandaloneBase {
         ans.code == 200
         ans.json.size() == 1
         ans.json[0].id == "rabbit"
-        ans.json[0].oid.length() > 0
     }
 
     def "Count outputs"() {
@@ -72,7 +70,6 @@ class OutputsSpec extends StandaloneBase {
         expect:
         ans.code == 200
         ans.json.id == "rabbit"
-        ans.json.oid.length() > 0
     }
 
     def "Update output"() {
@@ -81,7 +78,6 @@ class OutputsSpec extends StandaloneBase {
         expect:
         ans.code == 200
         ans.json.id == "rabbit"
-        ans.json.oid.length() > 0
         ans.json.enabled == false
     }
 

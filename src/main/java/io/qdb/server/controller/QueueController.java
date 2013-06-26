@@ -44,7 +44,6 @@ public class QueueController extends CrudController {
     public static class QueueDTO implements Comparable<QueueDTO> {
 
         public String id;
-        public String qid;
         public Integer version;
         public String database;
         public Long maxSize;
@@ -56,7 +55,6 @@ public class QueueController extends CrudController {
 
         public QueueDTO(String id, Queue queue) {
             this.id = id;
-            this.qid = queue.getId();
             this.version = queue.getVersion();
             this.maxSize = queue.getMaxSize();
             this.maxPayloadSize = queue.getMaxPayloadSize();

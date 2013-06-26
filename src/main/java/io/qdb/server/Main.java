@@ -18,8 +18,6 @@ package io.qdb.server;
 
 import ch.qos.logback.classic.Level;
 import com.google.inject.*;
-import io.qdb.server.output.OutputManager;
-import org.simpleframework.transport.connect.Connection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,11 +39,14 @@ public class Main {
                 ((ch.qos.logback.classic.Logger)rootLogger).setLevel(Level.toLevel(logLevel));
             }
 
-            Injector injector = Guice.createInjector(mod);
-            injector.getInstance(OutputManager.class);
-            injector.getInstance(Connection.class);
+            final ShutdownManager sm = Guice.createInjector(mod).getInstance(ShutdownManager.class);
+            Runtime.getRuntime().addShutdownHook(new Thread("qdb-shutdown-hook") {
+                @Override
+                public void run() { sm.close(); }
+            });
         } catch (Exception e) {
             log.error(e.getMessage(), e);
+            System.exit(1);
         }
     }
 
