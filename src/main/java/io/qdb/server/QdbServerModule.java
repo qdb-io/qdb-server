@@ -16,6 +16,8 @@
 
 package io.qdb.server;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
 import com.google.common.eventbus.EventBus;
 import com.google.inject.AbstractModule;
 import com.google.inject.Key;
@@ -32,6 +34,7 @@ import io.qdb.server.repo.Repository;
 import io.qdb.server.repo.*;
 import org.simpleframework.http.core.Container;
 import org.simpleframework.transport.connect.Connection;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.util.Map;
@@ -46,6 +49,13 @@ public class QdbServerModule extends AbstractModule {
     public QdbServerModule() {
         File local = new File(System.getProperty("qdb.conf", "qdb"));
         cfg = ConfigFactory.parseFileAnySyntax(local).withFallback(ConfigFactory.load());
+    }
+
+    /**
+     * Get the configured logging level.
+     */
+    public String getLogLevel() {
+        return cfg.getString("logLevel");
     }
 
     @Override

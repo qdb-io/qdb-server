@@ -16,6 +16,7 @@
 
 package io.qdb.server;
 
+import ch.qos.logback.classic.Level;
 import com.google.inject.*;
 import io.qdb.server.output.OutputManager;
 import org.simpleframework.transport.connect.Connection;
@@ -31,7 +32,16 @@ public class Main {
 
     public static void main(String[] args) {
         try {
-            Injector injector = Guice.createInjector(new QdbServerModule());
+            QdbServerModule mod = new QdbServerModule();
+
+            // set logging level if we are using logback
+            org.slf4j.Logger rootLogger = LoggerFactory.getLogger(ch.qos.logback.classic.Logger.ROOT_LOGGER_NAME);
+            if (rootLogger instanceof ch.qos.logback.classic.Logger) {
+                String logLevel = System.getProperty("qdbLogLevel", mod.getLogLevel());
+                ((ch.qos.logback.classic.Logger)rootLogger).setLevel(Level.toLevel(logLevel));
+            }
+
+            Injector injector = Guice.createInjector(mod);
             injector.getInstance(OutputManager.class);
             injector.getInstance(Connection.class);
         } catch (Exception e) {

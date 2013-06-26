@@ -63,6 +63,8 @@ tasks.withType(Tar) {
     compression = Compression.GZIP
 }
 
+tasks.run.systemProperties.qdbLogLevel = "DEBUG"
+
 task("run-debug", dependsOn: 'classes', type: JavaExec) {
     main = "io.qdb.server.Main"
     classpath = sourceSets.main.runtimeClasspath
