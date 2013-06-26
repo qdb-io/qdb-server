@@ -253,7 +253,8 @@ public class OutputJob implements Runnable {
      */
     private String toPath(Database db, Queue q, Output o) {
         StringBuilder b = new StringBuilder();
-        b.append("/db/").append(db.getId());
+        String dbId = db.getId();
+        if (!"default".equals(dbId)) b.append("/db/").append(dbId);
         String s = db.getQueueForQid(q.getId());
         if (s != null) {
             b.append("/q/").append(s);

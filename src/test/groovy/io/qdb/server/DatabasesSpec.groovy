@@ -41,8 +41,9 @@ class DatabasesSpec extends StandaloneBase {
 
         expect:
         ans.code == 200
-        ans.json.size() == 1
-        ans.json[0].id == "foo"
+        ans.json.size() == 2
+        ans.json[0].id == "default"
+        ans.json[1].id == "foo"
     }
 
     def "Count databases"() {
@@ -50,7 +51,7 @@ class DatabasesSpec extends StandaloneBase {
 
         expect:
         ans.code == 200
-        ans.json.count == 1
+        ans.json.count == 2
     }
 
     def "Get database"() {

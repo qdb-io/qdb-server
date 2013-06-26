@@ -42,6 +42,16 @@ class QueuesSpec extends StandaloneBase {
         ans2.code == 200
     }
 
+    def "Create queue in default database"() {
+        def data = [maxSize: "5m"]
+        def ans = POST("/q/oink", data)
+
+        expect:
+        ans.code == 201
+        ans.json.id == "oink"
+        ans.json.maxSize == 5 * 1024 * 1024
+    }
+
     def "Queue id validation"() {
         def ans = POST("/db/foo/q/a@b", [:], "david", "secret")
 
@@ -57,6 +67,15 @@ class QueuesSpec extends StandaloneBase {
         ans.json.size() == 1
         ans.json[0].id == "bar"
         ans.json[0].qid.length() > 0
+    }
+
+    def "List queues in default database"() {
+        def ans = GET("/q")
+
+        expect:
+        ans.code == 200
+        ans.json.size() == 1
+        ans.json[0].id == "oink"
     }
 
     def "Count queues"() {

@@ -53,6 +53,8 @@ public class RepositoryImpl implements Repository {
         queues = store.getMap("queues", Queue.class);
         outputs = store.getMap("outputs", Output.class);
 
+        if (findDatabase("default") == null) updateDatabase(new Database("default"));
+
         if (findUser("admin") == null) {
             User admin = new User();
             admin.setId("admin");
