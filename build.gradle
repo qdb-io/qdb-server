@@ -68,6 +68,7 @@ tasks.run.systemProperties.qdbLogLevel = "DEBUG"
 task("run-debug", dependsOn: 'classes', type: JavaExec) {
     main = "io.qdb.server.Main"
     classpath = sourceSets.main.runtimeClasspath
+    systemProperties.qdbLogLevel = "DEBUG"
     jvmArgs = ["-Xdebug", "-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005"]
 }
 
