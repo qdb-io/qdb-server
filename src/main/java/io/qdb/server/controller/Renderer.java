@@ -73,12 +73,12 @@ public class Renderer {
         return null;
     }
 
-    private static class StatusMsg {
+    public static class StatusMsg {
 
         public int responseCode;
         public String message;
 
-        private StatusMsg(int responseCode, String message) {
+        public StatusMsg(int responseCode, String message) {
             this.responseCode = responseCode;
             this.message = message;
         }

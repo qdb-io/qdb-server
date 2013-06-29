@@ -21,6 +21,7 @@ import io.qdb.buffer.MessageCursor;
 import io.qdb.server.databind.DateTimeParser;
 import io.qdb.server.model.Queue;
 import io.qdb.server.queue.QueueManager;
+import org.omg.CORBA.DynAnyPackage.Invalid;
 import org.simpleframework.http.Request;
 import org.simpleframework.http.Response;
 import org.slf4j.Logger;
@@ -30,7 +31,9 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.io.*;
 import java.nio.channels.ReadableByteChannel;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 @Singleton
 public class MessageController extends CrudController {
@@ -85,6 +88,14 @@ public class MessageController extends CrudController {
             return;
         }
 
+        if (call.getBoolean("multiple")) {
+            createMultiple(call, mb);
+        } else {
+            createSingle(call, mb);
+        }
+    }
+
+    private void createSingle(Call call, MessageBuffer mb) throws IOException {
         Request request = call.getRequest();
         String routingKey = request.getParameter("routingKey");
         int contentLength = request.getContentLength();
@@ -115,6 +126,92 @@ public class MessageController extends CrudController {
         } else {
             call.setCode(201, new CreateDTO(id, new Date(timestamp), contentLength));
         }
+    }
+
+    private void createMultiple(Call call, MessageBuffer mb) throws IOException {
+        int maxPayloadSize = mb.getMaxPayloadSize();
+        InputStream in = call.getRequest().getInputStream();
+        List<CreateDTO> created = new ArrayList<CreateDTO>();
+        try {
+            for (;;) {
+                String routingKey;
+                byte[] data = nextNetstring(in, 1024 * 1024, "routing key");
+                if (data == null) break;
+                routingKey = new String(data, "UTF8");
+
+                data = nextNetstring(in, maxPayloadSize, "payload");
+                if (data == null) {
+                    throw new IllegalArgumentException("Expected payload for message with routing key [" +
+                            routingKey + "]");
+                }
+
+                long timestamp = System.currentTimeMillis();
+                created.add(new CreateDTO(mb.append(timestamp, routingKey, data), new Date(timestamp), data.length));
+            }
+        } catch (IllegalArgumentException e) {
+            call.setCode(422, new MultipleErrorDTO(422, e.getMessage(), created.isEmpty() ? null : created));
+            return;
+        } finally {
+            close(in);
+        }
+
+        call.setCode(created.size() > 0 ? 201 : 200, created);
+    }
+
+    public static class MultipleErrorDTO extends Renderer.StatusMsg {
+        public List<CreateDTO> created;
+        public MultipleErrorDTO(int responseCode, String message, List<CreateDTO> created) {
+            super(responseCode, message);
+            this.created = created;
+        }
+    }
+
+    /**
+     * Read newline terminated nestring from in, returning null on EOF.
+     * See http://en.wikipedia.org/wiki/Netstrings. Throws IllegalArgumentException on invalid input.
+     */
+    private byte[] nextNetstring(InputStream in, int maxSize, String item) throws IOException, IllegalArgumentException {
+        int b;
+        for (;;) {
+            b = in.read();
+            if (b == -1) return null;
+            if (b != '\n') break;
+        }
+
+        int len = toDigit(b);
+        for (;;) {
+            b = in.read();
+            if (b == ':') break;
+            len = len * 10 + toDigit(b);
+        }
+        if (len < 0) {
+            throw new IllegalArgumentException("Invalid length " + len + " while reading " + item);
+        }
+        if (len > maxSize) {
+            throw new IllegalArgumentException("Length " + len + " exceeds maxPayloadSize " + maxSize +
+                    " while reading " + item);
+        }
+
+        byte[] data = new byte[len];
+        int todo = len;
+        for (; todo > 0; ) {
+            int sz = in.read(data, len - todo, todo);
+            if (sz < 0) {
+                throw new IllegalArgumentException("Expected " + len + " bytes, only read " + (len - todo) +
+                        " while reading " + item);
+            }
+            todo -= sz;
+        }
+        return data;
+    }
+
+    private int toDigit(int b) {
+        int ans = b - '0';
+        if (ans < 0 || ans > 9) {
+            throw new IllegalArgumentException("Expected '0'-'9', got '" + (char)b + "' (" + b +
+                    ", 0x" + Integer.toHexString(b) + ") ");
+        }
+        return ans;
     }
 
     private void close(Closeable c) {

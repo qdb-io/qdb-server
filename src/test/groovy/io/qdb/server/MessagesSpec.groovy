@@ -16,6 +16,7 @@
 
 package io.qdb.server
 
+import groovy.json.JsonBuilder
 import spock.lang.Stepwise
 
 import spock.lang.Shared
@@ -37,6 +38,7 @@ class MessagesSpec extends StandaloneBase {
         assert POST("/users/david", [password: "secret"]).code == 201
         assert POST("/db/foo", [owner: "david"]).code == 201
         assert POST("/db/foo/q/bar", [maxSize: 10000000], "david", "secret").code == 201
+        assert POST("/db/foo/q/lots", [maxSize: 10000000], "david", "secret").code == 201
     }
 
     def cleanupSpec() {
@@ -214,15 +216,46 @@ class MessagesSpec extends StandaloneBase {
         ans.code == 400
     }
 
-    def "Append many messages"() {
-        int ok = 0;
-        for (int i = 0; i < 100; i++) {
-            def ans = POST("/db/foo/q/bar/messages?routingKey=abc" + i,
-                    [hello: "world" + i], "david", "secret")
-            if (ans.code == 201) ++ok
-        }
+    private HttpURLConnection openConToLots() {
+        def url = new URL(client.serverUrl + "/db/foo/q/lots/messages?multiple=true")
+        HttpURLConnection con = url.openConnection() as HttpURLConnection
+        con.doOutput = true
+        con.requestMethod = "POST"
+        con.setRequestProperty("Authorization", client.toBasicAuth("david", "secret"))
+        con.setRequestProperty("Content-Type", "application/octet-stream")
+        con.setChunkedStreamingMode(1024)
+        return con
+    }
+
+    def "Append multiple error checking"() {
+        HttpURLConnection con = openConToLots()
+        con.outputStream.write((int)'{'.charAt(0))
+        def ans = new Client.Response(con)
 
         expect:
-        ok == 100
+        ans.code == 422
     }
+
+    def "Append multiple"() {
+        HttpURLConnection con = openConToLots()
+        def out = con.outputStream
+        int n = 100
+        byte[] buf = new byte[4096]
+        def rnd = new Random(123)
+        rnd.nextBytes(buf);
+        for (int i = 0; i < n; i++) {
+            int sz = rnd.nextInt(buf.length)
+            String routingKey = "key" + i
+            out.write((routingKey.length() + ":" + routingKey).getBytes("UTF8"))
+            out.write((sz + ":").getBytes("UTF8"))
+            out.write(buf, 0, sz)
+            out.flush()
+        }
+        def ans = new Client.Response(con)
+
+        expect:
+        ans.code == 201
+        ans.json.size() == n
+    }
+
 }

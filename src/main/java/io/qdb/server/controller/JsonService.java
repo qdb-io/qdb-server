@@ -110,6 +110,13 @@ public class JsonService {
     }
 
     /**
+     * Convert o to JSON.
+     */
+    public String toJsonStringNoIndenting(Object o) throws IOException {
+        return new String(toJsonNoIndenting(o), "UTF8");
+    }
+
+    /**
      * Convert o to JSON with no indenting.
      */
     public byte[] toJsonNoIndenting(Object o) throws IOException {
