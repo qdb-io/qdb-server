@@ -65,13 +65,7 @@ class MessagesSpec extends StandaloneBase {
     }
 
     def "Append message with chunked transfer encoding"() {
-        def url = new URL(client.serverUrl + "/db/foo/q/bar/messages")
-        HttpURLConnection con = url.openConnection() as HttpURLConnection
-        con.doOutput = true
-        con.requestMethod = "POST"
-        con.setRequestProperty("Authorization", client.toBasicAuth("david", "secret"))
-        con.setRequestProperty("Content-Type", "application/json")
-        con.setChunkedStreamingMode(1024)
+        def con = openConTo("/db/foo/q/bar/messages")
         con.outputStream.write(new byte[30000])
         Client.Response ans = new Client.Response(con)
 
@@ -79,6 +73,15 @@ class MessagesSpec extends StandaloneBase {
         ans.code == 201
         ans.json.id > 0
         ans.json.payloadSize == 30000
+    }
+
+    def "Append message with payload too long"() {
+        def con = openConTo("/db/foo/q/bar/messages?routingKey=abc")
+        con.outputStream.write(new byte[30001])
+        Client.Response ans = new Client.Response(con)
+
+        expect:
+        ans.code == 422
     }
 
     def "Get single message"() {
@@ -215,8 +218,8 @@ class MessagesSpec extends StandaloneBase {
         ans.code == 400
     }
 
-    private HttpURLConnection openConToLots() {
-        def url = new URL(client.serverUrl + "/db/foo/q/lots/messages?multiple=true")
+    private HttpURLConnection openConTo(String endpoint) {
+        def url = new URL(client.serverUrl + endpoint)
         HttpURLConnection con = url.openConnection() as HttpURLConnection
         con.doOutput = true
         con.requestMethod = "POST"
@@ -224,6 +227,10 @@ class MessagesSpec extends StandaloneBase {
         con.setRequestProperty("Content-Type", "application/octet-stream")
         con.setChunkedStreamingMode(1024)
         return con
+    }
+
+    private HttpURLConnection openConToLots() {
+        return openConTo("/db/foo/q/lots/messages?multiple=true")
     }
 
     def "Append multiple error checking"() {
@@ -264,6 +271,35 @@ class MessagesSpec extends StandaloneBase {
         ans.code == 422
         ans.json.responseCode == 422
         ans.json.created == null
+    }
+
+    def "Append multiple payload too long fails"() {
+        HttpURLConnection con = openConToLots()
+        def out = con.outputStream
+        out.write("3:key\n5001:".getBytes("UTF8"))
+        out.write(new byte[5001])
+        def ans = new Client.Response(con)
+
+        expect:
+        ans.code == 422
+    }
+
+    def "Append multiple length short fails"() {
+        HttpURLConnection con = openConToLots()
+        con.outputStream.write("3:ke".getBytes("UTF8"))
+        def ans = new Client.Response(con)
+
+        expect:
+        ans.code == 422
+    }
+
+    def "Append multiple dodgy length fails"() {
+        HttpURLConnection con = openConToLots()
+        con.outputStream.write(((1L + Integer.MAX_VALUE) + ":").getBytes("UTF8"))
+        def ans = new Client.Response(con)
+
+        expect:
+        ans.code == 422
     }
 
     def "Append multiple"() {

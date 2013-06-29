@@ -102,24 +102,21 @@ public class MessageController extends CrudController {
         long id = 0;
         long timestamp = System.currentTimeMillis();
         IllegalArgumentException err = null;
-        if (contentLength < 0) {
-            byte[] payload = readAll(request.getInputStream());
-            contentLength = payload.length;
-            try {
+        try {
+            if (contentLength < 0) {
+                byte[] payload = readAll(request.getInputStream());
+                contentLength = payload.length;
                 id = mb.append(timestamp, routingKey, payload);
-            } catch (IllegalArgumentException e) {
-                log.debug(e.toString(), e);
-                err = e;
+            } else {
+                ReadableByteChannel in = request.getByteChannel();
+                try {
+                    id = mb.append(timestamp, routingKey, in, contentLength);
+                } finally {
+                    close(in);
+                }
             }
-        } else {
-            ReadableByteChannel in = request.getByteChannel();
-            try {
-                id = mb.append(timestamp, routingKey, in, contentLength);
-            } catch (IllegalArgumentException e) {
-                err = e;
-            } finally {
-                close(in);
-            }
+        } catch (IllegalArgumentException e) {
+            err = e;
         }
 
         if (err != null) {
@@ -151,7 +148,7 @@ public class MessageController extends CrudController {
         try {
             for (;;) {
                 String routingKey;
-                byte[] data = nextNetstring(in, 1024 * 1024, "routing key");
+                byte[] data = nextNetstring(in, 1024, "routing key");
                 if (data == null) break;
                 routingKey = new String(data, "UTF8");
 
@@ -199,12 +196,12 @@ public class MessageController extends CrudController {
             b = in.read();
             if (b == ':') break;
             len = len * 10 + toDigit(b);
-        }
-        if (len < 0) {
-            throw new IllegalArgumentException("Invalid length " + len + " while reading " + item);
+            if (len < 0) {  // overflow
+                throw new IllegalArgumentException("Invalid length found while reading " + item);
+            }
         }
         if (len > maxSize) {
-            throw new IllegalArgumentException("Length " + len + " exceeds maxPayloadSize " + maxSize +
+            throw new IllegalArgumentException("Length " + len + " exceeds max " + maxSize +
                     " while reading " + item);
         }
 
