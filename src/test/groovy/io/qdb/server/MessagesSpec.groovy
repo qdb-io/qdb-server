@@ -16,7 +16,6 @@
 
 package io.qdb.server
 
-import groovy.json.JsonBuilder
 import spock.lang.Stepwise
 
 import spock.lang.Shared
@@ -37,8 +36,8 @@ class MessagesSpec extends StandaloneBase {
     def setupSpec() {
         assert POST("/users/david", [password: "secret"]).code == 201
         assert POST("/db/foo", [owner: "david"]).code == 201
-        assert POST("/db/foo/q/bar", [maxSize: 10000000], "david", "secret").code == 201
-        assert POST("/db/foo/q/lots", [maxSize: 10000000], "david", "secret").code == 201
+        assert POST("/db/foo/q/bar", [maxSize: 10000000, maxPayloadSize: 30000], "david", "secret").code == 201
+        assert POST("/db/foo/q/lots", [maxSize: 10000000, maxPayloadSize: 5000], "david", "secret").code == 201
     }
 
     def cleanupSpec() {
@@ -236,6 +235,37 @@ class MessagesSpec extends StandaloneBase {
         ans.code == 422
     }
 
+    def "Append multiple partial failure"() {
+        HttpURLConnection con = openConToLots()
+        con.outputStream.write("3:key\n1:x\n\nbad".getBytes("UTF8"))
+        def ans = new Client.Response(con)
+
+        expect:
+        ans.code == 422
+        ans.json.responseCode == 422
+        ans.json.created.size() == 1
+    }
+
+    def "Append multiple empty returns 200"() {
+        HttpURLConnection con = openConToLots()
+        def ans = new Client.Response(con)
+
+        expect:
+        ans.code == 200
+        ans.json.size() == 0
+    }
+
+    def "Append multiple missing payload fails"() {
+        HttpURLConnection con = openConToLots()
+        con.outputStream.write("3:key".getBytes("UTF8"))
+        def ans = new Client.Response(con)
+
+        expect:
+        ans.code == 422
+        ans.json.responseCode == 422
+        ans.json.created == null
+    }
+
     def "Append multiple"() {
         HttpURLConnection con = openConToLots()
         def out = con.outputStream
@@ -243,10 +273,13 @@ class MessagesSpec extends StandaloneBase {
         byte[] buf = new byte[4096]
         def rnd = new Random(123)
         rnd.nextBytes(buf);
+        def CRLF = '\r\n'.getBytes("UTF8")
         for (int i = 0; i < n; i++) {
+            out.write(CRLF) // not required but must be ignored
             int sz = rnd.nextInt(buf.length)
             String routingKey = "key" + i
             out.write((routingKey.length() + ":" + routingKey).getBytes("UTF8"))
+            out.write(CRLF) // not required but must be ignored
             out.write((sz + ":").getBytes("UTF8"))
             out.write(buf, 0, sz)
             out.flush()

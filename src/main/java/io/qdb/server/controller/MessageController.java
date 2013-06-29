@@ -108,6 +108,7 @@ public class MessageController extends CrudController {
             try {
                 id = mb.append(timestamp, routingKey, payload);
             } catch (IllegalArgumentException e) {
+                log.debug(e.toString(), e);
                 err = e;
             }
         } else {
@@ -122,9 +123,24 @@ public class MessageController extends CrudController {
         }
 
         if (err != null) {
-            call.setCode(400, err.getMessage());
+            call.setCode(422, err.getMessage());
         } else {
             call.setCode(201, new CreateDTO(id, new Date(timestamp), contentLength));
+        }
+    }
+
+    private byte[] readAll(InputStream in) throws IOException {
+        try {
+            ByteArrayOutputStream bos = new ByteArrayOutputStream(16384);
+            byte[] buf = new byte[16384];
+            for (;;) {
+                int sz = in.read(buf, 0, buf.length);
+                if (sz < 0) break;
+                bos.write(buf, 0, sz);
+            }
+            return bos.toByteArray();
+        } finally {
+            close(in);
         }
     }
 
@@ -175,7 +191,7 @@ public class MessageController extends CrudController {
         for (;;) {
             b = in.read();
             if (b == -1) return null;
-            if (b != '\n') break;
+            if (b != '\n' && b != '\r') break;
         }
 
         int len = toDigit(b);
@@ -219,21 +235,6 @@ public class MessageController extends CrudController {
             if (c != null) c.close();
         } catch (IOException e) {
             log.warn("Error closing " + c + ": " + e);
-        }
-    }
-
-    private byte[] readAll(InputStream in) throws IOException {
-        try {
-            ByteArrayOutputStream bos = new ByteArrayOutputStream(16384);
-            byte[] buf = new byte[16384];
-            for (;;) {
-                int sz = in.read(buf, 0, buf.length);
-                if (sz < 0) break;
-                bos.write(buf, 0, sz);
-            }
-            return bos.toByteArray();
-        } finally {
-            close(in);
         }
     }
 
