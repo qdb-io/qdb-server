@@ -97,7 +97,7 @@ class MessagesSpec extends StandaloneBase {
     }
 
     def "Get 2 messages streamed"() {
-        def ans = GET("/db/foo/q/bar/messages?id=0&limit=2")
+        def ans = GET("/db/foo/q/bar/messages?id=0&limit=2&noLengthPrefix=true")
         def r = new StringReader(ans.text)
 
         def h1 = new JsonSlurper().parseText(r.readLine())
@@ -124,6 +124,18 @@ class MessagesSpec extends StandaloneBase {
         h2.payloadSize == m2line.length()
         h2.routingKey == ""
         m2.hello == "2nd world"
+    }
+
+    def "Get message streamed with header length prefix"() {
+        def ans = GET("/db/foo/q/bar/messages?id=0&limit=1")
+        def line = new StringReader(ans.text).readLine()
+        def i = line.indexOf(':')
+        def len = line.substring(0, i)
+        def json = line.substring(i + 1)
+
+        expect:
+        ans.code == 200
+        len == json.length().toString()
     }
 
     def "Get message by timestamp"() {
@@ -198,7 +210,7 @@ class MessagesSpec extends StandaloneBase {
         def ans = null
         pool.execute({
             ready.countDown()
-            ans = GET("/db/foo/q/bar/messages?keepAliveMs=50&limit=1")
+            ans = GET("/db/foo/q/bar/messages?keepAliveMs=50&limit=1&noLengthPrefix=true")
             done.countDown()
         })
         ready.await(200, TimeUnit.MILLISECONDS)

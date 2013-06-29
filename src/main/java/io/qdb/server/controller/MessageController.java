@@ -250,6 +250,7 @@ public class MessageController extends CrudController {
         int keepAliveMs = call.getInt("keepAliveMs", 29000);
         byte[] separator = call.getUTF8Bytes("separator", "\n");
         boolean noHeaders = call.getBoolean("noHeaders");
+        boolean noLengthPrefix = call.getBoolean("noLengthPrefix");
 
         boolean single = call.getBoolean("single");
         if (single) {
@@ -261,7 +262,7 @@ public class MessageController extends CrudController {
         long id = at != null ? -1 : call.getLong("id", mb.getNextMessageId());
 
         Response response = call.getResponse();
-        response.set("Content-Type", single ? q.getContentType() : "text/plain");
+        response.set("Content-Type", single ? q.getContentType() : "application/octet-stream");
         OutputStream out = response.getOutputStream();
 
         MessageCursor c = at != null ? mb.cursorByTimestamp(at.getTime()) : mb.cursor(id);
@@ -299,7 +300,10 @@ public class MessageController extends CrudController {
                 out.write(c.getPayload());
             } else {
                 if (!noHeaders) {
-                    out.write(jsonService.toJsonNoIndenting(new MessageHeader(c)));
+                    MessageHeader h = new MessageHeader(c);
+                    byte[] data = jsonService.toJsonNoIndenting(h);
+                    if (!noLengthPrefix) out.write((data.length + ":").getBytes("UTF8"));
+                    out.write(data);
                     out.write(10);
                 }
                 out.write(c.getPayload());

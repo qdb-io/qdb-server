@@ -124,13 +124,6 @@ public class JsonService {
     }
 
     /**
-     * Convert o to JSON with no indenting.
-     */
-    public void toJsonNoIndenting(OutputStream out, Object o) throws IOException {
-        mapperNoIdentOutput.writeValue(out, o);
-    }
-
-    /**
      * Converts content to an instance of a particular type. Throws IllegalArgumentException if JSON is invalid.
      */
     public <T> T fromJson(InputStream ins, Class<T> klass) throws IOException {
