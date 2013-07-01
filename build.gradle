@@ -26,9 +26,7 @@ mainClassName = 'io.qdb.server.Main'
 
 repositories {
     mavenCentral()
-    maven {
-        url "/Users/david/.m2/repository"
-    }
+    mavenLocal()
 }
 
 dependencies {
@@ -50,14 +48,8 @@ dependencies {
     testCompile 'commons-io:commons-io:2.4'
 }
 
-task sourceJar(type: Jar) {
-    classifier = 'sources'
-    from sourceSets.main.allSource
-}
-
-artifacts {
-    archives sourceJar
-}
+project.sourceCompatibility = "1.6"
+project.targetCompatibility = "1.6"
 
 tasks.withType(Tar) {
     compression = Compression.GZIP
@@ -107,12 +99,36 @@ task deb(dependsOn: 'distTar') << {
             "--after-install src/linux/debian/postinst " +
             "--before-remove src/linux/debian/prerm " +
             "--deb-user root --deb-group root " +
-            "-f -p build/qdb_${version}_all.deb " +
+            "-f -p build/distributions/qdb_${version}_all.deb " +
             "-C build/debian/ " +
             "--description").split(" ") as List
     fpm.add "QDB persistent message queues with replay"
     fpm.add "."
     exec {
         commandLine fpm
+    }
+}
+
+// put s3AccessId and s3SecretKey into gradle.properties for this task
+task uploadToS3(dependsOn: ['distTar', 'deb']) {
+    configurations {
+        awstasks
+    }
+    dependencies {
+        awstasks files('lib/awstasks-0.3.jar')
+        awstasks 'net.java.dev.jets3t:jets3t:0.6.0'
+        awstasks 'org.apache.httpcomponents:httpclient:4.2.5'
+        awstasks 'commons-codec:commons-codec:1.3'
+    }
+    doLast {
+        ant.taskdef(name: 'S3Upload', classname: 'dak.ant.taskdefs.S3Upload', classpath: configurations.awstasks.asPath)
+        ant.S3Upload(
+                verbose:"true",
+                accessId: s3AccessId,
+                secretKey: s3SecretKey,
+                bucket: "downloads.qdb.io",
+                publicRead: "true") {
+            fileset(dir: "build/distributions/", includes: "**/*")
+        }
     }
 }
