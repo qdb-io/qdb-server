@@ -16,7 +16,6 @@
 
 package io.qdb.server;
 
-import ch.qos.logback.classic.Level;
 import com.google.inject.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,13 +30,7 @@ public class Main {
     public static void main(String[] args) {
         try {
             QdbServerModule mod = new QdbServerModule();
-
-            // set logging level if we are using logback
-            org.slf4j.Logger rootLogger = LoggerFactory.getLogger(ch.qos.logback.classic.Logger.ROOT_LOGGER_NAME);
-            if (rootLogger instanceof ch.qos.logback.classic.Logger) {
-                String logLevel = System.getProperty("qdbLogLevel", mod.getLogLevel());
-                ((ch.qos.logback.classic.Logger)rootLogger).setLevel(Level.toLevel(logLevel));
-            }
+            new LogbackLogging().init(mod.getCfg());
 
             final ShutdownManager sm = Guice.createInjector(mod).getInstance(ShutdownManager.class);
             Runtime.getRuntime().addShutdownHook(new Thread("qdb-shutdown-hook") {
