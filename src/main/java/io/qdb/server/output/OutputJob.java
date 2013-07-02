@@ -220,6 +220,7 @@ public class OutputJob implements Runnable {
                         output.setMessageId(completedId + 1); // +1 so we don't repeat the same message again
                         repo.updateOutput(output);
                         messageId = completedId;
+                        lastUpdate = System.currentTimeMillis();
                     }
                 }
             }
