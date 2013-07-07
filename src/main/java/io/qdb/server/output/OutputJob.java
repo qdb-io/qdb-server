@@ -112,9 +112,12 @@ public class OutputJob implements Runnable {
 
             boolean initOk = false;
             try {
-                Map<String, Object> p = output.getParams();
+                // give the handler clones so modifications to q or output don't cause trouble
+                Output oc = output.deepCopy();
+                Queue qc = q.deepCopy();
+                Map<String, Object> p = oc.getParams();
                 if (p != null) new DataBinder(jsonService).ignoreInvalidFields(true).bind(p, handler).check();
-                handler.init(q, output, outputPath);
+                handler.init(qc, oc, outputPath);
                 initOk = true;
             } catch (IllegalArgumentException e) {
                 log.error(outputPath + ": " + e.getMessage());
@@ -214,7 +217,7 @@ public class OutputJob implements Runnable {
                         o = repo.findOutput(oid);
                         // don't record our progress if we are now supposed to be processing from a different point in buffer
                         if (o.getMessageId() != output.getMessageId() || o.getAt() != output.getAt()) break;
-                        output = (Output)o.clone();
+                        output = o.deepCopy();
                         output.setAt(timestamp);
                         handler.updateOutput(output);
                         output.setMessageId(completedId + 1); // +1 so we don't repeat the same message again

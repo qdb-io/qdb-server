@@ -180,7 +180,7 @@ public class RepositoryImpl implements Repository {
             if (db != null) {
                 String dq = db.getQueueForQid(id);
                 if (dq != null) {
-                    db = (Database)db.clone();
+                    db = db.deepCopy();
                     db.getQueues().remove(dq);
                     databases.put(db.getId(), db);
                 }
@@ -222,7 +222,7 @@ public class RepositoryImpl implements Repository {
         if (q != null) {
             String qo = q.getOutputForOid(id);
             if (qo != null) {
-                q = (Queue)q.clone();
+                q = q.deepCopy();
                 q.getOutputs().remove(qo);
                 queues.put(q.getId(), q);
             }

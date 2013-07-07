@@ -163,7 +163,7 @@ public class QueueController extends CrudController {
                     call.setCode(409, new QueueDTO(id, q));
                     return;
                 }
-                q = (Queue)q.clone();
+                q = q.deepCopy();
             }
 
             boolean changed = create;
@@ -220,7 +220,7 @@ public class QueueController extends CrudController {
             if (create) {
                 // update the db after the queue to avoid having a db referencing a queue that does not exist if
                 // something goes wrong - better to have an unreferenced queue lying around
-                db = (Database)db.clone();      // make a copy before we modify it
+                db = db.deepCopy();      // make a copy before we modify it
                 Map<String, String> queues = db.getQueues();
                 if (queues == null) db.setQueues(queues = new HashMap<String, String>());
                 queues.put(id, q.getId());

@@ -16,6 +16,7 @@
 
 package io.qdb.server.model;
 
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -89,5 +90,11 @@ public class Queue extends ModelObject {
     @Override
     public String toString() {
         return super.toString() + ":database=" + database;
+    }
+
+    public Queue deepCopy() {
+        Queue q = (Queue)clone();
+        if (outputs != null) q.outputs = new HashMap<String, String>(outputs);
+        return q;
     }
 }

@@ -21,6 +21,8 @@ import io.qdb.server.controller.JsonService;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -44,6 +46,7 @@ public class DataBinder {
         return this;
     }
 
+    /** If true then converted data from the map is put back in the map. */
     public DataBinder updateMap(boolean on) {
         this.updateMap = on;
         return this;

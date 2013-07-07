@@ -16,6 +16,7 @@
 
 package io.qdb.server.model;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -64,5 +65,11 @@ public class Database extends ModelObject {
             }
         }
         return null;
+    }
+
+    public Database deepCopy() {
+        Database db = (Database)clone();
+        if (queues != null) db.queues = new HashMap<String, String>(queues);
+        return db;
     }
 }

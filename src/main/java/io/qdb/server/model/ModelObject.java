@@ -16,14 +16,18 @@
 
 package io.qdb.server.model;
 
+import com.rits.cloning.Cloner;
+
 /**
  * Base class for objects in our model. Supports equals (class and id must match) and hashcode (on id).
- * Serializable to/from JSON with Genson.
+ * Serializable to/from JSON with Genson. All subclasses have a deepCopy method.
  */
-public abstract class ModelObject implements Cloneable, Comparable<ModelObject> {
+public abstract class ModelObject implements Comparable<ModelObject>, Cloneable {
 
     private String id;
     private int version;
+
+    protected static final Cloner CLONER = new Cloner();
 
     protected ModelObject() {
     }
@@ -65,11 +69,11 @@ public abstract class ModelObject implements Cloneable, Comparable<ModelObject> 
 
     @SuppressWarnings("CloneDoesntDeclareCloneNotSupportedException")
     @Override
-    public Object clone() {
+    protected Object clone() {
         try {
             return super.clone();
-        } catch (CloneNotSupportedException ignore) {
-            return null; // not possible since we are Cloneable
+        } catch (CloneNotSupportedException e) {
+            throw new IllegalStateException(e.toString(), e);  // not possible since we are Cloneable
         }
     }
 

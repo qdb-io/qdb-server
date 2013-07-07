@@ -16,6 +16,7 @@
 
 package io.qdb.server.model;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -102,5 +103,11 @@ public class Output extends ModelObject {
     @Override
     public String toString() {
         return super.toString() + ":queue=" + queue + ":type=" + type;
+    }
+
+    public Output deepCopy() {
+        Output o = (Output)clone();
+        if (params != null) o.params = CLONER.deepClone(params);
+        return o;
     }
 }

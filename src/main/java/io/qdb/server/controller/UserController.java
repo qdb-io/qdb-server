@@ -110,7 +110,7 @@ public class UserController extends CrudController {
                         call.setCode(409, new UserDTO(u));
                         return;
                     }
-                    u = (User)u.clone();
+                    u = u.deepCopy();
                 }
 
                 boolean changed = create;

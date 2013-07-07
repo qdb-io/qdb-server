@@ -18,6 +18,8 @@ package io.qdb.server.model;
 
 import io.qdb.server.security.PasswordTools;
 
+import java.util.Arrays;
+
 /**
  * A user with permissions. The user's id is used as its username.
  */
@@ -78,5 +80,11 @@ public class User extends ModelObject {
     @Override
     public String toString() {
         return super.toString() + ":" + (admin ? "ADMIN" : "");
+    }
+
+    public User deepCopy() {
+        User u = (User)clone();
+        if (databases != null) u.databases = databases.clone();
+        return u;
     }
 }

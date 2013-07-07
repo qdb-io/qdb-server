@@ -19,7 +19,6 @@ package io.qdb.server.output;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import com.google.inject.Injector;
 import io.qdb.server.controller.JsonService;
 import io.qdb.server.model.Output;
 import io.qdb.server.repo.Repository;
@@ -62,7 +61,7 @@ public class OutputManager implements Closeable, Thread.UncaughtExceptionHandler
         this.pool = new ThreadPoolExecutor(1, Integer.MAX_VALUE,
                 60L, TimeUnit.SECONDS,
                 new SynchronousQueue<Runnable>(),
-                new ThreadFactoryBuilder().setNameFormat("output-manager-%d").setUncaughtExceptionHandler(this).build());
+                new ThreadFactoryBuilder().setNameFormat("output-%d").setUncaughtExceptionHandler(this).build());
         eventBus.register(this);
         for (Output output : this.repo.findOutputs(0, -1)) outputChanged(output);
     }

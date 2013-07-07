@@ -185,7 +185,7 @@ public class OutputController extends CrudController {
                     call.setCode(409, new OutputDTO(id, o));
                     return;
                 }
-                o = (Output)o.clone();
+                o = o.deepCopy();
             }
 
             boolean changed = create;
@@ -230,17 +230,17 @@ public class OutputController extends CrudController {
             if (dto.params != null) {
                 OutputHandler h = handlerFactory.createHandler(o.getType());
                 new DataBinder(jsonService).updateMap(true).bind(dto.params, h).check();
-                Map<String, Object> op = o.getParams();
-                if (op == null) {
+                Map<String, Object> params = o.getParams();
+                if (params == null) {
                     o.setParams(dto.params);
                     changed = true;
                 } else {
                     for (Map.Entry<String, Object> e : dto.params.entrySet()) {
                         String key = e.getKey();
                         Object v = e.getValue();
-                        Object existing = op.get(key);
+                        Object existing = params.get(key);
                         if (!v.equals(existing)) {
-                            op.put(key, v);
+                            params.put(key, v);
                             changed = true;
                         }
                     }
@@ -256,7 +256,7 @@ public class OutputController extends CrudController {
             }
 
             if (create) {
-                q = (Queue)q.clone();      // make a copy before we modify it
+                q = q.deepCopy();      // make a copy before we modify it
                 Map<String, String> outputs = q.getOutputs();
                 if (outputs == null) q.setOutputs(outputs = new HashMap<String, String>());
                 outputs.put(id, o.getId());

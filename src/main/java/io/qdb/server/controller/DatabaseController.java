@@ -97,7 +97,7 @@ public class DatabaseController extends CrudController {
                         call.setCode(409, new DatabaseDTO(db));
                         return;
                     }
-                    db = (Database)db.clone();
+                    db = db.deepCopy();
                 }
 
                 boolean changed = create;
