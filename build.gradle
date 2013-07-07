@@ -101,7 +101,7 @@ task deb(dependsOn: 'distTar') << {
             "--after-install src/linux/debian/postinst " +
             "--before-remove src/linux/debian/prerm " +
             "--deb-user root --deb-group root " +
-            "-f -p build/distributions/qdb-server_${version}.deb " +
+            "-f -p build/distributions/qdb-server-${version}.deb " +
             "-C build/debian/ " +
             "--description").split(" ") as List
     fpm.add "QDB persistent message queues with replay"
