@@ -21,7 +21,6 @@ import io.qdb.buffer.MessageCursor;
 import io.qdb.server.databind.DateTimeParser;
 import io.qdb.server.model.Queue;
 import io.qdb.server.queue.QueueManager;
-import org.omg.CORBA.DynAnyPackage.Invalid;
 import org.simpleframework.http.Request;
 import org.simpleframework.http.Response;
 import org.slf4j.Logger;
@@ -47,11 +46,13 @@ public class MessageController extends CrudController {
         public long id;
         public Date timestamp;
         public int payloadSize;
+        public String routingKey;
 
-        public CreateDTO(long id, Date timestamp, int payloadSize) {
+        public CreateDTO(long id, Date timestamp, int payloadSize, String routingKey) {
             this.id = id;
             this.timestamp = timestamp;
             this.payloadSize = payloadSize;
+            this.routingKey = routingKey;
         }
     }
 
@@ -122,7 +123,7 @@ public class MessageController extends CrudController {
         if (err != null) {
             call.setCode(422, err.getMessage());
         } else {
-            call.setCode(201, new CreateDTO(id, new Date(timestamp), contentLength));
+            call.setCode(201, new CreateDTO(id, new Date(timestamp), contentLength, routingKey));
         }
     }
 
@@ -159,7 +160,8 @@ public class MessageController extends CrudController {
                 }
 
                 long timestamp = System.currentTimeMillis();
-                created.add(new CreateDTO(mb.append(timestamp, routingKey, data), new Date(timestamp), data.length));
+                created.add(new CreateDTO(mb.append(timestamp, routingKey, data), new Date(timestamp), data.length,
+                        routingKey));
             }
         } catch (IllegalArgumentException e) {
             call.setCode(422, new MultipleErrorDTO(422, e.getMessage(), created.isEmpty() ? null : created));
