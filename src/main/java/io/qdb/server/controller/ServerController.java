@@ -21,30 +21,25 @@ import javax.inject.Singleton;
 import java.io.IOException;
 import java.util.Date;
 
-/**
- * Status of the server.
- */
 @Singleton
-public class ServerStatusController implements Controller {
+public class ServerController extends CrudController {
 
     private final Date upSince = new Date();
 
     public static class StatusDTO {
         public Date upSince;
+        @SuppressWarnings("UnusedDeclaration")
         public StatusDTO() { }
         public StatusDTO(Date upSince) { this.upSince = upSince; }
     }
 
     @Inject
-    public ServerStatusController() {
+    public ServerController(JsonService jsonService) {
+        super(jsonService);
     }
 
     @Override
-    public void handle(Call call) throws IOException {
-        if (!call.isGet()) {
-            call.setCode(400);
-            return;
-        }
+    protected void list(Call call, int offset, int limit) throws IOException {
         call.setJson(new StatusDTO(upSince));
     }
 }

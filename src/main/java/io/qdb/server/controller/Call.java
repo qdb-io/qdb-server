@@ -56,6 +56,10 @@ public class Call {
         this.segments = request.getPath().getSegments();
     }
 
+    public String[] getSegments() {
+        return segments;
+    }
+
     public Request getRequest() {
         return request;
     }

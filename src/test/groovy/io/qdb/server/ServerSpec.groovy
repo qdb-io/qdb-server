@@ -18,8 +18,8 @@ package io.qdb.server
 
 class ServerSpec extends StandaloneBase {
 
-    def "Unauthenticated user can get basic status"() {
-        def ans = GET("/", null, null)
+    def "Get basic status"() {
+        def ans = GET("/server")
 
         expect:
         ans.code == 200

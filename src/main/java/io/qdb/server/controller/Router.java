@@ -38,18 +38,21 @@ public class Router implements Container {
 
     private final AuthService authService;
     private final Renderer renderer;
-    private final ServerStatusController serverStatusController;
+    private final ServerController serverController;
     private final DatabaseController databaseController;
     private final UserController userController;
+    private final AdminUIController adminUIController;
 
     @Inject
-    public Router(AuthService authService, Renderer renderer, ServerStatusController serverStatusController,
-                  DatabaseController databaseController, UserController userController) {
+    public Router(AuthService authService, Renderer renderer, ServerController serverController,
+                  DatabaseController databaseController, UserController userController,
+                  AdminUIController adminUIController) {
         this.authService = authService;
         this.renderer = renderer;
-        this.serverStatusController = serverStatusController;
+        this.serverController = serverController;
         this.databaseController = databaseController;
         this.userController = userController;
+        this.adminUIController = adminUIController;
     }
 
     @Override
@@ -63,7 +66,7 @@ public class Router implements Container {
                 call.setAuth(auth);
                 String seg = call.nextSegment();
                 if (seg == null) {
-                    serverStatusController.handle(call);
+                    adminUIController.handle(call);
                 } else if (call.getAuth().isAnonymous()) {
                     authService.sendChallenge(resp);
                 } else if ("q".equals(seg)) {
@@ -72,9 +75,12 @@ public class Router implements Container {
                     databaseController.handle(call);
                 } else if ("users".equals(seg)) {
                     userController.handle(call);
+                } else if ("server".equals(seg)) {
+                    serverController.handle(call);
+                } else if (call.getAuth().isAnonymous()) {
+                    authService.sendChallenge(resp);
                 } else {
-                    if (call.isGet()) call.setCode(404);
-                    else call.setCode(400);
+                    adminUIController.handle(call);
                 }
             }
         } catch (Exception e) {
