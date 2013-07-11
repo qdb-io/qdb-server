@@ -21,7 +21,7 @@ apply plugin: 'groovy'
 apply from: file("etc/emma.gradle")
 
 group = 'io.qdb'
-version = '0.1.0-SNAPSHOT'
+version = '0.1.1-SNAPSHOT'
 mainClassName = 'io.qdb.server.Main'
 
 repositories {
