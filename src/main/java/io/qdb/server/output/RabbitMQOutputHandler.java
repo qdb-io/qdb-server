@@ -56,7 +56,7 @@ public class RabbitMQOutputHandler extends OutputHandlerAdapter implements Shutd
         } else {
             queueDurable = new boolean[queues.length];
             for (int i = 0; i < queues.length; i++) {
-                String[] toks = queues[i].split("[/s]*#[/s]*");
+                String[] toks = queues[i].split("[\\s]*#[\\s]*");
                 queues[i] = toks[0];
                 queueDurable[i] = toks.length == 1 || "true".equals(toks[1]);
                 if (queues[i].length() == 0) throw new IllegalArgumentException("empty queue name");
@@ -67,7 +67,7 @@ public class RabbitMQOutputHandler extends OutputHandlerAdapter implements Shutd
             }
         }
 
-        String[] toks = exchange.split("[/s]*#[/s]*");
+        String[] toks = exchange.split("[\\s]*#[\\s]*");
         exchange = toks[0];
         exchangeType = toks.length >= 2 ? toks[1] : "fanout";
         exchangeDurable = toks.length < 3 || "true".equals(toks[2]);

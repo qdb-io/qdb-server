@@ -23,11 +23,8 @@ import io.qdb.server.model.User;
 import io.qdb.server.security.Auth;
 import org.simpleframework.http.Request;
 import org.simpleframework.http.Response;
-import org.simpleframework.http.parse.DateParser;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.ReadableByteChannel;
 import java.text.ParseException;
 import java.util.Date;
 
@@ -175,7 +172,7 @@ public class Call {
      * Render o as json and write to the response.
      */
     public void setJson(Object o) throws IOException {
-        renderer.json(response, o);
+        renderer.json(response, o, getBoolean("borg"));
     }
 
     public Database getDatabase() {

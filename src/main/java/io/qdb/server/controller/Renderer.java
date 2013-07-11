@@ -16,7 +16,6 @@
 
 package io.qdb.server.controller;
 
-import io.qdb.server.controller.JsonService;
 import org.simpleframework.http.Response;
 
 import javax.inject.Inject;
@@ -36,8 +35,8 @@ public class Renderer {
         this.jsonService = jsonService;
     }
 
-    public void json(Response resp, Object o) throws IOException {
-        byte[] bytes = jsonService.toJson(o);
+    public void json(Response resp, Object o, boolean borg) throws IOException {
+        byte[] bytes = jsonService.toJson(o, borg);
         resp.set("Content-Type", "application/json;charset=utf-8");
         resp.setContentLength(bytes.length);
         resp.getOutputStream().write(bytes);
@@ -45,12 +44,12 @@ public class Renderer {
 
     public void setCode(Response resp, int code, String message) throws IOException {
         resp.setCode(code);
-        json(resp, new StatusMsg(code, message == null ? toMessage(code) : message));
+        json(resp, new StatusMsg(code, message == null ? toMessage(code) : message), false);
     }
 
     public void setCode(Response resp, int code, Object data) throws IOException {
         resp.setCode(code);
-        json(resp, data);
+        json(resp, data, false);
     }
 
     public void setText(Response resp, int code, String message) throws IOException {

@@ -20,6 +20,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.*;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.databind.ser.std.StdScalarSerializer;
 import com.google.inject.Inject;
 import io.qdb.server.databind.DateTimeParser;
 import io.qdb.server.databind.IntegerParser;
@@ -28,7 +29,7 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
+import java.lang.reflect.Type;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -39,16 +40,45 @@ import java.util.Date;
 @Singleton
 public class JsonService {
 
-    private final ObjectMapper mapper = new ObjectMapper();
+    private final ObjectMapper mapper;
     private final ObjectMapper mapperNoIdentOutput;
+    private final ObjectMapper mapperBorg;
 
     @Inject
     @SuppressWarnings("deprecation")
     public JsonService(@Named("prettyPrint") boolean prettyPrint) {
-        mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-        mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
-        mapper.configure(SerializationFeature.WRITE_NULL_MAP_VALUES, false);
+        SimpleModule qdbModule = createQdbModule();
 
+        mapperNoIdentOutput = createMapper(qdbModule, false);
+        mapper = createMapper(qdbModule, prettyPrint);
+//        mapper.registerModule(createHumanModule());
+
+        mapperBorg = createMapper(qdbModule, prettyPrint);
+    }
+
+    private ObjectMapper createMapper(Module module, boolean indent) {
+        ObjectMapper m = new ObjectMapper();
+        m.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        m.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
+        m.configure(SerializationFeature.WRITE_NULL_MAP_VALUES, false);
+        if (indent) m.configure(SerializationFeature.INDENT_OUTPUT, true);
+        m.registerModule(module);
+        return m;
+    }
+
+    private SimpleModule createHumanModule() {
+        SimpleModule module = new SimpleModule("qdb-human");
+        module.addSerializer(Long.TYPE, new StdScalarSerializer<Long>(Long.TYPE) {
+            @Override
+            public void serialize(Long value, JsonGenerator jgen, SerializerProvider provider)
+                    throws IOException, JsonProcessingException {
+                jgen.writeString("x" + value + "x");
+            }
+        });
+        return module;
+    }
+
+    private SimpleModule createQdbModule() {
         SimpleModule module = new SimpleModule("qdb");
 
         module.addSerializer(Date.class, new JsonSerializer<Date>(){
@@ -91,29 +121,15 @@ public class JsonService {
         };
         module.addDeserializer(Long.class, longJsonDeserializer);
         module.addDeserializer(Long.TYPE, longJsonDeserializer);
-
-        mapper.registerModule(module);
-
-        if (prettyPrint) {
-            mapperNoIdentOutput = mapper.copy();
-            mapper.configure(SerializationFeature.INDENT_OUTPUT, true);
-        } else {
-            mapperNoIdentOutput = mapper;
-        }
+        return module;
     }
 
     /**
      * Convert o to JSON.
      */
-    public byte[] toJson(Object o) throws IOException {
-        return mapper.writeValueAsBytes(o);
-    }
-
-    /**
-     * Convert o to JSON.
-     */
-    public String toJsonStringNoIndenting(Object o) throws IOException {
-        return new String(toJsonNoIndenting(o), "UTF8");
+    public byte[] toJson(Object o, boolean borg) throws IOException {
+        System.out.println("toJson borg=" + borg);
+        return borg ? mapperBorg.writeValueAsBytes(o) : mapper.writeValueAsBytes(o);
     }
 
     /**

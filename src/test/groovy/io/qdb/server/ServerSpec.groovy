@@ -23,7 +23,7 @@ class ServerSpec extends StandaloneBase {
 
         expect:
         ans.code == 200
-        ans.json.upSince != null
+        ans.json.started != null
     }
 
     def "Authentication required for non-root urls"() {

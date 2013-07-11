@@ -16,21 +16,27 @@
 
 package io.qdb.server.controller;
 
+import org.simpleframework.http.Response;
+
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.io.IOException;
+import java.lang.management.ManagementFactory;
+import java.lang.management.MemoryUsage;
 import java.util.Date;
 
 @Singleton
 public class ServerController extends CrudController {
 
-    private final Date upSince = new Date();
+    private final Date started = new Date();
 
     public static class StatusDTO {
-        public Date upSince;
-        @SuppressWarnings("UnusedDeclaration")
-        public StatusDTO() { }
-        public StatusDTO(Date upSince) { this.upSince = upSince; }
+        public Date started;
+        public String qdbVersion;
+        public long heapFreeMemory;
+        public long heapMaxMemory;
+        public long otherFreeMemory;
+        public long otherMaxMemory;
     }
 
     @Inject
@@ -40,6 +46,17 @@ public class ServerController extends CrudController {
 
     @Override
     protected void list(Call call, int offset, int limit) throws IOException {
-        call.setJson(new StatusDTO(upSince));
+        StatusDTO dto = new StatusDTO();
+        dto.started = started;
+
+        if (call.getBoolean("gc")) System.gc();
+        dto.heapMaxMemory = Runtime.getRuntime().totalMemory();
+        dto.heapFreeMemory = Runtime.getRuntime().freeMemory();
+
+        MemoryUsage usage = ManagementFactory.getMemoryMXBean().getNonHeapMemoryUsage();
+        dto.otherMaxMemory = usage.getMax();
+        dto.otherFreeMemory = dto.otherMaxMemory - usage.getUsed();
+
+        call.setJson(dto);
     }
 }

@@ -112,7 +112,7 @@ public class DataBinder {
     private String[] parseStringArray(String s) throws IOException {
         if (s.length() == 0) return new String[0];
         if (s.charAt(0) == '[') return jsonService.fromJson(new ByteArrayInputStream(s.getBytes("UTF8")), String[].class);
-        return s.split("[/s]*,[/s]*");
+        return s.split("[\\s]*,[\\s]*");
     }
 
     private void error(String field, String message) {

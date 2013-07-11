@@ -77,8 +77,6 @@ public class Router implements Container {
                     userController.handle(call);
                 } else if ("server".equals(seg)) {
                     serverController.handle(call);
-                } else if (call.getAuth().isAnonymous()) {
-                    authService.sendChallenge(resp);
                 } else {
                     adminUIController.handle(call);
                 }
