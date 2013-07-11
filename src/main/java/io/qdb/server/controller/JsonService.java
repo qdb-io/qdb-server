@@ -128,7 +128,6 @@ public class JsonService {
      * Convert o to JSON.
      */
     public byte[] toJson(Object o, boolean borg) throws IOException {
-        System.out.println("toJson borg=" + borg);
         return borg ? mapperBorg.writeValueAsBytes(o) : mapper.writeValueAsBytes(o);
     }
 
