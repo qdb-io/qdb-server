@@ -115,6 +115,8 @@ class DataBinderSpec extends Specification {
         b.bind([intValue: "1k", intWrapperValue: "1m", longValue: "1g"], dto).check();
         TypesDTO dto2 = new TypesDTO()
         b.bind([intValue: "1K", intWrapperValue: "1M", longValue: "1G"], dto2).check();
+        TypesDTO dto3 = new TypesDTO()
+        b.bind([intValue: "1kb", intWrapperValue: "1mB", longValue: "1Gb"], dto).check();
 
         expect:
         dto.intValue == 1024
@@ -123,6 +125,9 @@ class DataBinderSpec extends Specification {
         dto2.intValue == 1024
         dto2.intWrapperValue == 1024 * 1024
         dto2.longValue == 1024 * 1024 * 1024L
+        dto3.intValue == 1024
+        dto3.intWrapperValue == 1024 * 1024
+        dto3.longValue == 1024 * 1024 * 1024L
     }
 
     def "Converted values go back in map"() {

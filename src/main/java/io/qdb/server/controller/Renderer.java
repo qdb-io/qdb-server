@@ -47,9 +47,9 @@ public class Renderer {
         json(resp, new StatusMsg(code, message == null ? toMessage(code) : message), false);
     }
 
-    public void setCode(Response resp, int code, Object data) throws IOException {
+    public void setCode(Response resp, int code, Object data, boolean borg) throws IOException {
         resp.setCode(code);
-        json(resp, data, false);
+        json(resp, data, borg);
     }
 
     public void setText(Response resp, int code, String message) throws IOException {

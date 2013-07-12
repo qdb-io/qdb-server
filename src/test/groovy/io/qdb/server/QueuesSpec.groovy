@@ -35,15 +35,15 @@ class QueuesSpec extends StandaloneBase {
         expect:
         ans.code == 201
         ans.json.id == "bar"
-        ans.json.maxSize == 10 * 1024 * 1024
-        ans.json.maxPayloadSize == 1024 * 1024
+        ans.json.maxSize == "10 MB"
+        ans.json.maxPayloadSize == "1 MB"
         ans.json.contentType == "application/json; charset=utf-8"
         ans2.code == 200
     }
 
     def "Create queue in default database"() {
         def data = [maxSize: "5m"]
-        def ans = POST("/q/oink", data)
+        def ans = POST("/q/oink?borg=true", data)
 
         expect:
         ans.code == 201
@@ -93,7 +93,7 @@ class QueuesSpec extends StandaloneBase {
     }
 
     def "Update queue"() {
-        def ans = PUT("/db/foo/q/bar", [maxSize: 20000000, maxPayloadSize: 100000], "david", "secret")
+        def ans = PUT("/db/foo/q/bar?borg=true", [maxSize: 20000000, maxPayloadSize: 100000], "david", "secret")
 
         expect:
         ans.code == 200

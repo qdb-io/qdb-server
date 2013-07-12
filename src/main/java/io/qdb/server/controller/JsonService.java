@@ -20,16 +20,21 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.*;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.databind.ser.ContextualSerializer;
+import com.fasterxml.jackson.databind.ser.std.NumberSerializers;
 import com.fasterxml.jackson.databind.ser.std.StdScalarSerializer;
+import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import com.google.inject.Inject;
+import humanize.Humanize;
 import io.qdb.server.databind.DateTimeParser;
 import io.qdb.server.databind.IntegerParser;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.inject.Named;
 import javax.inject.Singleton;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Type;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -39,6 +44,8 @@ import java.util.Date;
  */
 @Singleton
 public class JsonService {
+
+    private static final Logger log = LoggerFactory.getLogger(JsonService.class);
 
     private final ObjectMapper mapper;
     private final ObjectMapper mapperNoIdentOutput;
@@ -51,7 +58,7 @@ public class JsonService {
 
         mapperNoIdentOutput = createMapper(qdbModule, false);
         mapper = createMapper(qdbModule, prettyPrint);
-//        mapper.registerModule(createHumanModule());
+        mapper.registerModule(createHumanModule());
 
         mapperBorg = createMapper(qdbModule, prettyPrint);
     }
@@ -66,23 +73,12 @@ public class JsonService {
         return m;
     }
 
-    private SimpleModule createHumanModule() {
-        SimpleModule module = new SimpleModule("qdb-human");
-        module.addSerializer(Long.TYPE, new StdScalarSerializer<Long>(Long.TYPE) {
-            @Override
-            public void serialize(Long value, JsonGenerator jgen, SerializerProvider provider)
-                    throws IOException, JsonProcessingException {
-                jgen.writeString("x" + value + "x");
-            }
-        });
-        return module;
-    }
-
     private SimpleModule createQdbModule() {
         SimpleModule module = new SimpleModule("qdb");
 
-        module.addSerializer(Date.class, new JsonSerializer<Date>(){
+        module.addSerializer(Date.class, new JsonSerializer<Date>() {
             private SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ"); // ISO 8601
+
             @Override
             public void serialize(Date value, JsonGenerator jgen, SerializerProvider provider) throws IOException {
                 jgen.writeString(df.format(value));
@@ -124,6 +120,24 @@ public class JsonService {
         return module;
     }
 
+    private SimpleModule createHumanModule() {
+        SimpleModule module = new SimpleModule("qdb-human");
+
+        BorgOrHumanSerializer<Long> longSer = new BorgOrHumanSerializer<Long>(Long.TYPE,
+                new HumanNumberSerializer<Long>(Long.TYPE),
+                new NumberSerializers.LongSerializer());
+        module.addSerializer(Long.TYPE, longSer);
+        module.addSerializer(Long.class, longSer);
+
+        BorgOrHumanSerializer<Integer> integerSer = new BorgOrHumanSerializer<Integer>(Integer.TYPE,
+                new HumanNumberSerializer<Integer>(Integer.TYPE),
+                new NumberSerializers.IntegerSerializer());
+        module.addSerializer(Integer.TYPE, integerSer);
+        module.addSerializer(Integer.class, integerSer);
+
+        return module;
+    }
+
     /**
      * Convert o to JSON.
      */
@@ -146,6 +160,50 @@ public class JsonService {
             return mapper.readValue(ins, klass);
         } catch (JsonProcessingException e) {
             throw new IllegalArgumentException(e.getMessage());
+        }
+    }
+
+    /**
+     * Chooses between human and borg serializers based on the name of the property being serialized.
+     */
+    private static class BorgOrHumanSerializer<T> extends StdSerializer<T> implements ContextualSerializer {
+
+        private final JsonSerializer<T> human;
+        private final JsonSerializer<T> borg;
+
+        public BorgOrHumanSerializer(Class<T> t, JsonSerializer<T> human, JsonSerializer<T> borg) {
+            super(t);
+            this.human = human;
+            this.borg = borg;
+        }
+
+        @Override
+        public JsonSerializer<T> createContextual(SerializerProvider prov, BeanProperty property) throws JsonMappingException {
+            if (property != null) {
+                String name = property.getName();
+                if (name.endsWith("Memory") || name.endsWith("Size")) return human;
+            }
+            return borg;
+        }
+
+        @Override
+        public void serialize(T value, JsonGenerator jgen, SerializerProvider provider) throws IOException {
+            borg.serialize(value, jgen, provider);
+        }
+    }
+
+    /**
+     * Serializers numbers as strings in human form e.g. 1 GB.
+     */
+    private static class HumanNumberSerializer<T extends Number> extends StdScalarSerializer<T> {
+
+        public HumanNumberSerializer(Class<T> t) {
+            super(t);
+        }
+
+        @Override
+        public void serialize(T value, JsonGenerator jgen, SerializerProvider provider) throws IOException {
+            jgen.writeString(Humanize.binaryPrefix(value));
         }
     }
 }

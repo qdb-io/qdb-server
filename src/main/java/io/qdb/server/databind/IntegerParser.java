@@ -17,29 +17,42 @@
 package io.qdb.server.databind;
 
 /**
- * Parses numbers accepting suffixes of k, m and g for kb, mb and gb respectively.
+ * Parses numbers accepting suffixes of k, kb, m, mb, g and gb for kb, mb and gb respectively. If there is a suffix
+ * the number can be a double.
  */
 public class IntegerParser {
 
     public static final IntegerParser INSTANCE = new IntegerParser();
 
     public long parseLong(String s) throws NumberFormatException {
-        int f = parseFactor(s);
-        if (f > 1) s = s.substring(0, s.length() - 1);
+        int n = s.length();
+        int f = parseFactor(s, n);
+        if (f > 1) {
+            char c = s.charAt(--n);
+            if (c == 'b' || c == 'B') --n;
+            s = s.substring(0, n).trim();
+            if (s.indexOf('.') >= 0) return (long)(Double.parseDouble(s) * f);
+        }
         return Long.parseLong(s) * f;
     }
 
     public int parseInt(String s) throws NumberFormatException {
-        int f = parseFactor(s);
-        if (f > 1) s = s.substring(0, s.length() - 1);
+        int n = s.length();
+        int f = parseFactor(s, n);
+        if (f > 1) {
+            char c = s.charAt(--n);
+            if (c == 'b' || c == 'B') --n;
+            s = s.substring(0, n).trim();
+            if (s.indexOf('.') >= 0) return (int)(Double.parseDouble(s) * f);
+        }
         return Integer.parseInt(s) * f;
     }
 
-    private int parseFactor(String s) {
-        int n = s.length();
+    private int parseFactor(String s, int n) {
         int f = 1;
         if (n > 0) {
             char c = s.charAt(n - 1);
+            if ( n > 1 && c == 'b' || c == 'B') c = s.charAt(n - 2);
             switch (c) {
                 case 'K':
                 case 'k':

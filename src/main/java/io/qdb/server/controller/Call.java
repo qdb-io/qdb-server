@@ -156,7 +156,7 @@ public class Call {
 
     public void setCode(int code, Object data) throws IOException {
         this.code = code;
-        renderer.setCode(response, code, data);
+        renderer.setCode(response, code, data, getBoolean("borg"));
     }
 
     public int getCode() {

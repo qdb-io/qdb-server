@@ -65,7 +65,7 @@ class MessagesSpec extends StandaloneBase {
     }
 
     def "Append message with chunked transfer encoding"() {
-        def con = openConTo("/db/foo/q/bar/messages")
+        def con = openConTo("/db/foo/q/bar/messages?borg=true")
         con.outputStream.write(new byte[30000])
         Client.Response ans = new Client.Response(con)
 
