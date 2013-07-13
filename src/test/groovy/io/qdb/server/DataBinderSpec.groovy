@@ -116,7 +116,7 @@ class DataBinderSpec extends Specification {
         TypesDTO dto2 = new TypesDTO()
         b.bind([intValue: "1K", intWrapperValue: "1M", longValue: "1G"], dto2).check();
         TypesDTO dto3 = new TypesDTO()
-        b.bind([intValue: "1kb", intWrapperValue: "1mB", longValue: "1Gb"], dto).check();
+        b.bind([intValue: "1kb", intWrapperValue: "1mB", longValue: "1Gb"], dto3).check();
 
         expect:
         dto.intValue == 1024

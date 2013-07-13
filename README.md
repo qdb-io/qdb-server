@@ -141,6 +141,8 @@ Use `gradle check` to run all tests (unit and functional).
 
 Use `gradle test -Dtest.single=Queues*` to run matching test specs.
 
+Use `gradle test -Dtest.single=Queues* -Dtest.debug=true` to run matching test specs with remote debugging.
+
 
 License
 -------
