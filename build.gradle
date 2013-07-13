@@ -96,7 +96,7 @@ task deb(dependsOn: 'distTar') << {
         rename ('default', 'qdb')
     }
     def fpm = ("fpm -s dir -t deb -n qdb-server -v ${version} -a noarch " +
-            "-d openjdk-7-jdk -d adduser " +
+            "-d openjdk-7-jre -d adduser " +
             "--config-files /etc/qdb.properties " +
             "--config-files /etc/default/qdb " +
             "--after-install src/linux/debian/postinst " +
