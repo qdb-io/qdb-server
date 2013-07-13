@@ -16,22 +16,21 @@
 
 package io.qdb.server.controller;
 
-import org.simpleframework.http.Response;
+import humanize.Humanize;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryUsage;
-import java.util.Date;
 
 @Singleton
 public class ServerController extends CrudController {
 
-    private final Date started = new Date();
+    private final long started = System.currentTimeMillis();
 
     public static class StatusDTO {
-        public Date started;
+        public String uptime;
         public String qdbVersion;
         public long heapFreeMemory;
         public long heapMaxMemory;
@@ -47,7 +46,11 @@ public class ServerController extends CrudController {
     @Override
     protected void list(Call call, int offset, int limit) throws IOException {
         StatusDTO dto = new StatusDTO();
-        dto.started = started;
+
+        int secs = (int)((System.currentTimeMillis() - started) / 1000);
+        int days = secs / 24 * 60 * 60;
+        secs %= 24 * 60 * 60;
+        dto.uptime = (days == 1 ? "1 day " : days > 0 ? days + " days " : "") + Humanize.duration(secs);
 
         if (call.getBoolean("gc")) System.gc();
         dto.heapMaxMemory = Runtime.getRuntime().totalMemory();
