@@ -260,7 +260,7 @@ public class MessageController extends CrudController {
             keepAliveMs = Integer.MAX_VALUE;
         }
 
-        Date at = call.getDate("at");
+        Date at = call.getDate("from");
         long id = at != null ? -1 : call.getLong("id", mb.getNextMessageId());
 
         Response response = call.getResponse();
