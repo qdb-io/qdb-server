@@ -78,9 +78,8 @@ task dist(dependsOn: jar, type: Tar) {
     compression = Compression.GZIP
     into("${project.name}-${version}") {
         from(project.file("src/dist"))
-        into("lib") {
-            from(jar)
-        }
+        from(jar)
+        rename("qdb-server-.*jar", "qdb-server.jar")
     }
 }
 

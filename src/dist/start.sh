@@ -9,7 +9,13 @@ QDB_SERVER_OPTS="-server"
 
 set -e
 
-nohup java -cp lib/*.jar $QDB_SERVER_OPTS io.qdb.server.Main >> $QDB_LOG 2>&1 &
+CP=""
+for f in lib/*.jar; do
+    [ -f "$f" ] && CP="$CP$f:"
+done
+CP="${CP}qdb-server.jar"
+
+nohup -cp $CP $QDB_SERVER_OPTS io.qdb.server.Main >> $QDB_LOG 2>&1 &
 PID=$!
 
 echo $PID > $QDB_PIDFILE

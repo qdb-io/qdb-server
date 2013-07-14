@@ -7,4 +7,10 @@ QDB_SERVER_OPTS="-server"
 
 set -e
 
-java -cp lib/*.jar $QDB_SERVER_OPTS io.qdb.server.Main
+CP=""
+for f in lib/*.jar; do
+    [ -f "$f" ] && CP="$CP$f:"
+done
+CP="${CP}qdb-server.jar"
+
+java -cp $CP $QDB_SERVER_OPTS io.qdb.server.Main
