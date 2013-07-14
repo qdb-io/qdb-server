@@ -18,8 +18,8 @@ package io.qdb.server
 
 class ServerSpec extends StandaloneBase {
 
-    def "Get basic status"() {
-        def ans = GET("/server")
+    def "Get status"() {
+        def ans = GET("/status")
 
         expect:
         ans.code == 200

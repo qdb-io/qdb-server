@@ -75,7 +75,7 @@ public class Router implements Container {
                     databaseController.handle(call);
                 } else if ("users".equals(seg)) {
                     userController.handle(call);
-                } else if ("server".equals(seg)) {
+                } else if ("status".equals(seg)) {
                     serverController.handle(call);
                 } else {
                     adminUIController.handle(call);

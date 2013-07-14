@@ -36,7 +36,8 @@ class MessagesSpec extends StandaloneBase {
     def setupSpec() {
         assert POST("/users/david", [password: "secret"]).code == 201
         assert POST("/db/foo", [owner: "david"]).code == 201
-        assert POST("/db/foo/q/bar", [maxSize: 10000000, maxPayloadSize: 30000], "david", "secret").code == 201
+        assert POST("/db/foo/q/bar", [maxSize: 10000000, maxPayloadSize: 30000,
+                contentType: "application/json; charset=utf-8"], "david", "secret").code == 201
         assert POST("/db/foo/q/lots", [maxSize: 10000000, maxPayloadSize: 5000], "david", "secret").code == 201
     }
 
@@ -89,6 +90,7 @@ class MessagesSpec extends StandaloneBase {
 
         expect:
         ans.code == 200
+        ans.json != null
         ans.json.hello == "world"
         ans.headers["X-QDB-Id"] == "0"
         ans.headers["X-QBD-Timestamp"] > startTime.toString()

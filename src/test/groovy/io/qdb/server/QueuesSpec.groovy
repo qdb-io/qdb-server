@@ -37,7 +37,7 @@ class QueuesSpec extends StandaloneBase {
         ans.json.id == "bar"
         ans.json.maxSize == "10 MB"
         ans.json.maxPayloadSize == "1 MB"
-        ans.json.contentType == "application/json; charset=utf-8"
+        ans.json.contentType == "application/octet-stream"
         ans2.code == 200
     }
 
