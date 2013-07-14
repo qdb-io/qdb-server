@@ -17,7 +17,6 @@
 package io.qdb.server
 
 import spock.lang.Stepwise
-import spock.lang.Shared
 
 @Stepwise
 class QueuesSpec extends StandaloneBase {

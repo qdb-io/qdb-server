@@ -54,10 +54,6 @@ dependencies {
 project.sourceCompatibility = "1.6"
 project.targetCompatibility = "1.6"
 
-tasks.withType(Tar) {
-    compression = Compression.GZIP
-}
-
 tasks.run.systemProperties.qdbLogLevel = "DEBUG"
 
 task("run-debug", dependsOn: 'classes', type: JavaExec) {
@@ -67,8 +63,29 @@ task("run-debug", dependsOn: 'classes', type: JavaExec) {
     jvmArgs = ["-Xdebug", "-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005"]
 }
 
+tasks.jar {
+    def now = new Date().format("yyyy-MM-dd HH:mm:ss")
+    manifest {
+        attributes('Main-Class': 'io.qdb.server.Main',
+                'Implementation-Title': 'QDB Server',
+                'Implementation-Version': "${version} ${now}",
+                'Implementation-Vendor': 'http://qdb.io/')
+    }
+    from configurations.runtime.asFileTree.files.collect { zipTree(it) }
+}
+
+task dist(dependsOn: jar, type: Tar) {
+    compression = Compression.GZIP
+    into("${project.name}-${version}") {
+        from(project.file("src/dist"))
+        into("lib") {
+            from(jar)
+        }
+    }
+}
+
 // create .deb package - needs fpm installed (gem install fpm)
-task deb(dependsOn: 'distTar') << {
+task deb(dependsOn: 'dist') << {
     delete {
         file 'build/debian'
     }
@@ -113,7 +130,7 @@ task deb(dependsOn: 'distTar') << {
 }
 
 // put s3AccessId and s3SecretKey into gradle.properties for this task
-task uploadToS3(dependsOn: ['distTar', 'deb']) {
+task uploadToS3(dependsOn: ['dist', 'deb']) {
     configurations {
         awstasks
     }

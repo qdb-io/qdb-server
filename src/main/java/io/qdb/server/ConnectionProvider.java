@@ -64,7 +64,8 @@ public class ConnectionProvider implements Provider<Connection> {
                 SocketAddress address = new InetSocketAddress(host, port);
                 connection = new SocketConnection(container);
                 connection.connect(address);
-                log.info("QDB Server listening on " + host + ":" + port);
+                log.info("QDB Server " + Package.getPackage("io.qdb.server").getImplementationVersion() +
+                        " listening on " + host + ":" + port);
             }
             return connection;
         } catch (IOException e) {

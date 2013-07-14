@@ -6,4 +6,5 @@ QDB_SERVER_OPTS="-server"
 [ -f /etc/default/qdb ] && . /etc/default/qdb
 
 set -e
-./bin/qdb-server
+
+java -cp lib/*.jar $QDB_SERVER_OPTS io.qdb.server.Main

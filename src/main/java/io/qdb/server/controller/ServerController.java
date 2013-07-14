@@ -52,6 +52,8 @@ public class ServerController extends CrudController {
         secs %= 24 * 60 * 60;
         dto.uptime = (days == 1 ? "1 day " : days > 0 ? days + " days " : "") + Humanize.duration(secs);
 
+        dto.qdbVersion = Package.getPackage("io.qdb.server").getImplementationVersion();
+
         if (call.getBoolean("gc")) System.gc();
         dto.heapMaxMemory = Runtime.getRuntime().totalMemory();
         dto.heapFreeMemory = Runtime.getRuntime().freeMemory();
