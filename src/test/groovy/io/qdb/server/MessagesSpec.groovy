@@ -87,15 +87,24 @@ class MessagesSpec extends StandaloneBase {
 
     def "Get single message"() {
         def ans = GET("/db/foo/q/bar/messages?id=0&single=true")
+        def df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ")
 
         expect:
         ans.code == 200
         ans.json != null
         ans.json.hello == "world"
         ans.headers["QDB-Id"] == "0"
-        ans.headers["QDB-Timestamp"] > startTime.toString()
+        df.parse(ans.headers["QDB-Timestamp"] as String).time >= startTime
         ans.headers["QDB-RoutingKey"] == "abc"
         ans.headers["Content-Type"] == "application/json; charset=utf-8"
+    }
+
+    def "Get single message in borg mode"() {
+        def ans = GET("/db/foo/q/bar/messages?id=0&single=true&borg=true")
+
+        expect:
+        ans.code == 200
+        Long.parseLong(ans.headers["QDB-Timestamp"] as String) >= startTime
     }
 
     def "Get 2 messages streamed"() {
@@ -126,6 +135,15 @@ class MessagesSpec extends StandaloneBase {
         h2.payloadSize == m2line.length()
         h2.routingKey == ""
         m2.hello == "2nd world"
+    }
+
+    def "Get message streamed in borg mode"() {
+        def ans = GET("/db/foo/q/bar/messages?id=0&limit=1&noLengthPrefix=true&borg=true")
+        def h = new JsonSlurper().parseText(new StringReader(ans.text).readLine())
+
+        expect:
+        ans.code == 200
+        h.timestamp >= startTime
     }
 
     def "Get message streamed with header length prefix"() {

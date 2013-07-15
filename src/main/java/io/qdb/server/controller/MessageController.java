@@ -253,6 +253,7 @@ public class MessageController extends CrudController {
         byte[] separator = call.getUTF8Bytes("separator", "\n");
         boolean noHeaders = call.getBoolean("noHeaders");
         boolean noLengthPrefix = call.getBoolean("noLengthPrefix");
+        boolean borg = call.getBoolean("borg");
 
         boolean single = call.getBoolean("single");
         if (single) {
@@ -297,13 +298,16 @@ public class MessageController extends CrudController {
             if (single) {
                 response.setContentLength(c.getPayloadSize());
                 response.set("QDB-Id", Long.toString(c.getId()));
-                response.set("QDB-Timestamp", DateTimeParser.INSTANCE.formatTimestamp(new Date(c.getTimestamp())));
+                long timestamp = c.getTimestamp();
+                response.set("QDB-Timestamp", borg
+                        ? Long.toString(timestamp)
+                        : DateTimeParser.INSTANCE.formatTimestamp(new Date(timestamp)));
                 response.set("QDB-RoutingKey", c.getRoutingKey());
                 out.write(c.getPayload());
             } else {
                 if (!noHeaders) {
                     MessageHeader h = new MessageHeader(c);
-                    byte[] data = jsonService.toJsonNoIndenting(h);
+                    byte[] data = jsonService.toJsonMsgHeader(h, borg);
                     if (!noLengthPrefix) out.write((data.length + ":").getBytes("UTF8"));
                     out.write(data);
                     out.write(10);

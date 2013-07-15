@@ -28,8 +28,6 @@ import com.google.inject.Inject;
 import humanize.Humanize;
 import io.qdb.server.databind.DateTimeParser;
 import io.qdb.server.databind.IntegerParser;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -40,116 +38,100 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 /**
- * Marshaling of objects to/from JSON using Jackson.
+ * Marshaling of objects to/from JSON using Jackson for the REST API.
  */
 @Singleton
 public class JsonService {
 
-    private static final Logger log = LoggerFactory.getLogger(JsonService.class);
-
     private final ObjectMapper mapper;
-    private final ObjectMapper mapperNoIdentOutput;
+    private final ObjectMapper mapperMsgHeader;
     private final ObjectMapper mapperBorg;
+    private final ObjectMapper mapperBorgMsgHeader;
+
+    private final JsonDeserializer<Long> longJsonDeserializer = new JsonDeserializer<Long>() {
+        @Override
+        public Long deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException {
+            if (jp.getCurrentToken() == JsonToken.VALUE_NUMBER_INT) return jp.getLongValue();
+            return IntegerParser.INSTANCE.parseLong(jp.getText().trim());
+        }
+    };
+
+    private final JsonDeserializer<Integer> integerJsonDeserializer = new JsonDeserializer<Integer>() {
+        @Override
+        public Integer deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException {
+            if (jp.getCurrentToken() == JsonToken.VALUE_NUMBER_INT) return jp.getIntValue();
+            return IntegerParser.INSTANCE.parseInt(jp.getText().trim());
+        }
+    };
+
+    private final JsonDeserializer<Date> dateDeserializer = new JsonDeserializer<Date>() {
+        @Override
+        public Date deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException {
+            if (jp.getCurrentToken() == JsonToken.VALUE_NUMBER_INT) return new Date(jp.getLongValue());
+            String s = jp.getText().trim();
+            try {
+                return DateTimeParser.INSTANCE.parse(s);
+            } catch (ParseException e) {
+                throw new IllegalArgumentException("Invalid date: [" + s + "]");
+            }
+        }
+    };
+
+    BorgOrHumanSerializer<Integer> integerSerializer = new BorgOrHumanSerializer<Integer>(Integer.TYPE,
+            new HumanNumberSerializer<Integer>(Integer.TYPE),
+            new NumberSerializers.IntegerSerializer());
+
+    BorgOrHumanSerializer<Long> longSerializer = new BorgOrHumanSerializer<Long>(Long.TYPE,
+            new HumanNumberSerializer<Long>(Long.TYPE),
+            new NumberSerializers.LongSerializer());
 
     @Inject
     @SuppressWarnings("deprecation")
     public JsonService(@Named("prettyPrint") boolean prettyPrint) {
-        SimpleModule qdbModule = createQdbModule();
-
-        mapperNoIdentOutput = createMapper(qdbModule, false);
-        mapper = createMapper(qdbModule, prettyPrint);
-        mapper.registerModule(createHumanModule());
-
-        mapperBorg = createMapper(qdbModule, prettyPrint);
+        mapper = createMapper(prettyPrint, false, false);
+        mapperMsgHeader = createMapper(false, false, true);
+        mapperBorg = createMapper(prettyPrint, true, true);
+        mapperBorgMsgHeader = prettyPrint ? createMapper(false, true, true) : mapperBorg;
     }
 
-    private ObjectMapper createMapper(Module module, boolean indent) {
-        ObjectMapper m = new ObjectMapper();
-        m.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-        m.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
-        m.configure(SerializationFeature.WRITE_NULL_MAP_VALUES, false);
-        if (indent) m.configure(SerializationFeature.INDENT_OUTPUT, true);
-        m.registerModule(module);
-        return m;
-    }
+    private ObjectMapper createMapper(boolean prettyPrint, boolean datesAsTimestamps, boolean borg) {
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
+        mapper.configure(SerializationFeature.WRITE_NULL_MAP_VALUES, false);
+        mapper.configure(SerializationFeature.INDENT_OUTPUT, prettyPrint);
+        mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, datesAsTimestamps);
 
-    private SimpleModule createQdbModule() {
-        SimpleModule module = new SimpleModule("qdb");
-
-        module.addSerializer(Date.class, new JsonSerializer<Date>() {
-            private SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ"); // ISO 8601
-
-            @Override
-            public void serialize(Date value, JsonGenerator jgen, SerializerProvider provider) throws IOException {
-                jgen.writeString(df.format(value));
-            }
-        });
-
-        module.addDeserializer(Date.class, new JsonDeserializer<Date>() {
-            @Override
-            public Date deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException {
-                if (jp.getCurrentToken() == JsonToken.VALUE_NUMBER_INT) return new Date(jp.getLongValue());
-                String s = jp.getText().trim();
-                try {
-                    return DateTimeParser.INSTANCE.parse(s);
-                } catch (ParseException e) {
-                    throw new IllegalArgumentException("Invalid date: [" + s + "]");
-                }
-            }
-        });
-
-        JsonDeserializer<Integer> integerJsonDeserializer = new JsonDeserializer<Integer>() {
-            @Override
-            public Integer deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException, JsonProcessingException {
-                if (jp.getCurrentToken() == JsonToken.VALUE_NUMBER_INT) return jp.getIntValue();
-                return IntegerParser.INSTANCE.parseInt(jp.getText().trim());
-            }
-        };
+        SimpleModule module = new SimpleModule();
+        module.addDeserializer(Date.class, dateDeserializer);
         module.addDeserializer(Integer.class, integerJsonDeserializer);
         module.addDeserializer(Integer.TYPE, integerJsonDeserializer);
-
-        JsonDeserializer<Long> longJsonDeserializer = new JsonDeserializer<Long>() {
-            @Override
-            public Long deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException, JsonProcessingException {
-                if (jp.getCurrentToken() == JsonToken.VALUE_NUMBER_INT) return jp.getLongValue();
-                return IntegerParser.INSTANCE.parseLong(jp.getText().trim());
-            }
-        };
         module.addDeserializer(Long.class, longJsonDeserializer);
         module.addDeserializer(Long.TYPE, longJsonDeserializer);
-        return module;
-    }
+        if (!borg) {
+            module.addSerializer(Integer.TYPE, integerSerializer);
+            module.addSerializer(Integer.class, integerSerializer);
+            module.addSerializer(Long.TYPE, longSerializer);
+            module.addSerializer(Long.class, longSerializer);
+        }
+        if (!datesAsTimestamps) module.addSerializer(Date.class, new ISO8601DateSerializer());
+        mapper.registerModule(module);
 
-    private SimpleModule createHumanModule() {
-        SimpleModule module = new SimpleModule("qdb-human");
-
-        BorgOrHumanSerializer<Long> longSer = new BorgOrHumanSerializer<Long>(Long.TYPE,
-                new HumanNumberSerializer<Long>(Long.TYPE),
-                new NumberSerializers.LongSerializer());
-        module.addSerializer(Long.TYPE, longSer);
-        module.addSerializer(Long.class, longSer);
-
-        BorgOrHumanSerializer<Integer> integerSer = new BorgOrHumanSerializer<Integer>(Integer.TYPE,
-                new HumanNumberSerializer<Integer>(Integer.TYPE),
-                new NumberSerializers.IntegerSerializer());
-        module.addSerializer(Integer.TYPE, integerSer);
-        module.addSerializer(Integer.class, integerSer);
-
-        return module;
+        return mapper;
     }
 
     /**
      * Convert o to JSON.
      */
     public byte[] toJson(Object o, boolean borg) throws IOException {
-        return borg ? mapperBorg.writeValueAsBytes(o) : mapper.writeValueAsBytes(o);
+        return (borg ? mapperBorg : mapper).writeValueAsBytes(o);
     }
 
     /**
-     * Convert o to JSON with no indenting.
+     * Convert o to JSON with no indenting and no humanization of sizes.
      */
-    public byte[] toJsonNoIndenting(Object o) throws IOException {
-        return mapperNoIdentOutput.writeValueAsBytes(o);
+    public byte[] toJsonMsgHeader(Object o, boolean borg) throws IOException {
+        return (borg ? mapperBorgMsgHeader :  mapperMsgHeader).writeValueAsBytes(o);
     }
 
     /**
@@ -204,6 +186,16 @@ public class JsonService {
         @Override
         public void serialize(T value, JsonGenerator jgen, SerializerProvider provider) throws IOException {
             jgen.writeString(Humanize.binaryPrefix(value));
+        }
+    }
+
+    private static class ISO8601DateSerializer extends JsonSerializer<Date> {
+
+        private SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ"); // ISO 8601
+
+        @Override
+        public void serialize(Date value, JsonGenerator jgen, SerializerProvider provider) throws IOException {
+            jgen.writeString(df.format(value));
         }
     }
 }

@@ -23,6 +23,7 @@ import io.qdb.server.queue.QueueManager;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.io.IOException;
+import java.util.Date;
 
 @Singleton
 public class TimelineController extends CrudController {
@@ -32,14 +33,14 @@ public class TimelineController extends CrudController {
     static class TimelineEntryDTO {
 
         public long messageId;
-        public long timestamp;
+        public Date timestamp;
         public int bytes;
         public long millis;
         public int count;
 
         TimelineEntryDTO(Timeline t, int i) {
             messageId = t.getMessageId(i);
-            timestamp = t.getTimestamp(i);
+            timestamp = new Date(t.getTimestamp(i));
             bytes = t.getBytes(i);
             millis = t.getMillis(i);
             count = t.getCount(i);
