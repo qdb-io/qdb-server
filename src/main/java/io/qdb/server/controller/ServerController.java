@@ -48,7 +48,7 @@ public class ServerController extends CrudController {
         StatusDTO dto = new StatusDTO();
 
         int secs = (int)((System.currentTimeMillis() - started) / 1000);
-        int days = secs / 24 * 60 * 60;
+        int days = secs / (24 * 60 * 60);
         secs %= 24 * 60 * 60;
         dto.uptime = (days == 1 ? "1 day " : days > 0 ? days + " days " : "") + Humanize.duration(secs);
 
