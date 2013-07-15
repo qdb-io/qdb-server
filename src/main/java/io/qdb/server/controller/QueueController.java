@@ -215,17 +215,15 @@ public class QueueController extends CrudController {
                 }
             }
 
-            if (changed) repo.updateQueue(q);
-
             if (create) {
-                // update the db after the queue to avoid having a db referencing a queue that does not exist if
-                // something goes wrong - better to have an unreferenced queue lying around
                 db = db.deepCopy();      // make a copy before we modify it
                 Map<String, String> queues = db.getQueues();
                 if (queues == null) db.setQueues(queues = new HashMap<String, String>());
                 queues.put(id, q.getId());
                 repo.updateDatabase(db);
             }
+
+            if (changed) repo.updateQueue(q);
         }
         call.setCode(create ? 201 : 200, new QueueDTO(id, q));
     }

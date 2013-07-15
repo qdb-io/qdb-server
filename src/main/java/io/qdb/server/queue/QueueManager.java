@@ -80,8 +80,8 @@ public class QueueManager implements Closeable, Thread.UncaughtExceptionHandler 
         MessageBuffer mb = buffers.get(q.getId());
         boolean newBuffer = mb == null;
         if (newBuffer) {
-            File dir = queueStorageManager.findDir(q);
             try {
+                File dir = queueStorageManager.findDir(q);
                 mb = new PersistentMessageBuffer(dir);
             } catch (IOException e) {
                 log.error("Error creating buffer for queue " + q + ": " + e, e);

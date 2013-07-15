@@ -17,7 +17,9 @@
 package io.qdb.server.queue;
 
 import io.qdb.server.Util;
+import io.qdb.server.model.Database;
 import io.qdb.server.model.Queue;
+import io.qdb.server.repo.Repository;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -33,9 +35,11 @@ import java.io.IOException;
 public class QueueStorageManager {
 
     private final File[] queueDataDirs;
+    private final Repository repository;
 
     @Inject
-    public QueueStorageManager(@Named("dataDir") String dataDir) throws IOException {
+    public QueueStorageManager(@Named("dataDir") String dataDir, Repository repository) throws IOException {
+        this.repository = repository;
         queueDataDirs = new File[]{new File(dataDir, "queues")};
         for (File dir : queueDataDirs) Util.ensureDirectory(dir);
     }
@@ -44,12 +48,25 @@ public class QueueStorageManager {
      * If q already exists i.e. there is an existing directory for it then return that directory. Otherwise allocate
      * a new directory and return it.
      */
-    public File findDir(Queue q) {
-        for (File dir : queueDataDirs) {
-            File f = new File(dir, q.getId());
-            if (f.exists()) return f;
+    public File findDir(Queue q) throws IOException {
+        Database db = repository.findDatabase(q.getDatabase());
+        if (db == null) {
+            throw new IllegalStateException("database [" + q.getDatabase() + "] for queue [" + q.getId() +
+                    "] not found");
         }
-        return new File(allocateDataDir(q), q.getId());
+        String name = db.getQueueForQid(q.getId());
+        if (name == null) {
+            throw new IllegalStateException("database [" + q.getDatabase() + "] does not have name for queue [" +
+                    q.getId() + "]");
+        }
+        for (File dir : queueDataDirs) {
+            File dbDir = new File(dir, q.getDatabase());
+            if (dbDir.isDirectory()) {
+                File f = new File(dbDir, name);
+                if (f.exists()) return f;
+            }
+        }
+        return new File(Util.ensureDirectory(new File(allocateDataDir(q), q.getDatabase())), name);
     }
 
     private File allocateDataDir(Queue q) {
