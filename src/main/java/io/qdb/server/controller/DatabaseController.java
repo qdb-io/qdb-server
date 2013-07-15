@@ -23,6 +23,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.io.IOException;
 import java.util.List;
+import java.util.regex.Pattern;
 
 @Singleton
 public class DatabaseController extends CrudController {
@@ -45,6 +46,8 @@ public class DatabaseController extends CrudController {
             owner = db.getOwner();
         }
     }
+
+    private static final Pattern VALID_DATABASE_ID = Pattern.compile("[0-9a-z\\-_]+", Pattern.CASE_INSENSITIVE);
 
     @Inject
     public DatabaseController(Repository repo, JsonService jsonService, QueueController queueController) {
@@ -89,6 +92,10 @@ public class DatabaseController extends CrudController {
                 if (create = db == null) {
                     if (call.isPut()) {
                         call.setCode(404);
+                        return;
+                    }
+                    if (!VALID_DATABASE_ID.matcher(id).matches()) {
+                        call.setCode(400, "Database id must contain only letters, numbers, hyphens and underscores");
                         return;
                     }
                     db = new Database(id);

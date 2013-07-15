@@ -36,6 +36,13 @@ class DatabasesSpec extends StandaloneBase {
         ans2.code == 200
     }
 
+    def "Database id validation"() {
+        def ans = POST("/db/a@b", [:])
+
+        expect:
+        ans.code == 400
+    }
+
     def "List databases for admin"() {
         def ans = GET("/db")
 
