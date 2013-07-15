@@ -15,7 +15,7 @@ for f in lib/*.jar; do
 done
 CP="${CP}qdb-server.jar"
 
-nohup -cp $CP $QDB_SERVER_OPTS io.qdb.server.Main >> $QDB_LOG 2>&1 &
+nohup java -cp $CP $QDB_SERVER_OPTS io.qdb.server.Main >> $QDB_LOG 2>&1 &
 PID=$!
 
 echo $PID > $QDB_PIDFILE
