@@ -141,7 +141,7 @@ public class QueueController extends CrudController {
                     return;
                 }
                 if (!VALID_QUEUE_ID.matcher(id).matches()) {
-                    call.setCode(400, "Queue id must contain only letters, numbers, hyphens and underscores");
+                    call.setCode(422, "Queue id must contain only letters, numbers, hyphens and underscores");
                     return;
                 }
 
@@ -181,7 +181,7 @@ public class QueueController extends CrudController {
                 if (dto.maxSize != null) {
                     maxSize = dto.maxSize;
                     if (maxSize < 1000000L) {
-                        call.setCode(400, "maxSize must be at least 1000000 bytes");
+                        call.setCode(422, "maxSize must be at least 1000000 bytes");
                         return;
                     }
                 }
@@ -190,11 +190,11 @@ public class QueueController extends CrudController {
                     maxPayloadSize = dto.maxPayloadSize;
                     if (maxPayloadSize != 0) {
                         if (maxPayloadSize > maxSize / 3) {
-                            call.setCode(400, "maxPayloadSize may not exceed 1/3 of maxSize (" + maxSize / 3 + ") bytes");
+                            call.setCode(422, "maxPayloadSize may not exceed 1/3 of maxSize (" + maxSize / 3 + ") bytes");
                             return;
                         }
                         if (maxPayloadSize < 1000) {
-                            call.setCode(400, "maxPayloadSize must be at least 1000 bytes");
+                            call.setCode(422, "maxPayloadSize must be at least 1000 bytes");
                             return;
                         }
                     }

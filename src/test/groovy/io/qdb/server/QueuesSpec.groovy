@@ -54,7 +54,7 @@ class QueuesSpec extends StandaloneBase {
         def ans = POST("/db/foo/q/a@b", [:], "david", "secret")
 
         expect:
-        ans.code == 400
+        ans.code == 422
     }
 
     def "List queues"() {
@@ -105,14 +105,14 @@ class QueuesSpec extends StandaloneBase {
         def ans = PUT("/db/foo/q/bar", [maxSize: 100000], "david", "secret")
 
         expect:
-        ans.code == 400
+        ans.code == 422
     }
 
     def "Queue maxPayloadSize validation"() {
-        def ans = PUT("/db/foo/q/bar", [maxPayloadSize: 20000000 / 3 + 1], "david", "secret")
+        def ans = PUT("/db/foo/q/bar", [maxPayloadSize: (int)(20000000 / 3) + 1], "david", "secret")
 
         expect:
-        ans.code == 400
+        ans.code == 422
     }
 
     def "Delete queue"() {

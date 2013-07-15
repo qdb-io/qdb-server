@@ -95,7 +95,7 @@ public class DatabaseController extends CrudController {
                         return;
                     }
                     if (!VALID_DATABASE_ID.matcher(id).matches()) {
-                        call.setCode(400, "Database id must contain only letters, numbers, hyphens and underscores");
+                        call.setCode(422, "Database id must contain only letters, numbers, hyphens and underscores");
                         return;
                     }
                     db = new Database(id);
@@ -110,7 +110,7 @@ public class DatabaseController extends CrudController {
                 boolean changed = create;
                 if (dto.owner != null && !dto.owner.equals(db.getOwner())) {
                     if (repo.findUser(dto.owner) == null) {
-                        call.setCode(400, "owner [" + dto.owner + "] does not exist");
+                        call.setCode(422, "owner [" + dto.owner + "] does not exist");
                         return;
                     }
                     db.setOwner(dto.owner);

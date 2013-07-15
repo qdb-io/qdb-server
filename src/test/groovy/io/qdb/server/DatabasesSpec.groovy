@@ -40,7 +40,7 @@ class DatabasesSpec extends StandaloneBase {
         def ans = POST("/db/a@b", [:])
 
         expect:
-        ans.code == 400
+        ans.code == 422
     }
 
     def "List databases for admin"() {
