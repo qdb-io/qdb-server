@@ -32,14 +32,14 @@ public class TimelineController extends CrudController {
 
     static class TimelineEntryDTO {
 
-        public long messageId;
+        public long id;
         public Date timestamp;
         public int bytes;
         public long millis;
         public int count;
 
         TimelineEntryDTO(Timeline t, int i) {
-            messageId = t.getMessageId(i);
+            id = t.getMessageId(i);
             timestamp = new Date(t.getTimestamp(i));
             bytes = t.getBytes(i);
             millis = t.getMillis(i);
