@@ -92,9 +92,9 @@ class MessagesSpec extends StandaloneBase {
         ans.code == 200
         ans.json != null
         ans.json.hello == "world"
-        ans.headers["X-QDB-Id"] == "0"
-        ans.headers["X-QBD-Timestamp"] > startTime.toString()
-        ans.headers["X-QDB-RoutingKey"] == "abc"
+        ans.headers["QDB-Id"] == "0"
+        ans.headers["QDB-Timestamp"] > startTime.toString()
+        ans.headers["QDB-RoutingKey"] == "abc"
         ans.headers["Content-Type"] == "application/json; charset=utf-8"
     }
 

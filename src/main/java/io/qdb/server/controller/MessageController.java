@@ -296,9 +296,9 @@ public class MessageController extends CrudController {
 
             if (single) {
                 response.setContentLength(c.getPayloadSize());
-                response.set("X-QDB-Id", Long.toString(c.getId()));
-                response.set("X-QBD-Timestamp", DateTimeParser.INSTANCE.formatTimestamp(new Date(c.getTimestamp())));
-                response.set("X-QDB-RoutingKey", c.getRoutingKey());
+                response.set("QDB-Id", Long.toString(c.getId()));
+                response.set("QDB-Timestamp", DateTimeParser.INSTANCE.formatTimestamp(new Date(c.getTimestamp())));
+                response.set("QDB-RoutingKey", c.getRoutingKey());
                 out.write(c.getPayload());
             } else {
                 if (!noHeaders) {
