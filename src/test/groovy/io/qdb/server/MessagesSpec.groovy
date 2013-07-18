@@ -86,7 +86,7 @@ class MessagesSpec extends StandaloneBase {
     }
 
     def "Get single message"() {
-        def ans = GET("/db/foo/q/bar/messages?id=0&single=true")
+        def ans = GET("/db/foo/q/bar/messages?fromId=0&single=true")
         def df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ")
 
         expect:
@@ -100,7 +100,7 @@ class MessagesSpec extends StandaloneBase {
     }
 
     def "Get single message in borg mode"() {
-        def ans = GET("/db/foo/q/bar/messages?id=0&single=true&borg=true")
+        def ans = GET("/db/foo/q/bar/messages?fromId=0&single=true&borg=true")
 
         expect:
         ans.code == 200
@@ -108,7 +108,7 @@ class MessagesSpec extends StandaloneBase {
     }
 
     def "Get 2 messages streamed"() {
-        def ans = GET("/db/foo/q/bar/messages?id=0&limit=2&noLengthPrefix=true")
+        def ans = GET("/db/foo/q/bar/messages?fromId=0&limit=2&noLengthPrefix=true")
         def r = new StringReader(ans.text)
 
         def h1 = new JsonSlurper().parseText(r.readLine())
@@ -138,7 +138,7 @@ class MessagesSpec extends StandaloneBase {
     }
 
     def "Get message streamed in borg mode"() {
-        def ans = GET("/db/foo/q/bar/messages?id=0&limit=1&noLengthPrefix=true&borg=true")
+        def ans = GET("/db/foo/q/bar/messages?fromId=0&limit=1&noLengthPrefix=true&borg=true")
         def h = new JsonSlurper().parseText(new StringReader(ans.text).readLine())
 
         expect:
@@ -147,7 +147,7 @@ class MessagesSpec extends StandaloneBase {
     }
 
     def "Get message streamed with header length prefix"() {
-        def ans = GET("/db/foo/q/bar/messages?id=0&limit=1")
+        def ans = GET("/db/foo/q/bar/messages?fromId=0&limit=1")
         def line = new StringReader(ans.text).readLine()
         def i = line.indexOf(':')
         def len = line.substring(0, i)

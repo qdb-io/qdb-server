@@ -261,14 +261,14 @@ public class MessageController extends CrudController {
             keepAliveMs = Integer.MAX_VALUE;
         }
 
-        Date at = call.getDate("from");
-        long id = at != null ? -1 : call.getLong("id", mb.getNextMessageId());
+        Date from = call.getDate("from");
+        long fromId = from != null ? -1 : call.getLong("fromId", mb.getNextMessageId());
 
         Response response = call.getResponse();
         response.set("Content-Type", single ? q.getContentType() : "application/octet-stream");
         OutputStream out = response.getOutputStream();
 
-        MessageCursor c = at != null ? mb.cursorByTimestamp(at.getTime()) : mb.cursor(id);
+        MessageCursor c = from != null ? mb.cursorByTimestamp(from.getTime()) : mb.cursor(fromId);
 
         int nextKeepAliveMs = keepAliveMs;
         for (int sent = 0; limit == 0 || sent < limit; ++sent) {

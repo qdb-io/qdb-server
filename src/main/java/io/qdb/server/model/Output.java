@@ -16,7 +16,6 @@
 
 package io.qdb.server.model;
 
-import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -28,7 +27,11 @@ public class Output extends ModelObject {
     private String type;
     private String url;
     private boolean enabled;
-    private long messageId;
+    private long fromId;
+    private long toId;
+    private long atId;
+    private long from;
+    private long to;
     private long at;
     private int updateIntervalMs;
     private Map<String, Object> params;
@@ -68,12 +71,44 @@ public class Output extends ModelObject {
         this.enabled = enabled;
     }
 
-    public long getMessageId() {
-        return messageId;
+    public long getFromId() {
+        return fromId;
     }
 
-    public void setMessageId(long messageId) {
-        this.messageId = messageId;
+    public void setFromId(long fromId) {
+        this.fromId = fromId;
+    }
+
+    public long getToId() {
+        return toId;
+    }
+
+    public void setToId(long toId) {
+        this.toId = toId;
+    }
+
+    public long getAtId() {
+        return atId;
+    }
+
+    public void setAtId(long atId) {
+        this.atId = atId;
+    }
+
+    public long getFrom() {
+        return from;
+    }
+
+    public void setFrom(long from) {
+        this.from = from;
+    }
+
+    public long getTo() {
+        return to;
+    }
+
+    public void setTo(long to) {
+        this.to = to;
     }
 
     public long getAt() {

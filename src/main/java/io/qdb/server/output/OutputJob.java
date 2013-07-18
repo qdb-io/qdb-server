@@ -168,14 +168,14 @@ public class OutputJob implements Runnable {
         if (log.isDebugEnabled()) log.debug(outputPath + ": processing messages");
         MessageCursor cursor = null;
         try {
-            long messageId = output.getMessageId();
-            if (messageId == -2) {
+            long atId = output.getAtId();
+            if (atId == -2) {
                 cursor = buffer.cursorByTimestamp(output.getAt());
             } else {
-                cursor = buffer.cursor(messageId < 0 ? buffer.getNextMessageId() : messageId);
+                cursor = buffer.cursor(atId < 0 ? buffer.getNextMessageId() : atId);
             }
 
-            long completedId = messageId;
+            long completedId = atId;
             long timestamp = 0;
             long lastUpdate = System.currentTimeMillis();
             int updateIntervalMs = output.getUpdateIntervalMs();
@@ -211,18 +211,18 @@ public class OutputJob implements Runnable {
                     errorCount = 0;
                 }
 
-                if (completedId != messageId && (exitLoop || updateIntervalMs <= 0
+                if (completedId != atId && (exitLoop || updateIntervalMs <= 0
                         || System.currentTimeMillis() - lastUpdate >= updateIntervalMs)) {
                     synchronized (repo) {
                         o = repo.findOutput(oid);
                         // don't record our progress if we are now supposed to be processing from a different point in buffer
-                        if (o.getMessageId() != output.getMessageId() || o.getAt() != output.getAt()) break;
+                        if (o.getAtId() != output.getAtId() || o.getAt() != output.getAt()) break;
                         output = o.deepCopy();
                         output.setAt(timestamp);
                         handler.updateOutput(output);
-                        output.setMessageId(completedId + 1); // +1 so we don't repeat the same message again
+                        output.setAtId(completedId + 1); // +1 so we don't repeat the same message again
                         repo.updateOutput(output);
-                        messageId = completedId;
+                        atId = completedId;
                         lastUpdate = System.currentTimeMillis();
                     }
                 }

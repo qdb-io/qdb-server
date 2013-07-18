@@ -52,7 +52,11 @@ public class OutputController extends CrudController {
         public String type;
         public String url;
         public Boolean enabled;
-        public Long messageId;
+        public Long fromId;
+        public Long toId;
+        public Long atId;
+        public Date from;
+        public Date to;
         public Date at;
         public Integer updateIntervalMs;
         public transient Map<String, Object> params;
@@ -66,9 +70,21 @@ public class OutputController extends CrudController {
             this.type = o.getType();
             this.url = o.getUrl();
             this.enabled = o.isEnabled();
-            this.messageId = o.getMessageId();
-            this.at = new Date(o.getAt());
+            this.fromId = toLong(o.getFromId());
+            this.toId = toLong(o.getToId());
+            this.atId = toLong(o.getAtId());
+            this.from = toDate(o.getFrom());
+            this.to = toDate(o.getTo());
+            this.at = toDate(o.getAt());
             this.params = o.getParams();
+        }
+
+        private Date toDate(long ms) {
+            return ms == 0 ? null : new Date(ms);
+        }
+
+        private Long toLong(long id) {
+            return id < 0 ? null : id;
         }
 
         @JsonAnySetter
@@ -171,7 +187,9 @@ public class OutputController extends CrudController {
                 o.setQueue(q.getId());
                 o.setEnabled(true);
                 o.setUpdateIntervalMs(1000);
-                o.setMessageId(-1);
+                o.setAtId(-1);
+                o.setFromId(-1);
+                o.setToId(-1);
             } else {
                 o = repo.findOutput(oid);
                 if (o == null) {    // this shouldn't happen
@@ -216,14 +234,37 @@ public class OutputController extends CrudController {
                 changed = true;
             }
 
-            // user can set the timestamp (to start/restart processing from that time) or messageId but not both
-            if (dto.at != null && dto.at.getTime() != o.getAt()) {
-                o.setAt(dto.at.getTime());
-                o.setMessageId(-2);
-                changed = true;
-            } else if (dto.messageId != null && dto.messageId != o.getMessageId()) {
-                o.setAt(0);
-                o.setMessageId(dto.messageId);
+            // user can set the from (to start/restart processing from that time) or fromId but not both
+            if (dto.from != null) {
+                long ms = dto.from.getTime();
+                if (ms != o.getFrom() || ms != o.getAt()) {
+                    o.setFrom(ms);
+                    o.setAt(ms);
+                    o.setAtId(-2);
+                    changed = true;
+                }
+            } else if (dto.fromId != null) {
+                Long fromId = dto.fromId;
+                if (fromId != o.getFromId() || fromId != o.getAtId()) {
+                    o.setFromId(fromId);
+                    o.setAtId(fromId);
+                    o.setFrom(0);
+                    o.setTo(0);
+                    o.setAt(0);
+                    changed = true;
+                }
+            }
+
+            // can set the to or toId (to stop processing at that time/id) but not both
+            if (dto.to != null) {
+                if (dto.to.getTime() != o.getTo()) {
+                    o.setTo(dto.to.getTime());
+                    o.setToId(-1);
+                    changed = true;
+                }
+            } else if (dto.toId != null && dto.toId != o.getToId()) {
+                o.setToId(dto.toId);
+                o.setTo(0);
                 changed = true;
             }
 
