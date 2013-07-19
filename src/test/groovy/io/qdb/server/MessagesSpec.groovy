@@ -56,7 +56,7 @@ class MessagesSpec extends StandaloneBase {
 
         expect:
         ans.code == 201
-        ans.json.id == 0
+        ans.json.id == 1
         ts >= now
         ts < now + 30 * 1000L
         ans2.code == 201
@@ -93,7 +93,7 @@ class MessagesSpec extends StandaloneBase {
         ans.code == 200
         ans.json != null
         ans.json.hello == "world"
-        ans.headers["QDB-Id"] == "0"
+        ans.headers["QDB-Id"] == "1"
         df.parse(ans.headers["QDB-Timestamp"] as String).time >= startTime
         ans.headers["QDB-RoutingKey"] == "abc"
         ans.headers["Content-Type"] == "application/json; charset=utf-8"
@@ -124,13 +124,13 @@ class MessagesSpec extends StandaloneBase {
         expect:
         ans.code == 200
 
-        h1.id == 0
+        h1.id == 1
         df.parse(h1.timestamp).time >= startTime
         h1.payloadSize == m1line.length()
         h1.routingKey == "abc"
         m1.hello == "world"
 
-        h2.id > 0
+        h2.id > 1
         df.parse(h2.timestamp).time >= h1.startTime
         h2.payloadSize == m2line.length()
         h2.routingKey == ""

@@ -51,13 +51,13 @@ class TimelineSpec extends StandaloneBase {
         ans.code == 200
         ans.json.size() == 2
 
-        ans.json[0].id == 0
+        ans.json[0].id == 1
         df.parse(ans.json[0].timestamp as String).time == ts1
         ans.json[0].count == 2
         ans.json[0].millis == ts2 - ts1
-        ans.json[0].bytes == ans.json[1].id
+        ans.json[0].bytes == ans.json[1].id - 1
 
-        ans.json[1].id == id2 + id2 /* size of a each message is also id2 */
+        ans.json[1].id == id2 + id2 - 1 /* size of a each message is also id2 */
         ans.json[1].count == 0
         ans.json[1].millis == 0
     }
@@ -69,7 +69,7 @@ class TimelineSpec extends StandaloneBase {
         expect:
         ans.code == 200
         ans.json.size() == 1
-        ans.json[0].id == 0
+        ans.json[0].id == 1
         ans.json[0].count == 2
     }
 

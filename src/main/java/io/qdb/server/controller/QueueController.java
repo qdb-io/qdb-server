@@ -54,6 +54,8 @@ public class QueueController extends CrudController {
         public String contentType;
         public Long size;
         public Long messageCount;
+        public Date oldestMessage;
+        public Long oldestMessageId;
 
         @SuppressWarnings("UnusedDeclaration")
         public QueueDTO() { }
@@ -72,6 +74,8 @@ public class QueueController extends CrudController {
                 try {
                     size = mb.getSize();
                     messageCount = mb.getMessageCount();
+                    oldestMessage = mb.getOldestMessageDate();
+                    oldestMessageId = mb.getOldestMessageId();
                 } catch (IOException e) {
                     log.error("/db/" + queue.getDatabase() + "/q/" + id + ": " + e, e);
                 }
