@@ -16,8 +16,10 @@
 
 package io.qdb.server.controller;
 
+import io.qdb.buffer.MessageBuffer;
 import io.qdb.server.model.*;
 import io.qdb.server.model.Queue;
+import io.qdb.server.queue.QueueManager;
 import io.qdb.server.repo.Repository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,6 +38,7 @@ public class QueueController extends CrudController {
     private final MessageController messageController;
     private final TimelineController timelineController;
     private final OutputController outputController;
+    private final QueueManager queueManager;
 
     private static final SecureRandom RND = new SecureRandom();
 
@@ -49,6 +52,8 @@ public class QueueController extends CrudController {
         public Long maxSize;
         public Integer maxPayloadSize;
         public String contentType;
+        public Long size;
+        public Long messageCount;
 
         @SuppressWarnings("UnusedDeclaration")
         public QueueDTO() { }
@@ -61,6 +66,24 @@ public class QueueController extends CrudController {
             this.contentType = queue.getContentType();
         }
 
+        public QueueDTO(String id, Queue queue, MessageBuffer mb) {
+            this(id, queue);
+            if (mb != null) {
+                try {
+                    size = mb.getSize();
+                    messageCount = mb.getMessageCount();
+                } catch (IOException e) {
+                    log.error("/db/" + queue.getDatabase() + "/q/" + id + ": " + e, e);
+                }
+            }
+        }
+
+        public void init(MessageBuffer mb) throws IOException {
+            if (mb == null) return;
+            size = mb.getSize();
+            messageCount = mb.getMessageCount();
+        }
+
         @Override
         public int compareTo(QueueDTO o) {
             return id.compareTo(o.id);
@@ -71,12 +94,14 @@ public class QueueController extends CrudController {
 
     @Inject
     public QueueController(JsonService jsonService, Repository repo, MessageController messageController,
-                TimelineController timelineController, OutputController outputController) {
+                           TimelineController timelineController, OutputController outputController,
+                           QueueManager queueManager) {
         super(jsonService);
         this.repo = repo;
         this.messageController = messageController;
         this.timelineController = timelineController;
         this.outputController = outputController;
+        this.queueManager = queueManager;
     }
 
     @SuppressWarnings("unchecked")
@@ -87,7 +112,7 @@ public class QueueController extends CrudController {
         if (queues != null) {
             for (Map.Entry<String, String> e : queues.entrySet()) {
                 Queue queue = repo.findQueue(e.getValue());
-                if (queue != null) ans.add(new QueueDTO(e.getKey(), queue));
+                if (queue != null) ans.add(createQueueDTO(e.getKey(), queue));
             }
             Collections.sort(ans);
             int last = Math.min(offset + limit, ans.size());
@@ -113,12 +138,16 @@ public class QueueController extends CrudController {
             if (queueId != null) {
                 Queue queue = repo.findQueue(queueId);
                 if (queue != null) {
-                    call.setJson(new QueueDTO(id, queue));
+                    call.setJson(createQueueDTO(id, queue));
                     return;
                 }
             }
         }
         call.setCode(404);
+    }
+
+    protected QueueDTO createQueueDTO(String id, Queue queue) {
+        return new QueueDTO(id, queue, queueManager.getBuffer(queue));
     }
 
     @Override
@@ -153,14 +182,14 @@ public class QueueController extends CrudController {
             } else {
                 q = repo.findQueue(qid);
                 if (q == null) {    // this shouldn't happen
-                    String msg = "Queue /databases/" + db.getId() + "/queues/" + id + " qid [" + qid +
+                    String msg = "Queue /db/" + db.getId() + "/q/" + id + " qid [" + qid +
                             "] not found";
                     log.error(msg);
                     call.setCode(500, msg);
                     return;
                 }
                 if (dto.version != null && !dto.version.equals(q.getVersion())) {
-                    call.setCode(409, new QueueDTO(id, q));
+                    call.setCode(409, createQueueDTO(id, q));
                     return;
                 }
                 q = q.deepCopy();
@@ -225,7 +254,7 @@ public class QueueController extends CrudController {
 
             if (changed) repo.updateQueue(q);
         }
-        call.setCode(create ? 201 : 200, new QueueDTO(id, q));
+        call.setCode(create ? 201 : 200, new QueueDTO(id, q, create ? null : queueManager.getBuffer(q)));
     }
 
     private String generateQueueId() {
