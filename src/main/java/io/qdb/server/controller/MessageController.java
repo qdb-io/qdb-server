@@ -262,7 +262,7 @@ public class MessageController extends CrudController {
         }
 
         Date from = call.getDate("from");
-        long fromId = from != null ? -1 : call.getLong("fromId", mb.getNextMessageId());
+        long fromId = from != null ? -1 : call.getLong("fromId", mb.getNextId());
 
         Response response = call.getResponse();
         response.set("Content-Type", single ? q.getContentType() : "application/octet-stream");

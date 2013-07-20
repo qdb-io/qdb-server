@@ -74,8 +74,8 @@ public class QueueController extends CrudController {
                 try {
                     size = mb.getSize();
                     messageCount = mb.getMessageCount();
-                    oldestMessage = mb.getOldestMessageDate();
-                    oldestMessageId = mb.getOldestMessageId();
+                    oldestMessage = mb.getOldestTimestamp();
+                    oldestMessageId = mb.getOldestId();
                 } catch (IOException e) {
                     log.error("/db/" + queue.getDatabase() + "/q/" + id + ": " + e, e);
                 }

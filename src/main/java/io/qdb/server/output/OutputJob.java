@@ -172,7 +172,7 @@ public class OutputJob implements Runnable {
             if (atId == -2) {
                 cursor = buffer.cursorByTimestamp(output.getAt());
             } else {
-                cursor = buffer.cursor(atId < 0 ? buffer.getNextMessageId() : atId);
+                cursor = buffer.cursor(atId < 0 ? buffer.getNextId() : atId);
             }
 
             long completedId = atId;
