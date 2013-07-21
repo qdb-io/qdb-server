@@ -195,8 +195,11 @@ public class OutputJob implements Runnable {
                 }
                 if (haveMsg) {
                     try {
-                        completedId = handler.processMessage(cursor.getId(), cursor.getRoutingKey(),
+                        long currentId = cursor.getId();
+                        completedId = handler.processMessage(currentId, cursor.getRoutingKey(),
                                 timestamp = cursor.getTimestamp(), cursor.getPayload());
+                        if (completedId == currentId) completedId = cursor.getNextId();
+                        else ++completedId;
                         errorCount = 0; // we successfully processed a message
                     } catch (Exception e) {
                         exitLoop = true;
@@ -220,7 +223,7 @@ public class OutputJob implements Runnable {
                         output = o.deepCopy();
                         output.setAt(timestamp);
                         handler.updateOutput(output);
-                        output.setAtId(completedId + 1); // +1 so we don't repeat the same message again
+                        output.setAtId(completedId);
                         repo.updateOutput(output);
                         atId = completedId;
                         lastUpdate = System.currentTimeMillis();

@@ -62,8 +62,10 @@ public class OutputController extends CrudController {
         public Date from;
         public Date to;
         public Date at;
-        public Object behindBy;
         public Integer updateIntervalMs;
+        public Object behindBy;
+        public Long behindByBytes;
+        public Double behindByPercentage;
         public transient Map<String, Object> params;
 
         @SuppressWarnings("UnusedDeclaration")
@@ -88,6 +90,8 @@ public class OutputController extends CrudController {
                     if (to != null && to.before(end)) end = to;
                     long ms = end.getTime() - at.getTime();
                     behindBy = borg ? ms : Util.humanDuration(ms);
+                    behindByBytes = mb.getNextId() - atId;
+                    behindByPercentage = Math.round(behindByBytes * 1000.0 / mb.getMaxSize()) / 10.0;
                 } catch (IOException e) {
                     log.error(mb + ": " + e, e);
                 }
@@ -265,6 +269,7 @@ public class OutputController extends CrudController {
                     o.setFrom(ms);
                     o.setAt(ms);
                     o.setAtId(-2);
+                    o.setFromId(-1);
                     changed = true;
                 }
             } else if (dto.fromId != null) {

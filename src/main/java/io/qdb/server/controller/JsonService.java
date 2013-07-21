@@ -163,7 +163,7 @@ public class JsonService {
         public JsonSerializer<T> createContextual(SerializerProvider prov, BeanProperty property) throws JsonMappingException {
             if (property != null) {
                 String name = property.getName();
-                if (name.endsWith("Memory") || name.endsWith("ize")) return human;
+                if (name.endsWith("emory") || name.endsWith("ize") || name.endsWith("ytes")) return human;
             }
             return borg;
         }
