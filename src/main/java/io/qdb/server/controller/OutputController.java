@@ -18,11 +18,14 @@ package io.qdb.server.controller;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
+import io.qdb.buffer.MessageBuffer;
+import io.qdb.server.Util;
 import io.qdb.server.databind.DataBinder;
 import io.qdb.server.databind.HasAnySetter;
 import io.qdb.server.model.Output;
 import io.qdb.server.model.Queue;
 import io.qdb.server.output.OutputHandler;
+import io.qdb.server.queue.QueueManager;
 import io.qdb.server.repo.Repository;
 import io.qdb.server.output.OutputHandlerFactory;
 import org.slf4j.Logger;
@@ -40,6 +43,7 @@ public class OutputController extends CrudController {
 
     private final Repository repo;
     private final OutputHandlerFactory handlerFactory;
+    private final QueueManager queueManager;
 
     private static final SecureRandom RND = new SecureRandom();
 
@@ -58,13 +62,14 @@ public class OutputController extends CrudController {
         public Date from;
         public Date to;
         public Date at;
+        public String behindBy;
         public Integer updateIntervalMs;
         public transient Map<String, Object> params;
 
         @SuppressWarnings("UnusedDeclaration")
         public OutputDTO() { }
 
-        public OutputDTO(String id, Output o) {
+        public OutputDTO(String id, Output o, Queue q, MessageBuffer mb) {
             this.id = id;
             this.version = o.getVersion();
             this.type = o.getType();
@@ -77,6 +82,15 @@ public class OutputController extends CrudController {
             this.to = toDate(o.getTo());
             this.at = toDate(o.getAt());
             this.params = o.getParams();
+            if (at != null && mb != null) {
+                try {
+                    Date end = mb.getMostRecentTimestamp();
+                    if (to != null && to.before(end)) end = to;
+                    behindBy = Util.humanDuration(end.getTime() - at.getTime());
+                } catch (IOException e) {
+                    log.error(mb + ": " + e, e);
+                }
+            }
         }
 
         private Date toDate(long ms) {
@@ -108,21 +122,24 @@ public class OutputController extends CrudController {
     private static final Pattern VALID_OUTPUT_ID = Pattern.compile("[0-9a-z\\-_]+", Pattern.CASE_INSENSITIVE);
 
     @Inject
-    public OutputController(JsonService jsonService, Repository repo, OutputHandlerFactory handlerFactory) {
+    public OutputController(JsonService jsonService, Repository repo, OutputHandlerFactory handlerFactory,
+                            QueueManager queueManager) {
         super(jsonService);
         this.repo = repo;
         this.handlerFactory = handlerFactory;
+        this.queueManager = queueManager;
     }
 
     @SuppressWarnings("unchecked")
     @Override
     protected void list(Call call, int offset, int limit) throws IOException {
         List<OutputDTO> ans = new ArrayList<OutputDTO>();
-        Map<String, String> outputs = call.getQueue().getOutputs();
+        Queue q = call.getQueue();
+        Map<String, String> outputs = q.getOutputs();
         if (outputs != null) {
             for (Map.Entry<String, String> e : outputs.entrySet()) {
                 Output o = repo.findOutput(e.getValue());
-                if (o != null) ans.add(new OutputDTO(e.getKey(), o));
+                if (o != null) ans.add(createOutputDTO(e.getKey(), o, q));
             }
             Collections.sort(ans);
             int last = Math.min(offset + limit, ans.size());
@@ -142,13 +159,14 @@ public class OutputController extends CrudController {
 
     @Override
     protected void show(Call call, String id) throws IOException {
-        Map<String, String> outputs = call.getQueue().getOutputs();
+        Queue q = call.getQueue();
+        Map<String, String> outputs = q.getOutputs();
         if (outputs != null) {
             String oid = outputs.get(id);
             if (oid != null) {
                 Output o = repo.findOutput(oid);
                 if (o != null) {
-                    call.setJson(new OutputDTO(id, o));
+                    call.setJson(createOutputDTO(id, o, q));
                     return;
                 }
             }
@@ -156,14 +174,19 @@ public class OutputController extends CrudController {
         call.setCode(404);
     }
 
+    private OutputDTO createOutputDTO(String id, Output o, Queue q) {
+        return new OutputDTO(id, o, q, queueManager.getBuffer(q));
+    }
+
     @Override
     protected void createOrUpdate(Call call, String id) throws IOException {
         OutputDTO dto = getBodyObject(call, OutputDTO.class);
         boolean create;
         Output o;
+        Queue q;
         synchronized (repo) {
             // re-lookup queue inside sync block in case we need to update it
-            Queue q = repo.findQueue(call.getQueue().getId());
+            q = repo.findQueue(call.getQueue().getId());
             if (q == null) {   // this isn't likely but isn't impossible either
                 call.setCode(404);
                 return;
@@ -200,7 +223,7 @@ public class OutputController extends CrudController {
                     return;
                 }
                 if (dto.version != null && !dto.version.equals(o.getVersion())) {
-                    call.setCode(409, new OutputDTO(id, o));
+                    call.setCode(409, createOutputDTO(id, o, q));
                     return;
                 }
                 o = o.deepCopy();
@@ -306,7 +329,7 @@ public class OutputController extends CrudController {
 
             if (changed) repo.updateOutput(o);
         }
-        call.setCode(create ? 201 : 200, new OutputDTO(id, o));
+        call.setCode(create ? 201 : 200, createOutputDTO(id, o, q));
     }
 
     private String generateOutputId() {
