@@ -16,7 +16,9 @@
 
 package io.qdb.server.controller;
 
+import humanize.Humanize;
 import io.qdb.buffer.MessageBuffer;
+import io.qdb.server.Util;
 import io.qdb.server.model.*;
 import io.qdb.server.model.Queue;
 import io.qdb.server.queue.QueueManager;
@@ -54,8 +56,10 @@ public class QueueController extends CrudController {
         public String contentType;
         public Long size;
         public Long messageCount;
+        public String duration;
         public Date oldestMessage;
         public Date newestMessage;
+        public String newestMessageReceived;
         public Long oldestMessageId;
         public Long nextMessageId;
 
@@ -79,6 +83,11 @@ public class QueueController extends CrudController {
                     oldestMessage = mb.getOldestTimestamp();
                     oldestMessageId = mb.getOldestId();
                     newestMessage = mb.getMostRecentTimestamp();
+                    if (newestMessage != null) {
+                        newestMessageReceived = Util.humanDuration(
+                                System.currentTimeMillis() - newestMessage.getTime()) + " ago";
+                        duration = Util.humanDuration(newestMessage.getTime() - oldestMessage.getTime());
+                    }
                     nextMessageId = mb.getNextId();
                 } catch (IOException e) {
                     log.error("/db/" + queue.getDatabase() + "/q/" + id + ": " + e, e);
