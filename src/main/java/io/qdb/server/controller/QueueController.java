@@ -16,7 +16,6 @@
 
 package io.qdb.server.controller;
 
-import humanize.Humanize;
 import io.qdb.buffer.MessageBuffer;
 import io.qdb.server.Util;
 import io.qdb.server.model.*;
@@ -56,10 +55,10 @@ public class QueueController extends CrudController {
         public String contentType;
         public Long size;
         public Long messageCount;
-        public String duration;
+        public Object duration;
         public Date oldestMessage;
         public Date newestMessage;
-        public String newestMessageReceived;
+        public Object newestMessageReceived;
         public Long oldestMessageId;
         public Long nextMessageId;
 
@@ -74,7 +73,7 @@ public class QueueController extends CrudController {
             this.contentType = queue.getContentType();
         }
 
-        public QueueDTO(String id, Queue queue, MessageBuffer mb) {
+        public QueueDTO(String id, Queue queue, MessageBuffer mb, boolean borg) {
             this(id, queue);
             if (mb != null) {
                 try {
@@ -84,9 +83,10 @@ public class QueueController extends CrudController {
                     oldestMessageId = mb.getOldestId();
                     newestMessage = mb.getMostRecentTimestamp();
                     if (newestMessage != null) {
-                        newestMessageReceived = Util.humanDuration(
-                                System.currentTimeMillis() - newestMessage.getTime()) + " ago";
-                        duration = Util.humanDuration(newestMessage.getTime() - oldestMessage.getTime());
+                        long ms = System.currentTimeMillis() - newestMessage.getTime();
+                        newestMessageReceived = borg ? ms : Util.humanDuration(ms) + " ago";
+                        ms = newestMessage.getTime() - oldestMessage.getTime();
+                        duration = borg ? ms : Util.humanDuration(ms);
                     }
                     nextMessageId = mb.getNextId();
                 } catch (IOException e) {
@@ -129,7 +129,7 @@ public class QueueController extends CrudController {
         if (queues != null) {
             for (Map.Entry<String, String> e : queues.entrySet()) {
                 Queue queue = repo.findQueue(e.getValue());
-                if (queue != null) ans.add(createQueueDTO(e.getKey(), queue));
+                if (queue != null) ans.add(createQueueDTO(call, e.getKey(), queue));
             }
             Collections.sort(ans);
             int last = Math.min(offset + limit, ans.size());
@@ -155,7 +155,7 @@ public class QueueController extends CrudController {
             if (queueId != null) {
                 Queue queue = repo.findQueue(queueId);
                 if (queue != null) {
-                    call.setJson(createQueueDTO(id, queue));
+                    call.setJson(createQueueDTO(call, id, queue));
                     return;
                 }
             }
@@ -163,8 +163,8 @@ public class QueueController extends CrudController {
         call.setCode(404);
     }
 
-    protected QueueDTO createQueueDTO(String id, Queue queue) {
-        return new QueueDTO(id, queue, queueManager.getBuffer(queue));
+    protected QueueDTO createQueueDTO(Call call, String id, Queue queue) throws IOException {
+        return new QueueDTO(id, queue, queueManager.getBuffer(queue), call.getBoolean("borg"));
     }
 
     @Override
@@ -206,7 +206,7 @@ public class QueueController extends CrudController {
                     return;
                 }
                 if (dto.version != null && !dto.version.equals(q.getVersion())) {
-                    call.setCode(409, createQueueDTO(id, q));
+                    call.setCode(409, createQueueDTO(call, id, q));
                     return;
                 }
                 q = q.deepCopy();
@@ -271,7 +271,7 @@ public class QueueController extends CrudController {
 
             if (changed) repo.updateQueue(q);
         }
-        call.setCode(create ? 201 : 200, new QueueDTO(id, q, create ? null : queueManager.getBuffer(q)));
+        call.setCode(create ? 201 : 200, new QueueDTO(id, q, create ? null : queueManager.getBuffer(q), call.getBoolean("borg")));
     }
 
     private String generateQueueId() {

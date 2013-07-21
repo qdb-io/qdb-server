@@ -62,14 +62,14 @@ public class OutputController extends CrudController {
         public Date from;
         public Date to;
         public Date at;
-        public String behindBy;
+        public Object behindBy;
         public Integer updateIntervalMs;
         public transient Map<String, Object> params;
 
         @SuppressWarnings("UnusedDeclaration")
         public OutputDTO() { }
 
-        public OutputDTO(String id, Output o, Queue q, MessageBuffer mb) {
+        public OutputDTO(String id, Output o, MessageBuffer mb, boolean borg) {
             this.id = id;
             this.version = o.getVersion();
             this.type = o.getType();
@@ -86,7 +86,8 @@ public class OutputController extends CrudController {
                 try {
                     Date end = mb.getMostRecentTimestamp();
                     if (to != null && to.before(end)) end = to;
-                    behindBy = Util.humanDuration(end.getTime() - at.getTime());
+                    long ms = end.getTime() - at.getTime();
+                    behindBy = borg ? ms : Util.humanDuration(ms);
                 } catch (IOException e) {
                     log.error(mb + ": " + e, e);
                 }
@@ -139,7 +140,7 @@ public class OutputController extends CrudController {
         if (outputs != null) {
             for (Map.Entry<String, String> e : outputs.entrySet()) {
                 Output o = repo.findOutput(e.getValue());
-                if (o != null) ans.add(createOutputDTO(e.getKey(), o, q));
+                if (o != null) ans.add(createOutputDTO(call, e.getKey(), o, q));
             }
             Collections.sort(ans);
             int last = Math.min(offset + limit, ans.size());
@@ -166,7 +167,7 @@ public class OutputController extends CrudController {
             if (oid != null) {
                 Output o = repo.findOutput(oid);
                 if (o != null) {
-                    call.setJson(createOutputDTO(id, o, q));
+                    call.setJson(createOutputDTO(call, id, o, q));
                     return;
                 }
             }
@@ -174,8 +175,8 @@ public class OutputController extends CrudController {
         call.setCode(404);
     }
 
-    private OutputDTO createOutputDTO(String id, Output o, Queue q) {
-        return new OutputDTO(id, o, q, queueManager.getBuffer(q));
+    private OutputDTO createOutputDTO(Call call, String id, Output o, Queue q) throws IOException {
+        return new OutputDTO(id, o, queueManager.getBuffer(q), call.getBoolean("borg"));
     }
 
     @Override
@@ -223,7 +224,7 @@ public class OutputController extends CrudController {
                     return;
                 }
                 if (dto.version != null && !dto.version.equals(o.getVersion())) {
-                    call.setCode(409, createOutputDTO(id, o, q));
+                    call.setCode(409, createOutputDTO(call, id, o, q));
                     return;
                 }
                 o = o.deepCopy();
@@ -329,7 +330,7 @@ public class OutputController extends CrudController {
 
             if (changed) repo.updateOutput(o);
         }
-        call.setCode(create ? 201 : 200, createOutputDTO(id, o, q));
+        call.setCode(create ? 201 : 200, createOutputDTO(call, id, o, q));
     }
 
     private String generateOutputId() {
