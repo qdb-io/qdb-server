@@ -16,19 +16,13 @@
 
 package io.qdb.server;
 
-import humanize.Humanize;
-
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Field;
-import java.util.Map;
 
 /**
  * Static utility methods.
  */
 public class Util {
-
-    private static final int DAY_MS = 24 * 60 * 60 * 1000;
 
     /**
      * Ensure that dir exists, creating it if needed and that it is a writeable directory.
@@ -45,25 +39,4 @@ public class Util {
         }
         return dir.getAbsoluteFile();
     }
-
-    /**
-     * Convert a ms value into a human readable duration.
-     */
-    public static String humanDuration(long ms) {
-        StringBuilder b = new StringBuilder();
-        int days = (int)(ms / DAY_MS);
-        if (days > 0) {
-            b.append(days).append(days == 1 ? " day " : " days ");
-            ms %= DAY_MS;
-        }
-        int secs = (int)(ms / 1000);
-        if (secs < 1 && days == 0) {
-            ms %= 1000;
-            b.append(ms).append(" ms");
-        } else {
-            b.append(Humanize.duration(secs));
-        }
-        return b.toString();
-    }
-
 }

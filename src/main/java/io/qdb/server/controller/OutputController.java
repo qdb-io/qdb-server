@@ -19,8 +19,8 @@ package io.qdb.server.controller;
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import io.qdb.buffer.MessageBuffer;
-import io.qdb.server.Util;
 import io.qdb.server.databind.DataBinder;
+import io.qdb.server.databind.DurationParser;
 import io.qdb.server.databind.HasAnySetter;
 import io.qdb.server.model.Output;
 import io.qdb.server.model.Queue;
@@ -89,7 +89,7 @@ public class OutputController extends CrudController {
                     Date end = mb.getMostRecentTimestamp();
                     if (to != null && to.before(end)) end = to;
                     long ms = end.getTime() - at.getTime();
-                    behindBy = borg ? ms : Util.humanDuration(ms);
+                    behindBy = borg ? ms : DurationParser.formatHumanMs(ms);
                     behindByBytes = mb.getNextId() - atId;
                     behindByPercentage = Math.round(behindByBytes * 1000.0 / mb.getMaxSize()) / 10.0;
                 } catch (IOException e) {

@@ -55,7 +55,7 @@ class TimelineSpec extends StandaloneBase {
         df.parse(ans.json[0].timestamp as String).time == ts1
         ans.json[0].count == 2
         ans.json[0].millis == ts2 - ts1
-        ans.json[0].bytes == ans.json[1].id - 1
+        ans.json[0].bytes == (ans.json[1].id - 1) + " bytes"
 
         ans.json[1].id == id2 + id2 - 1 /* size of a each message is also id2 */
         ans.json[1].count == 0

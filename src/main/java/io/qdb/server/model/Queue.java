@@ -29,6 +29,8 @@ public class Queue extends ModelObject {
     private long maxSize;
     private int maxPayloadSize;
     private String contentType;
+    private int warnAfter;
+    private int errorAfter;
     private Map<String, String> outputs;
 
     public Queue() {
@@ -64,6 +66,22 @@ public class Queue extends ModelObject {
 
     public void setContentType(String contentType) {
         this.contentType = contentType;
+    }
+
+    public int getWarnAfter() {
+        return warnAfter;
+    }
+
+    public void setWarnAfter(int warnAfter) {
+        this.warnAfter = warnAfter;
+    }
+
+    public int getErrorAfter() {
+        return errorAfter;
+    }
+
+    public void setErrorAfter(int errorAfter) {
+        this.errorAfter = errorAfter;
     }
 
     public Map<String, String> getOutputs() {

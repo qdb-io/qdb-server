@@ -27,6 +27,7 @@ import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import com.google.inject.Inject;
 import humanize.Humanize;
 import io.qdb.server.databind.DateTimeParser;
+import io.qdb.server.databind.DurationParser;
 import io.qdb.server.databind.IntegerParser;
 
 import javax.inject.Named;
@@ -163,7 +164,9 @@ public class JsonService {
         public JsonSerializer<T> createContextual(SerializerProvider prov, BeanProperty property) throws JsonMappingException {
             if (property != null) {
                 String name = property.getName();
-                if (name.endsWith("emory") || name.endsWith("ize") || name.endsWith("ytes")) return human;
+                if (name.endsWith("emory") || name.endsWith("ize") || name.endsWith("ytes")) {
+                    return human;
+                }
             }
             return borg;
         }

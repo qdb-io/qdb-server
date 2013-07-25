@@ -17,10 +17,12 @@
 package io.qdb.server.controller;
 
 import io.qdb.buffer.MessageBuffer;
-import io.qdb.server.Util;
+import io.qdb.server.databind.DurationParser;
 import io.qdb.server.model.*;
 import io.qdb.server.model.Queue;
 import io.qdb.server.queue.QueueManager;
+import io.qdb.server.queue.QueueStatus;
+import io.qdb.server.queue.QueueStatusMonitor;
 import io.qdb.server.repo.Repository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,6 +42,7 @@ public class QueueController extends CrudController {
     private final TimelineController timelineController;
     private final OutputController outputController;
     private final QueueManager queueManager;
+    private final QueueStatusMonitor queueStatusMonitor;
 
     private static final SecureRandom RND = new SecureRandom();
 
@@ -53,6 +56,10 @@ public class QueueController extends CrudController {
         public Long maxSize;
         public Integer maxPayloadSize;
         public String contentType;
+        public Object warnAfter;
+        public Object errorAfter;
+
+        public String status;
         public Long size;
         public Long messageCount;
         public Object duration;
@@ -65,40 +72,25 @@ public class QueueController extends CrudController {
         @SuppressWarnings("UnusedDeclaration")
         public QueueDTO() { }
 
-        public QueueDTO(String id, Queue queue) {
+        public QueueDTO(String id, Queue queue, boolean borg) {
             this.id = id;
             this.version = queue.getVersion();
             this.maxSize = queue.getMaxSize();
             this.maxPayloadSize = queue.getMaxPayloadSize();
             this.contentType = queue.getContentType();
-        }
-
-        public QueueDTO(String id, Queue queue, MessageBuffer mb, boolean borg) {
-            this(id, queue);
-            if (mb != null) {
-                try {
-                    size = mb.getSize();
-                    messageCount = mb.getMessageCount();
-                    oldestMessage = mb.getOldestTimestamp();
-                    oldestMessageId = mb.getOldestId();
-                    newestMessage = mb.getMostRecentTimestamp();
-                    if (newestMessage != null) {
-                        long ms = System.currentTimeMillis() - newestMessage.getTime();
-                        newestMessageReceived = borg ? ms : Util.humanDuration(ms) + " ago";
-                        ms = newestMessage.getTime() - oldestMessage.getTime();
-                        duration = borg ? ms : Util.humanDuration(ms);
-                    }
-                    nextMessageId = mb.getNextId();
-                } catch (IOException e) {
-                    log.error("/db/" + queue.getDatabase() + "/q/" + id + ": " + e, e);
-                }
+            if (borg) {
+                this.warnAfter = null0(queue.getWarnAfter());
+                this.errorAfter = null0(queue.getErrorAfter());
+            } else {
+                int secs = queue.getWarnAfter();
+                if (secs > 0) this.warnAfter = DurationParser.formatHumanMs(secs * 1000L);
+                secs = queue.getErrorAfter();
+                if (secs > 0) this.errorAfter = DurationParser.formatHumanMs(secs * 1000L);
             }
         }
 
-        public void init(MessageBuffer mb) throws IOException {
-            if (mb == null) return;
-            size = mb.getSize();
-            messageCount = mb.getMessageCount();
+        private Integer null0(int x) {
+            return x == 0 ? null : x;
         }
 
         @Override
@@ -112,13 +104,14 @@ public class QueueController extends CrudController {
     @Inject
     public QueueController(JsonService jsonService, Repository repo, MessageController messageController,
                            TimelineController timelineController, OutputController outputController,
-                           QueueManager queueManager) {
+                           QueueManager queueManager, QueueStatusMonitor queueStatusMonitor) {
         super(jsonService);
         this.repo = repo;
         this.messageController = messageController;
         this.timelineController = timelineController;
         this.outputController = outputController;
         this.queueManager = queueManager;
+        this.queueStatusMonitor = queueStatusMonitor;
     }
 
     @SuppressWarnings("unchecked")
@@ -164,7 +157,31 @@ public class QueueController extends CrudController {
     }
 
     protected QueueDTO createQueueDTO(Call call, String id, Queue queue) throws IOException {
-        return new QueueDTO(id, queue, queueManager.getBuffer(queue), call.getBoolean("borg"));
+        boolean borg = call.getBoolean("borg");
+        QueueDTO dto = new QueueDTO(id, queue, borg);
+        try {
+            MessageBuffer mb = queueManager.getBuffer(queue);
+            if (mb != null) {
+                dto.size = mb.getSize();
+                dto.messageCount = mb.getMessageCount();
+                dto.oldestMessage = mb.getOldestTimestamp();
+                dto.oldestMessageId = mb.getOldestId();
+                dto.newestMessage = mb.getMostRecentTimestamp();
+                if (dto.newestMessage != null) {
+                    long ms = System.currentTimeMillis() - dto.newestMessage.getTime();
+                    dto.newestMessageReceived = borg ? ms : DurationParser.formatHumanMs(ms) + " ago";
+                    ms = dto.newestMessage.getTime() - dto.oldestMessage.getTime();
+                    dto.duration = borg ? ms : DurationParser.formatHumanMs(ms);
+                }
+                dto.nextMessageId = mb.getNextId();
+            }
+
+            QueueStatus status = queueStatusMonitor.getStatus(queue);
+            if (status != null) dto.status = status.toString();
+        } catch (IOException e) {
+            log.error("/db/" + queue.getDatabase() + "/q/" + id + ": " + e, e);
+        }
+        return dto;
     }
 
     @Override
@@ -253,6 +270,32 @@ public class QueueController extends CrudController {
                 changed = true;
             }
 
+            if (dto.warnAfter != null) {
+                try {
+                    int secs = convertDuration(dto.warnAfter);
+                    if (secs != q.getWarnAfter()) {
+                        q.setWarnAfter(secs);
+                        changed = true;
+                    }
+                } catch (IllegalArgumentException e) {
+                    call.setCode(422, "Invalid warnAfter value, expected duration");
+                    return;
+                }
+            }
+
+            if (dto.errorAfter != null) {
+                try {
+                    int secs = convertDuration(dto.errorAfter);
+                    if (secs != q.getErrorAfter()) {
+                        q.setErrorAfter(secs);
+                        changed = true;
+                    }
+                } catch (IllegalArgumentException e) {
+                    call.setCode(422, "Invalid errorAfter value, expected duration");
+                    return;
+                }
+            }
+
             if (create) {
                 for (int attempt = 0; ; ) {
                     q.setId(generateQueueId());
@@ -271,7 +314,13 @@ public class QueueController extends CrudController {
 
             if (changed) repo.updateQueue(q);
         }
-        call.setCode(create ? 201 : 200, new QueueDTO(id, q, create ? null : queueManager.getBuffer(q), call.getBoolean("borg")));
+        call.setCode(create ? 201 : 200, createQueueDTO(call, id, q));
+    }
+
+    private int convertDuration(Object v) throws IllegalArgumentException {
+        if (v instanceof Number) return ((Number)v).intValue();
+        if (v instanceof String) return DurationParser.parse((String)v);
+        throw new IllegalArgumentException("Expected duration");
     }
 
     private String generateQueueId() {

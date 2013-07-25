@@ -115,6 +115,22 @@ class QueuesSpec extends StandaloneBase {
         ans.code == 422
     }
 
+    def "Queue warnAfter"() {
+        def ans = PUT("/db/foo/q/bar", [warnAfter: "90"], "david", "secret")
+
+        expect:
+        ans.code == 200
+        ans.json.warnAfter == "0:01:30"
+    }
+
+    def "Queue errorAfter"() {
+        def ans = PUT("/db/foo/q/bar", [errorAfter: "80"], "david", "secret")
+
+        expect:
+        ans.code == 200
+        ans.json.errorAfter == "0:01:20"
+    }
+
     def "Delete queue"() {
         def ans = DELETE("/db/foo/q/bar", "david", "secret")
         def ans2 = GET("/db/foo/q/bar")
