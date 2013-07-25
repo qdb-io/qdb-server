@@ -2,6 +2,7 @@ package io.qdb.server;
 
 import io.qdb.server.output.OutputManager;
 import io.qdb.server.queue.QueueManager;
+import io.qdb.server.queue.QueueStatusMonitor;
 import org.simpleframework.transport.connect.Connection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,12 +23,15 @@ public class ShutdownManager implements Closeable {
     private final Connection connection;
     private final OutputManager outputManager;
     private final QueueManager queueManager;
+    private final QueueStatusMonitor queueStatusMonitor;
 
     @Inject
-    public ShutdownManager(Connection connection, OutputManager outputManager, QueueManager queueManager) {
+    public ShutdownManager(Connection connection, OutputManager outputManager, QueueManager queueManager,
+                           QueueStatusMonitor queueStatusMonitor) {
         this.connection = connection;
         this.outputManager = outputManager;
         this.queueManager = queueManager;
+        this.queueStatusMonitor = queueStatusMonitor;
     }
 
     @Override
@@ -37,6 +41,7 @@ public class ShutdownManager implements Closeable {
         } catch (IOException e) {
             log.error("Error closing listener: " + e, e);
         }
+        queueStatusMonitor.close();
         try {
             outputManager.close();
         } catch (IOException e) {

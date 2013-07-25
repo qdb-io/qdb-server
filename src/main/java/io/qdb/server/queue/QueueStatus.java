@@ -25,6 +25,7 @@ public class QueueStatus {
 
     public final Type type;
     public final String message;
+    public final long created = System.currentTimeMillis();
 
     public QueueStatus(Type type, String message) {
         this.type = type;
