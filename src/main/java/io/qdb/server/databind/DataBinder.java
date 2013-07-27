@@ -84,6 +84,7 @@ public class DataBinder {
                     else if (t == Boolean.TYPE || t == Boolean.class) v = "true".equals(v);
                     else if (t == Date.class) v = DateTimeParser.INSTANCE.parse(s);
                     else if (t == String[].class) v = parseStringArray(s);
+                    else if (t == Double.TYPE || t == Double.class) v = Double.parseDouble(s);
                 } catch (Exception x) {
                     error(key, "Invalid value, expected " + t.getSimpleName() + ": [" + v + "]");
                     continue;

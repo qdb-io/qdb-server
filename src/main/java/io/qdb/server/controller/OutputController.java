@@ -70,8 +70,8 @@ public class OutputController extends CrudController {
         public Object behindBy;
         public Long behindByBytes;
         public Double behindByPercentage;
-        public Object warnIfBehindBy;
-        public Object errorIfBehindBy;
+        public Double warnAfter;
+        public Double errorAfter;
         public transient Map<String, Object> params;
 
         @SuppressWarnings("UnusedDeclaration")
@@ -89,6 +89,8 @@ public class OutputController extends CrudController {
             this.from = toDate(o.getFrom());
             this.to = toDate(o.getTo());
             this.at = toDate(o.getAt());
+            this.warnAfter = toPercentage(o.getWarnAfter());
+            this.errorAfter = toPercentage(o.getErrorAfter());
             this.params = o.getParams();
         }
 
@@ -98,6 +100,10 @@ public class OutputController extends CrudController {
 
         private Long toLong(long id) {
             return id < 0 ? null : id;
+        }
+
+        private Double toPercentage(double p) {
+            return p <= 0.0 ? null : p;
         }
 
         @JsonAnySetter
@@ -177,14 +183,17 @@ public class OutputController extends CrudController {
     private OutputDTO createOutputDTO(Call call, String id, Output o, Queue q) throws IOException {
         OutputDTO dto = new OutputDTO(id, o);
         MessageBuffer mb = queueManager.getBuffer(q);
-        if (dto.at != null && mb != null) {
+        if (mb != null) {
             boolean borg = call.getBoolean("borg");
             try {
                 Date end = mb.getMostRecentTimestamp();
                 if (dto.to != null && dto.to.before(end)) end = dto.to;
-                long ms = end.getTime() - dto.at.getTime();
-                dto.behindBy = borg ? ms : DurationParser.formatHumanMs(ms);
-                dto.behindByBytes = mb.getNextId() - dto.atId;
+                if (dto.at != null) {
+                    long ms = end.getTime() - dto.at.getTime();
+                    dto.behindBy = borg ? ms : DurationParser.formatHumanMs(ms);
+                }
+                dto.behindByBytes = mb.getNextId() - (dto.atId == null ? dto.fromId == null ? mb.getOldestId() : dto.fromId : dto.atId);
+                if (dto.behindByBytes < 0) dto.behindByBytes = 0L;
                 dto.behindByPercentage = Math.round(dto.behindByBytes * 1000.0 / mb.getMaxSize()) / 10.0;
 
                 Status status = outputStatusMonitor.getStatus(o);
@@ -224,11 +233,16 @@ public class OutputController extends CrudController {
                     call.setCode(400, "type is required");
                     return;
                 }
+                MessageBuffer mb = queueManager.getBuffer(q);
+                if (mb == null) {
+                    call.setCode(503, "queue buffer is unavailable");
+                    return;
+                }
                 o = new Output();
                 o.setQueue(q.getId());
                 o.setEnabled(true);
                 o.setUpdateIntervalMs(1000);
-                o.setAtId(-1);
+                o.setAtId(mb.getNextId());
                 o.setFromId(-1);
                 o.setToId(-1);
             } else {
@@ -281,7 +295,7 @@ public class OutputController extends CrudController {
                 if (ms != o.getFrom() || ms != o.getAt()) {
                     o.setFrom(ms);
                     o.setAt(ms);
-                    o.setAtId(-2);
+                    o.setAtId(-1);
                     o.setFromId(-1);
                     changed = true;
                 }
@@ -310,30 +324,14 @@ public class OutputController extends CrudController {
                 changed = true;
             }
 
-            if (dto.warnIfBehindBy != null) {
-                try {
-                    double p = convertPercentage(dto.warnIfBehindBy);
-                    if (Math.abs(p - o.getWarnIfBehindBy()) >= 0.1) {
-                        o.setWarnIfBehindBy(p);
-                        changed = true;
-                    }
-                } catch (IllegalArgumentException e) {
-                    call.setCode(422, "Invalid warnIfBehindBy value: " + e.getMessage());
-                    return;
-                }
+            if (dto.warnAfter != null && Math.abs(dto.warnAfter - o.getWarnAfter()) >= 0.001) {
+                o.setWarnAfter(dto.warnAfter);
+                changed = true;
             }
 
-            if (dto.errorIfBehindBy != null) {
-                try {
-                    double p = convertPercentage(dto.errorIfBehindBy);
-                    if (Math.abs(p - o.getErrorIfBehindBy()) >= 0.1) {
-                        o.setErrorIfBehindBy(p);
-                        changed = true;
-                    }
-                } catch (IllegalArgumentException e) {
-                    call.setCode(422, "Invalid errorIfBehindBy value: " + e.getMessage());
-                    return;
-                }
+            if (dto.errorAfter != null && Math.abs(dto.errorAfter - o.getErrorAfter()) >= 0.001) {
+                o.setErrorAfter(dto.errorAfter);
+                changed = true;
             }
 
             if (dto.params != null) {

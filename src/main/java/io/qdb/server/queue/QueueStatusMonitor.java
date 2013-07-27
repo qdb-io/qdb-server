@@ -71,7 +71,7 @@ public class QueueStatusMonitor extends StatusMonitor<Queue> {
 
         if (errorAfter > 0 && secs >= errorAfter) {
             return new Status(Status.Type.ERROR, buildMessage(ms));
-        } else if (secs >= warnAfter) {
+        } else if (warnAfter > 0 && secs >= warnAfter) {
             return new Status(Status.Type.WARN, buildMessage(ms));
         }
         return OK;

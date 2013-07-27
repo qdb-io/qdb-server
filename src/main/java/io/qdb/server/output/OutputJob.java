@@ -123,7 +123,7 @@ public class OutputJob implements Runnable {
                 log.error(outputPath + ": " + e.getMessage());
                 return;
             } catch (Exception e) {
-                log.error(outputPath + ": " + e.getMessage(), e);
+                log.error(outputPath + ": " + e.getMessage(), e instanceof OutputException ? null : e);
                 ++errorCount;
             }
 
@@ -169,11 +169,7 @@ public class OutputJob implements Runnable {
         MessageCursor cursor = null;
         try {
             long atId = output.getAtId();
-            if (atId == -2) {
-                cursor = buffer.cursorByTimestamp(output.getAt());
-            } else {
-                cursor = buffer.cursor(atId < 0 ? buffer.getNextId() : atId);
-            }
+            cursor = atId < 0 ? buffer.cursorByTimestamp(output.getAt()) : buffer.cursor(atId);
 
             long completedId = atId;
             long timestamp = 0;

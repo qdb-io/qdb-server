@@ -165,7 +165,7 @@ public class QueueController extends CrudController {
                 dto.size = mb.getSize();
                 dto.messageCount = mb.getMessageCount();
                 dto.oldestMessage = mb.getOldestTimestamp();
-                dto.oldestMessageId = mb.getOldestId();
+                if (dto.oldestMessage != null) dto.oldestMessageId = mb.getOldestId();
                 dto.newestMessage = mb.getMostRecentTimestamp();
                 if (dto.newestMessage != null) {
                     long ms = System.currentTimeMillis() - dto.newestMessage.getTime();

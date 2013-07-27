@@ -34,8 +34,8 @@ public class Output extends ModelObject {
     private long to;
     private long at;
     private int updateIntervalMs;
-    private double warnIfBehindBy;
-    private double errorIfBehindBy;
+    private double warnAfter;
+    private double errorAfter;
     private Map<String, Object> params;
 
     public Output() {
@@ -129,20 +129,20 @@ public class Output extends ModelObject {
         this.updateIntervalMs = updateIntervalMs;
     }
 
-    public double getWarnIfBehindBy() {
-        return warnIfBehindBy;
+    public double getWarnAfter() {
+        return warnAfter;
     }
 
-    public void setWarnIfBehindBy(double warnIfBehindBy) {
-        this.warnIfBehindBy = warnIfBehindBy;
+    public void setWarnAfter(double warnAfter) {
+        this.warnAfter = warnAfter;
     }
 
-    public double getErrorIfBehindBy() {
-        return errorIfBehindBy;
+    public double getErrorAfter() {
+        return errorAfter;
     }
 
-    public void setErrorIfBehindBy(double errorIfBehindBy) {
-        this.errorIfBehindBy = errorIfBehindBy;
+    public void setErrorAfter(double errorAfter) {
+        this.errorAfter = errorAfter;
     }
 
     public Map<String, Object> getParams() {

@@ -111,6 +111,7 @@ task deb(dependsOn: 'dist') << {
         into 'build/debian/etc/default'
         rename ('default', 'qdb')
     }
+    // default-jre | openjdk-6-jre | openjdk-7-jre | java6-runtime
     def fpm = ("fpm -s dir -t deb -n qdb-server -v ${version} -a noarch " +
             "-d openjdk-7-jre -d adduser " +
             "--config-files /etc/qdb.properties " +

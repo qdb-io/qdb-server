@@ -17,7 +17,6 @@
 package io.qdb.server.output;
 
 import io.qdb.buffer.MessageBuffer;
-import io.qdb.server.databind.DurationParser;
 import io.qdb.server.model.Database;
 import io.qdb.server.model.Output;
 import io.qdb.server.model.Queue;
@@ -30,9 +29,7 @@ import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import java.io.IOException;
-import java.text.DecimalFormat;
 import java.util.Collection;
-import java.util.Date;
 
 /**
  * Monitors the status of all outputs and logs warnings and errors as needed.
@@ -69,23 +66,23 @@ public class OutputStatusMonitor extends StatusMonitor<Output> {
         MessageBuffer mb = outputManager.getBuffer(q);
         if (mb == null) return null;
 
-        double warnAfter = o.getWarnIfBehindBy();
-        double errorAfter = o.getErrorIfBehindBy();
+        double warnAfter = o.getWarnAfter();
+        double errorAfter = o.getErrorAfter();
         if (warnAfter <= 0.0 && errorAfter <= 0.0) return OK;
 
         long behindByBytes = mb.getNextId() - o.getAtId();
         double p = behindByBytes * 100.0 / mb.getMaxSize();
 
-        if (errorAfter > 0 && p >= errorAfter) {
+        if (errorAfter > 0.0 && p >= errorAfter) {
             return new Status(Status.Type.ERROR, buildMessage(p));
-        } else if (p >= warnAfter) {
+        } else if (warnAfter > 0.0 && p >= warnAfter) {
             return new Status(Status.Type.WARN, buildMessage(p));
         }
         return OK;
     }
 
     private String buildMessage(double p) {
-        return String.format("%.1f of queue used", p);
+        return String.format("%.1f%% of queue used", p);
     }
 
     protected String toPath(Output o) {
