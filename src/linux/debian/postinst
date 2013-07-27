@@ -8,5 +8,5 @@ if [ "$1" = "configure" ]; then
 	mkdir -p /var/run/qdb
 	chown -R qdb:qdb /var/lib/qdb /var/log/qdb /var/run/qdb
 	update-rc.d qdb defaults
-	service qdb start
+	service qdb restart
 fi
