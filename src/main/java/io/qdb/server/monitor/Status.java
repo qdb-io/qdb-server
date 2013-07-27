@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package io.qdb.server.queue;
+package io.qdb.server.monitor;
 
 /**
  * The status of a queue.
  */
-public class QueueStatus {
+public class Status {
 
     public enum Type { OK, WARN, ERROR }
 
@@ -27,7 +27,7 @@ public class QueueStatus {
     public final String message;
     public final long created = System.currentTimeMillis();
 
-    public QueueStatus(Type type, String message) {
+    public Status(Type type, String message) {
         this.type = type;
         this.message = message;
     }

@@ -21,8 +21,8 @@ import io.qdb.server.databind.DurationParser;
 import io.qdb.server.model.*;
 import io.qdb.server.model.Queue;
 import io.qdb.server.queue.QueueManager;
-import io.qdb.server.queue.QueueStatus;
 import io.qdb.server.queue.QueueStatusMonitor;
+import io.qdb.server.monitor.Status;
 import io.qdb.server.repo.Repository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -176,7 +176,7 @@ public class QueueController extends CrudController {
                 dto.nextMessageId = mb.getNextId();
             }
 
-            QueueStatus status = queueStatusMonitor.getStatus(queue);
+            Status status = queueStatusMonitor.getStatus(queue);
             if (status != null) dto.status = status.toString();
         } catch (IOException e) {
             log.error("/db/" + queue.getDatabase() + "/q/" + id + ": " + e, e);

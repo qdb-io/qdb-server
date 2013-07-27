@@ -20,60 +20,44 @@ import io.qdb.buffer.MessageBuffer;
 import io.qdb.server.databind.DurationParser;
 import io.qdb.server.model.Database;
 import io.qdb.server.model.Queue;
+import io.qdb.server.monitor.Status;
+import io.qdb.server.monitor.StatusMonitor;
 import io.qdb.server.repo.Repository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
-import java.io.Closeable;
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Monitors the status of all queues and logs warnings and errors as needed.
  */
 @Singleton
-public class QueueStatusMonitor implements Closeable {
-
-    private static final Logger log = LoggerFactory.getLogger(QueueStatusMonitor.class);
+public class QueueStatusMonitor extends StatusMonitor<Queue> {
 
     private final Repository repo;
     private final QueueManager queueManager;
-    private final int queueWarningRepeatSecs;
-
-    private final Timer timer = new Timer("queue-status-monitor", true);
-    private final Map<String, QueueStatus> statuses = new HashMap<String, QueueStatus>();
-
-    private static final QueueStatus OK = new QueueStatus(QueueStatus.Type.OK, null);
 
     @Inject
     public QueueStatusMonitor(Repository repo, QueueManager queueManager,
-                @Named("queueStatusMonitorStartDelay") int queueStatusMonitorStartDelay,
-                @Named("queueStatusMonitorInterval") int queueStatusMonitorInterval,
-                @Named("queueWarningRepeatSecs") int queueWarningRepeat) throws IOException {
+                @Named("queueStatusMonitorStartDelay") int startDelay,
+                @Named("queueStatusMonitorInterval") int interval,
+                @Named("queueWarningRepeatSecs") int warningRepeat) throws IOException {
+        super("queue", startDelay, interval, warningRepeat);
         this.repo = repo;
         this.queueManager = queueManager;
-        this.queueWarningRepeatSecs = queueWarningRepeat;
-        timer.scheduleAtFixedRate(new TimerTask() {
-            @Override
-            public void run() {
-                checkQueues();
-            }
-        }, queueStatusMonitorStartDelay * 1000L, queueStatusMonitorInterval * 1000L);
     }
 
     @Override
-    public void close() {
-        timer.cancel();
+    protected Collection<Queue> getObjects() throws IOException {
+        return repo.findQueues(0, -1);
     }
 
     /**
      * Get the status of the queue or null if no status is available (it doesn't have a buffer yet).
      */
-    public QueueStatus getStatus(Queue q) throws IOException {
+    public Status getStatus(Queue q) throws IOException {
         MessageBuffer mb = queueManager.getBuffer(q);
         if (mb == null) return null;
 
@@ -86,9 +70,9 @@ public class QueueStatusMonitor implements Closeable {
         int secs = (int)(ms / 1000);
 
         if (errorAfter > 0 && secs >= errorAfter) {
-            return new QueueStatus(QueueStatus.Type.ERROR, buildMessage(ms));
+            return new Status(Status.Type.ERROR, buildMessage(ms));
         } else if (secs >= warnAfter) {
-            return new QueueStatus(QueueStatus.Type.WARN, buildMessage(ms));
+            return new Status(Status.Type.WARN, buildMessage(ms));
         }
         return OK;
     }
@@ -97,34 +81,7 @@ public class QueueStatusMonitor implements Closeable {
         return "Last message appended " + DurationParser.formatHumanMs(ms) + " ago";
     }
 
-    private void checkQueues() {
-        try {
-            List<Queue> queues = repo.findQueues(0, -1);
-            for (Queue q : queues) {
-                QueueStatus status = getStatus(q);
-                if (status == null) continue;
-                String qid = q.getId();
-                QueueStatus last = statuses.get(qid);
-                if (last == null) last = OK;
-                if (status.type != QueueStatus.Type.OK) {
-                    if (status.type.compareTo(last.type) > 0
-                            || (status.created - last.created) / 1000 >= queueWarningRepeatSecs) {
-                        String msg = toPath(q) + ": " + status.message;
-                        if (status.type == QueueStatus.Type.WARN) log.warn(msg);
-                        else log.error(msg);
-                        statuses.put(qid, status);
-                    }
-                } else if (last.type != QueueStatus.Type.OK) {
-                    statuses.put(qid, status);
-                    log.info(toPath(q) + " has recovered");
-                }
-            }
-        } catch (IOException e) {
-            log.error("Error checking status of queues: " + e, e);
-        }
-    }
-
-    private String toPath(Queue q) {
+    protected String toPath(Queue q) {
         try {
             StringBuilder b = new StringBuilder();
             Database db = repo.findDatabase(q.getDatabase());
@@ -136,4 +93,5 @@ public class QueueStatusMonitor implements Closeable {
             return "queue id " + q.getId();
         }
     }
+
 }

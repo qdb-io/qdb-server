@@ -24,7 +24,9 @@ import io.qdb.server.databind.DurationParser;
 import io.qdb.server.databind.HasAnySetter;
 import io.qdb.server.model.Output;
 import io.qdb.server.model.Queue;
+import io.qdb.server.monitor.Status;
 import io.qdb.server.output.OutputHandler;
+import io.qdb.server.output.OutputStatusMonitor;
 import io.qdb.server.queue.QueueManager;
 import io.qdb.server.repo.Repository;
 import io.qdb.server.output.OutputHandlerFactory;
@@ -44,6 +46,7 @@ public class OutputController extends CrudController {
     private final Repository repo;
     private final OutputHandlerFactory handlerFactory;
     private final QueueManager queueManager;
+    private final OutputStatusMonitor outputStatusMonitor;
 
     private static final SecureRandom RND = new SecureRandom();
 
@@ -63,15 +66,18 @@ public class OutputController extends CrudController {
         public Date to;
         public Date at;
         public Integer updateIntervalMs;
+        public String status;
         public Object behindBy;
         public Long behindByBytes;
         public Double behindByPercentage;
+        public Object warnIfBehindBy;
+        public Object errorIfBehindBy;
         public transient Map<String, Object> params;
 
         @SuppressWarnings("UnusedDeclaration")
         public OutputDTO() { }
 
-        public OutputDTO(String id, Output o, MessageBuffer mb, boolean borg) {
+        public OutputDTO(String id, Output o) {
             this.id = id;
             this.version = o.getVersion();
             this.type = o.getType();
@@ -84,18 +90,6 @@ public class OutputController extends CrudController {
             this.to = toDate(o.getTo());
             this.at = toDate(o.getAt());
             this.params = o.getParams();
-            if (at != null && mb != null) {
-                try {
-                    Date end = mb.getMostRecentTimestamp();
-                    if (to != null && to.before(end)) end = to;
-                    long ms = end.getTime() - at.getTime();
-                    behindBy = borg ? ms : DurationParser.formatHumanMs(ms);
-                    behindByBytes = mb.getNextId() - atId;
-                    behindByPercentage = Math.round(behindByBytes * 1000.0 / mb.getMaxSize()) / 10.0;
-                } catch (IOException e) {
-                    log.error(mb + ": " + e, e);
-                }
-            }
         }
 
         private Date toDate(long ms) {
@@ -128,11 +122,12 @@ public class OutputController extends CrudController {
 
     @Inject
     public OutputController(JsonService jsonService, Repository repo, OutputHandlerFactory handlerFactory,
-                            QueueManager queueManager) {
+                            QueueManager queueManager, OutputStatusMonitor outputStatusMonitor) {
         super(jsonService);
         this.repo = repo;
         this.handlerFactory = handlerFactory;
         this.queueManager = queueManager;
+        this.outputStatusMonitor = outputStatusMonitor;
     }
 
     @SuppressWarnings("unchecked")
@@ -180,7 +175,25 @@ public class OutputController extends CrudController {
     }
 
     private OutputDTO createOutputDTO(Call call, String id, Output o, Queue q) throws IOException {
-        return new OutputDTO(id, o, queueManager.getBuffer(q), call.getBoolean("borg"));
+        OutputDTO dto = new OutputDTO(id, o);
+        MessageBuffer mb = queueManager.getBuffer(q);
+        if (dto.at != null && mb != null) {
+            boolean borg = call.getBoolean("borg");
+            try {
+                Date end = mb.getMostRecentTimestamp();
+                if (dto.to != null && dto.to.before(end)) end = dto.to;
+                long ms = end.getTime() - dto.at.getTime();
+                dto.behindBy = borg ? ms : DurationParser.formatHumanMs(ms);
+                dto.behindByBytes = mb.getNextId() - dto.atId;
+                dto.behindByPercentage = Math.round(dto.behindByBytes * 1000.0 / mb.getMaxSize()) / 10.0;
+
+                Status status = outputStatusMonitor.getStatus(o);
+                if (status != null) dto.status = status.toString();
+            } catch (IOException e) {
+                log.error(mb + ": " + e, e);
+            }
+        }
+        return dto;
     }
 
     @Override
@@ -297,6 +310,32 @@ public class OutputController extends CrudController {
                 changed = true;
             }
 
+            if (dto.warnIfBehindBy != null) {
+                try {
+                    double p = convertPercentage(dto.warnIfBehindBy);
+                    if (Math.abs(p - o.getWarnIfBehindBy()) >= 0.1) {
+                        o.setWarnIfBehindBy(p);
+                        changed = true;
+                    }
+                } catch (IllegalArgumentException e) {
+                    call.setCode(422, "Invalid warnIfBehindBy value: " + e.getMessage());
+                    return;
+                }
+            }
+
+            if (dto.errorIfBehindBy != null) {
+                try {
+                    double p = convertPercentage(dto.errorIfBehindBy);
+                    if (Math.abs(p - o.getErrorIfBehindBy()) >= 0.1) {
+                        o.setErrorIfBehindBy(p);
+                        changed = true;
+                    }
+                } catch (IllegalArgumentException e) {
+                    call.setCode(422, "Invalid errorIfBehindBy value: " + e.getMessage());
+                    return;
+                }
+            }
+
             if (dto.params != null) {
                 OutputHandler h = handlerFactory.createHandler(o.getType());
                 new DataBinder(jsonService).updateMap(true).bind(dto.params, h).check();
@@ -336,6 +375,28 @@ public class OutputController extends CrudController {
             if (changed) repo.updateOutput(o);
         }
         call.setCode(create ? 201 : 200, createOutputDTO(call, id, o, q));
+    }
+
+    private double convertPercentage(Object v) throws IllegalArgumentException {
+        if (v instanceof Number || v instanceof String) {
+            double p;
+            if (v instanceof Number) {
+                p = ((Number)v).doubleValue();
+            } else {
+                String s = (String)v;
+                if (s.endsWith("%")) s = s.substring(0, s.length() - 1);
+                try {
+                    p = Double.parseDouble(s.trim());
+                } catch (NumberFormatException e) {
+                    throw new IllegalArgumentException(e.getMessage());
+                }
+            }
+            if (p < 0.0 || p > 100.0) {
+                throw new IllegalArgumentException("Expected percentage between 0 and 100");
+            }
+            return p;
+        }
+        throw new IllegalArgumentException("Expected percentage");
     }
 
     private String generateOutputId() {
