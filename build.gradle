@@ -21,7 +21,7 @@ apply plugin: 'groovy'
 apply from: file("etc/emma.gradle")
 
 group = 'io.qdb'
-version = '0.4.2-SNAPSHOT'
+version = '0.4.3-SNAPSHOT'
 mainClassName = 'io.qdb.server.Main'
 
 repositories {
@@ -31,7 +31,7 @@ repositories {
 
 dependencies {
     compile 'io.qdb:qdb-buffer:0.4.1-SNAPSHOT'
-    compile 'io.qdb:qdb-kvstore:0.1.1-SNAPSHOT'
+    compile 'io.qdb:qdb-kvstore:0.1.2-SNAPSHOT'
     compile 'org.simpleframework:simple:4.1.21'
     compile 'com.google.inject:guice:3.0'
     compile 'ch.qos.logback:logback-core:1.0.7'

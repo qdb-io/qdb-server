@@ -17,6 +17,9 @@
 package io.qdb.server;
 
 import com.google.inject.*;
+import io.qdb.kvstore.DirLockedException;
+import io.qdb.kvstore.KeyValueStore;
+import io.qdb.server.repo.Repository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,13 +35,26 @@ public class Main {
             QdbServerModule mod = new QdbServerModule();
             new LogbackLogging().init(mod.getCfg());
 
-            final ShutdownManager sm = Guice.createInjector(mod).getInstance(ShutdownManager.class);
+            Injector injector = Guice.createInjector(mod);
+            try {
+                injector.getInstance(Repository.class);
+            } catch (ProvisionException e) {
+                for (Throwable t = e.getCause(); t != null; t = t.getCause()) {
+                    if (t instanceof DirLockedException) {
+                        log.error(t.getMessage() + ", is QDB already running?");
+                        System.exit(1);
+                    }
+                }
+                throw e;
+            }
+
+            final ShutdownManager sm = injector.getInstance(ShutdownManager.class);
             Runtime.getRuntime().addShutdownHook(new Thread("qdb-shutdown-hook") {
                 @Override
                 public void run() { sm.close(); }
             });
         } catch (Exception e) {
-            log.error(e.getMessage(), e);
+            log.error(e.toString(), e);
             System.exit(1);
         }
     }
