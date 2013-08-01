@@ -21,7 +21,7 @@ apply plugin: 'groovy'
 apply from: file("etc/emma.gradle")
 
 group = 'io.qdb'
-version = '0.4.3'
+version = '0.4.4-SNAPSHOT'
 mainClassName = 'io.qdb.server.Main'
 
 repositories {
@@ -30,8 +30,8 @@ repositories {
 }
 
 dependencies {
-    compile 'io.qdb:qdb-buffer:0.4.1-SNAPSHOT'
-    compile 'io.qdb:qdb-kvstore:0.1.2-SNAPSHOT'
+    compile 'io.qdb:qdb-buffer:0.4.1'
+    compile 'io.qdb:qdb-kvstore:0.1.3'
     compile 'org.simpleframework:simple:4.1.21'
     compile 'com.google.inject:guice:3.0'
     compile 'ch.qos.logback:logback-core:1.0.7'
@@ -93,9 +93,6 @@ task deb(dependsOn: 'dist') << {
         into 'build/debian/var/lib'
     }
     new File("build/debian/var/lib/${project.name}-${version}").renameTo("build/debian/var/lib/qdb")
-    delete {
-        file 'build/debian/var/lib/qdb/bin/qdb-server.bat'
-    }
     copy {
         from fileTree("src/linux/etc/")
         into 'build/debian/etc'
