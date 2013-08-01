@@ -92,10 +92,12 @@ class DateTimeParserSpec extends Specification {
     }
 
     def "Format timestamp works"() {
-        Date d = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ").parse("2013-06-16T21:04:32.123+0200")
+        def df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ")
+        Date d = df.parse("2013-06-16T21:04:32.123+0200")
         String s = DateTimeParser.INSTANCE.formatTimestamp(d)
+        Date d2 = df.parse(s)
 
         expect:
-        s == "2013-06-16T21:04:32.123+0200"
+        d == d2
     }
 }
