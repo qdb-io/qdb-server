@@ -10,13 +10,6 @@ Building
 QDB is built using Gradle (http://www.gradle.org/downloads). If you don't already have it just download, unzip
 it somewhere and put the bin directory on your path. You need version 1.6 or newer.
 
-QDB depends on two libraries that are not yet on Maven central:
-
-https://github.com/qdb-io/qdb-buffer
-https://github.com/qdb-io/qdb-kvstore
-
-These need to be built and installed in your local Maven repository before building QDB.
-
 
 Running From Source
 -------------------
