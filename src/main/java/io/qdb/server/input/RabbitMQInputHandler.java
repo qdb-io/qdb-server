@@ -17,9 +17,9 @@
 package io.qdb.server.input;
 
 import com.rabbitmq.client.*;
+import io.qdb.server.ExpectedIOException;
 import io.qdb.server.model.Input;
 import io.qdb.server.model.Queue;
-import io.qdb.server.output.OutputException;
 
 import java.io.IOException;
 import java.net.ConnectException;
@@ -78,7 +78,7 @@ public class RabbitMQInputHandler extends InputHandlerAdapter implements Shutdow
     }
 
     @Override
-    public void fetchMessages(final Sink sink) throws Exception {
+    public void start(final Sink sink) throws Exception {
         final Channel c = ensureChannel();
         c.basicConsume(queue, autoAck, "",
             new DefaultConsumer(c) {
@@ -90,9 +90,12 @@ public class RabbitMQInputHandler extends InputHandlerAdapter implements Shutdow
                         sink.append(envelope.getRoutingKey(), body);
                         if (!autoAck) c.basicAck(envelope.getDeliveryTag(), false);
                         ok = true;
+                    } catch (Exception e) {
+                        sink.error(e);
                     } finally {
                         if (!ok) {
                             try {
+                                // todo should probably sit on the message for a bit before nacking to prevent storm
                                 c.basicNack(envelope.getDeliveryTag(), false, true);
                             } catch (IOException e) {
                                 log.debug("Error nacking message: " + e, e);
@@ -115,7 +118,7 @@ public class RabbitMQInputHandler extends InputHandlerAdapter implements Shutdow
             try {
                 con = connectionFactory.newConnection();
             } catch (ConnectException e) {
-                throw new OutputException(e.getMessage() + ": " + getConnectionInfo());
+                throw new ExpectedIOException(e.getMessage() + ": " + getConnectionInfo());
             }
             channel = con.createChannel();
             if (log.isInfoEnabled()) log.info(inputPath + ": Connected to " + getConnectionInfo());

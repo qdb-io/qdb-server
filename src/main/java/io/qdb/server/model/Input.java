@@ -27,6 +27,7 @@ public class Input extends ModelObject {
     private String type;
     private String url;
     private boolean enabled;
+    private long lastMessageId;
     private long lastMessageTimestamp;
     private int updateIntervalMs;
     private int warnAfter;
@@ -66,6 +67,14 @@ public class Input extends ModelObject {
 
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
+    }
+
+    public long getLastMessageId() {
+        return lastMessageId;
+    }
+
+    public void setLastMessageId(long lastMessageId) {
+        this.lastMessageId = lastMessageId;
     }
 
     public long getLastMessageTimestamp() {

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.qdb.server.output;
+package io.qdb.server;
 
 import java.io.IOException;
 
@@ -22,9 +22,9 @@ import java.io.IOException;
  * Throw these for "expected" exceptions that should not be logged with full stack trace e.g. failure to connect
  * to a remote server etc.
  */
-public class OutputException extends IOException {
+public class ExpectedIOException extends IOException {
 
-    public OutputException(String message) {
+    public ExpectedIOException(String message) {
         super(message);
     }
 }

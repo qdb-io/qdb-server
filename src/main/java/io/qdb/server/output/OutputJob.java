@@ -18,6 +18,7 @@ package io.qdb.server.output;
 
 import io.qdb.buffer.MessageBuffer;
 import io.qdb.buffer.MessageCursor;
+import io.qdb.server.ExpectedIOException;
 import io.qdb.server.controller.JsonService;
 import io.qdb.server.databind.DataBinder;
 import io.qdb.server.model.Database;
@@ -123,7 +124,7 @@ public class OutputJob implements Runnable {
                 log.error(outputPath + ": " + e.getMessage());
                 return;
             } catch (Exception e) {
-                log.error(outputPath + ": " + e.getMessage(), e instanceof OutputException ? null : e);
+                log.error(outputPath + ": " + e.getMessage(), e instanceof ExpectedIOException ? null : e);
                 ++errorCount;
             }
 

@@ -27,7 +27,7 @@ class InputsSpec extends StandaloneBase {
     }
 
     def "Create input"() {
-        def data = [type: "rabbitmq", url: "amqp://127.0.0.1/"]
+        def data = [type: "rabbitmq", url: "amqp://127.0.0.1/", enabled: false]
         def ans = POST("/db/foo/q/bar/in/rabbit", data)
         def ans2 = POST("/db/foo/q/bar/in/rabbit", data)
 
@@ -36,7 +36,7 @@ class InputsSpec extends StandaloneBase {
         ans.json.id == "rabbit"
         ans.json.type == data.type
         ans.json.url == data.url
-        ans.json.enabled == true
+        ans.json.enabled == false
         ans2.code == 200
     }
 

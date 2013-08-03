@@ -1,5 +1,6 @@
 package io.qdb.server;
 
+import io.qdb.server.input.InputManager;
 import io.qdb.server.input.InputStatusMonitor;
 import io.qdb.server.output.OutputManager;
 import io.qdb.server.output.OutputStatusMonitor;
@@ -24,17 +25,19 @@ public class ShutdownManager implements Closeable {
 
     private final Connection connection;
     private final OutputManager outputManager;
+    private final InputManager inputManager;
     private final QueueManager queueManager;
     private final QueueStatusMonitor queueStatusMonitor;
     private final OutputStatusMonitor outputStatusMonitor;
     private final InputStatusMonitor inputStatusMonitor;
 
     @Inject
-    public ShutdownManager(Connection connection, OutputManager outputManager, QueueManager queueManager,
-                           QueueStatusMonitor queueStatusMonitor, OutputStatusMonitor outputStatusMonitor,
-                           InputStatusMonitor inputStatusMonitor) {
+    public ShutdownManager(Connection connection, OutputManager outputManager, InputManager inputManager,
+                           QueueManager queueManager, QueueStatusMonitor queueStatusMonitor,
+                           OutputStatusMonitor outputStatusMonitor, InputStatusMonitor inputStatusMonitor) {
         this.connection = connection;
         this.outputManager = outputManager;
+        this.inputManager = inputManager;
         this.queueManager = queueManager;
         this.queueStatusMonitor = queueStatusMonitor;
         this.outputStatusMonitor = outputStatusMonitor;
@@ -53,12 +56,17 @@ public class ShutdownManager implements Closeable {
         inputStatusMonitor.close();
         try {
             outputManager.close();
-        } catch (IOException e) {
+        } catch (Exception e) {
             log.error("Error closing output manager: " + e, e);
         }
         try {
+            inputManager.close();
+        } catch (Exception e) {
+            log.error("Error closing input manager: " + e, e);
+        }
+        try {
             queueManager.close();
-        } catch (IOException e) {
+        } catch (Exception e) {
             log.error("Error closing queue manager: " + e, e);
         }
         log.info("Shutdown complete");

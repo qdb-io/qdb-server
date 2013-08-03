@@ -17,12 +17,12 @@
 package io.qdb.server.output;
 
 import com.rabbitmq.client.*;
+import io.qdb.server.ExpectedIOException;
 import io.qdb.server.model.Output;
 import io.qdb.server.model.Queue;
 
 import java.io.IOException;
 import java.net.ConnectException;
-import java.util.Arrays;
 
 /**
  * Published messages to a RabbitMQ server.
@@ -97,7 +97,7 @@ public class RabbitMQOutputHandler extends OutputHandlerAdapter implements Shutd
             try {
                 con = connectionFactory.newConnection();
             } catch (ConnectException e) {
-                throw new OutputException(e.getMessage() + ": " + getConnectionInfo());
+                throw new ExpectedIOException(e.getMessage() + ": " + getConnectionInfo());
             }
             channel = con.createChannel();
             if (log.isInfoEnabled()) log.info(outputPath + ": Connected to " + getConnectionInfo());
