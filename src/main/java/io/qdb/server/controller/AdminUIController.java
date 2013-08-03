@@ -56,6 +56,6 @@ public class AdminUIController implements Controller {
             "<title>QDB</title>\n" +
             "</head>\n" +
             "<body>\n" +
-            "<p>Admin UI coming soon .. to check the status of the server GET /server</p>\n" +
+            "<p>Admin UI coming soon .. to check the status of the server GET /status</p>\n" +
             "</body>";
 }

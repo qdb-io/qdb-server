@@ -1,5 +1,6 @@
 package io.qdb.server;
 
+import io.qdb.server.input.InputStatusMonitor;
 import io.qdb.server.output.OutputManager;
 import io.qdb.server.output.OutputStatusMonitor;
 import io.qdb.server.queue.QueueManager;
@@ -26,15 +27,18 @@ public class ShutdownManager implements Closeable {
     private final QueueManager queueManager;
     private final QueueStatusMonitor queueStatusMonitor;
     private final OutputStatusMonitor outputStatusMonitor;
+    private final InputStatusMonitor inputStatusMonitor;
 
     @Inject
     public ShutdownManager(Connection connection, OutputManager outputManager, QueueManager queueManager,
-                           QueueStatusMonitor queueStatusMonitor, OutputStatusMonitor outputStatusMonitor) {
+                           QueueStatusMonitor queueStatusMonitor, OutputStatusMonitor outputStatusMonitor,
+                           InputStatusMonitor inputStatusMonitor) {
         this.connection = connection;
         this.outputManager = outputManager;
         this.queueManager = queueManager;
         this.queueStatusMonitor = queueStatusMonitor;
         this.outputStatusMonitor = outputStatusMonitor;
+        this.inputStatusMonitor = inputStatusMonitor;
     }
 
     @Override
@@ -46,6 +50,7 @@ public class ShutdownManager implements Closeable {
         }
         queueStatusMonitor.close();
         outputStatusMonitor.close();
+        inputStatusMonitor.close();
         try {
             outputManager.close();
         } catch (IOException e) {

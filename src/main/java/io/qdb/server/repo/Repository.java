@@ -71,6 +71,17 @@ public interface Repository extends Closeable {
 
     public void deleteOutput(String id) throws IOException;
 
+
+    public Input findInput(String id) throws IOException;
+
+    public void updateInput(Input input) throws IOException;
+
+    public List<Input> findInputs(int offset, int limit) throws IOException;
+
+    public int countInputs() throws IOException;
+
+    public void deleteInput(String id) throws IOException;
+
     /**
      * A change to one of the objects we store. These are published on the shared
      * {@link com.google.common.eventbus.EventBus}.

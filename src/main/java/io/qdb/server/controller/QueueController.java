@@ -30,7 +30,6 @@ import org.slf4j.LoggerFactory;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.io.IOException;
-import java.security.SecureRandom;
 import java.util.*;
 import java.util.regex.Pattern;
 
@@ -41,10 +40,9 @@ public class QueueController extends CrudController {
     private final MessageController messageController;
     private final TimelineController timelineController;
     private final OutputController outputController;
+    private final InputController inputController;
     private final QueueManager queueManager;
     private final QueueStatusMonitor queueStatusMonitor;
-
-    private static final SecureRandom RND = new SecureRandom();
 
     private static final Logger log = LoggerFactory.getLogger(QueueController.class);
 
@@ -104,12 +102,13 @@ public class QueueController extends CrudController {
     @Inject
     public QueueController(JsonService jsonService, Repository repo, MessageController messageController,
                            TimelineController timelineController, OutputController outputController,
-                           QueueManager queueManager, QueueStatusMonitor queueStatusMonitor) {
+                           InputController inputController, QueueManager queueManager, QueueStatusMonitor queueStatusMonitor) {
         super(jsonService);
         this.repo = repo;
         this.messageController = messageController;
         this.timelineController = timelineController;
         this.outputController = outputController;
+        this.inputController = inputController;
         this.queueManager = queueManager;
         this.queueStatusMonitor = queueStatusMonitor;
     }
@@ -156,6 +155,7 @@ public class QueueController extends CrudController {
         call.setCode(404);
     }
 
+    @SuppressWarnings("ConstantConditions")
     protected QueueDTO createQueueDTO(Call call, String id, Queue queue) throws IOException {
         boolean borg = call.getBoolean("borg");
         QueueDTO dto = new QueueDTO(id, queue, borg);
@@ -298,7 +298,7 @@ public class QueueController extends CrudController {
 
             if (create) {
                 for (int attempt = 0; ; ) {
-                    q.setId(generateQueueId());
+                    q.setId(generateId());
                     if (repo.findQueue(q.getId()) == null) break;
                     if (++attempt == 20) throw new IOException("Got " + attempt + " dup id's attempting to create queue?");
                 }
@@ -315,16 +315,6 @@ public class QueueController extends CrudController {
             if (changed) repo.updateQueue(q);
         }
         call.setCode(create ? 201 : 200, createQueueDTO(call, id, q));
-    }
-
-    private int convertDuration(Object v) throws IllegalArgumentException {
-        if (v instanceof Number) return ((Number)v).intValue();
-        if (v instanceof String) return DurationParser.parse((String)v);
-        throw new IllegalArgumentException("Expected duration");
-    }
-
-    private String generateQueueId() {
-        return Integer.toString(Math.abs(RND.nextInt()), 36);
     }
 
     @Override
@@ -345,6 +335,7 @@ public class QueueController extends CrudController {
             call.setQueue(q);
             if ("messages".equals(resource)) return messageController;
             if ("out".equals(resource)) return outputController;
+            if ("in".equals(resource)) return inputController;
             if ("timeline".equals(resource)) return timelineController;
         }
         return StatusCodeController.SC_404;

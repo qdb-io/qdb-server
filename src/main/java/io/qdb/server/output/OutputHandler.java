@@ -34,13 +34,13 @@ public interface OutputHandler extends Closeable {
      * which will cause the output to stop until it is updated. Throwing other exceptions will cause the output
      * to be retried after a delay defined by its backoff policy.
      */
-    public void init(Queue q, Output output, String outputPath) throws Exception;
+    void init(Queue q, Output output, String outputPath) throws Exception;
 
     /**
      * Process the message and return the id of the message that processing should start after. This will usually
      * be the id of the message just processed, unless messages are being processed asynchronously.
      */
-    public long processMessage(long messageId, String routingKey, long timestamp, byte[] payload) throws Exception;
+    long processMessage(long messageId, String routingKey, long timestamp, byte[] payload) throws Exception;
 
     /**
      * This is called when processing progress is being recorded with the new output instance. Handlers might want
@@ -48,6 +48,6 @@ public interface OutputHandler extends Closeable {
      * the timestamp of the last message processed and this may not be the same as the last completed message if
      * messages are being processed asynchronously. This method must be fast.
      */
-    public void updateOutput(Output output);
+    void updateOutput(Output output);
 
 }

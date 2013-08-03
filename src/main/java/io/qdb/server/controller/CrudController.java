@@ -19,10 +19,12 @@ package io.qdb.server.controller;
 import io.qdb.kvstore.KeyValueStoreException;
 import io.qdb.server.databind.DataBinder;
 import io.qdb.server.databind.DataBindingException;
+import io.qdb.server.databind.DurationParser;
 import org.simpleframework.http.Request;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.security.SecureRandom;
 
 /**
  * Base class for controllers that provide CRUD for some resource.
@@ -30,6 +32,8 @@ import java.io.InputStream;
 public abstract class CrudController implements Controller {
 
     protected final JsonService jsonService;
+
+    private static final SecureRandom RND = new SecureRandom();
 
     protected CrudController(JsonService jsonService) {
         this.jsonService = jsonService;
@@ -128,6 +132,16 @@ public abstract class CrudController implements Controller {
             new DataBinder(jsonService).bind(req.getForm(), dto).check();
         }
         return dto;
+    }
+
+    protected int convertDuration(Object v) throws IllegalArgumentException {
+        if (v instanceof Number) return ((Number)v).intValue();
+        if (v instanceof String) return DurationParser.parse((String) v);
+        throw new IllegalArgumentException("Expected duration");
+    }
+
+    protected String generateId() {
+        return Integer.toString(Math.abs(RND.nextInt()), 36);
     }
 
     public static class Count {

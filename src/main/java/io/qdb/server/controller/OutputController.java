@@ -36,7 +36,6 @@ import org.slf4j.LoggerFactory;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.io.IOException;
-import java.security.SecureRandom;
 import java.util.*;
 import java.util.regex.Pattern;
 
@@ -47,8 +46,6 @@ public class OutputController extends CrudController {
     private final OutputHandlerFactory handlerFactory;
     private final QueueManager queueManager;
     private final OutputStatusMonitor outputStatusMonitor;
-
-    private static final SecureRandom RND = new SecureRandom();
 
     private static final Logger log = LoggerFactory.getLogger(OutputController.class);
 
@@ -89,6 +86,7 @@ public class OutputController extends CrudController {
             this.from = toDate(o.getFrom());
             this.to = toDate(o.getTo());
             this.at = toDate(o.getAt());
+            this.updateIntervalMs = o.getUpdateIntervalMs();
             this.warnAfter = toPercentage(o.getWarnAfter());
             this.errorAfter = toPercentage(o.getErrorAfter());
             this.params = o.getParams();
@@ -98,8 +96,8 @@ public class OutputController extends CrudController {
             return ms == 0 ? null : new Date(ms);
         }
 
-        private Long toLong(long id) {
-            return id < 0 ? null : id;
+        private Long toLong(long v) {
+            return v < 0 ? null : v;
         }
 
         private Double toPercentage(double p) {
@@ -248,7 +246,7 @@ public class OutputController extends CrudController {
             } else {
                 o = repo.findOutput(oid);
                 if (o == null) {    // this shouldn't happen
-                    String msg = "Output /databases/" + q.getDatabase() + "/queues/" + q.getId() + "/outputs/" + id +
+                    String msg = "Output /db/" + q.getDatabase() + "/q/" + q.getId() + "/out/" + id +
                             " oid [" + oid + "] not found";
                     log.error(msg);
                     call.setCode(500, msg);
@@ -356,7 +354,7 @@ public class OutputController extends CrudController {
 
             if (create) {
                 for (int attempt = 0; ; ) {
-                    o.setId(generateOutputId());
+                    o.setId(generateId());
                     if (repo.findOutput(o.getId()) == null) break;
                     if (++attempt == 20) throw new IOException("Got " + attempt + " dup id's attempting to create output?");
                 }
@@ -373,32 +371,6 @@ public class OutputController extends CrudController {
             if (changed) repo.updateOutput(o);
         }
         call.setCode(create ? 201 : 200, createOutputDTO(call, id, o, q));
-    }
-
-    private double convertPercentage(Object v) throws IllegalArgumentException {
-        if (v instanceof Number || v instanceof String) {
-            double p;
-            if (v instanceof Number) {
-                p = ((Number)v).doubleValue();
-            } else {
-                String s = (String)v;
-                if (s.endsWith("%")) s = s.substring(0, s.length() - 1);
-                try {
-                    p = Double.parseDouble(s.trim());
-                } catch (NumberFormatException e) {
-                    throw new IllegalArgumentException(e.getMessage());
-                }
-            }
-            if (p < 0.0 || p > 100.0) {
-                throw new IllegalArgumentException("Expected percentage between 0 and 100");
-            }
-            return p;
-        }
-        throw new IllegalArgumentException("Expected percentage");
-    }
-
-    private String generateOutputId() {
-        return Integer.toString(Math.abs(RND.nextInt()), 36);
     }
 
     @Override

@@ -32,6 +32,7 @@ public class Queue extends ModelObject {
     private int warnAfter;
     private int errorAfter;
     private Map<String, String> outputs;
+    private Map<String, String> inputs;
 
     public Queue() {
     }
@@ -105,6 +106,27 @@ public class Queue extends ModelObject {
         return null;
     }
 
+    public Map<String, String> getInputs() {
+        return inputs;
+    }
+
+    public void setInputs(Map<String, String> inputs) {
+        this.inputs = inputs;
+    }
+
+    public String getInputIdForInput(String input) {
+        return inputs == null ? null : inputs.get(input);
+    }
+
+    public String getInputForInputId(String inputId) {
+        if (inputs != null) {
+            for (Map.Entry<String, String> e : inputs.entrySet()) {
+                if (inputId.equals(e.getValue())) return e.getKey();
+            }
+        }
+        return null;
+    }
+
     @Override
     public String toString() {
         return super.toString() + ":database=" + database;
@@ -113,6 +135,7 @@ public class Queue extends ModelObject {
     public Queue deepCopy() {
         Queue q = (Queue)clone();
         if (outputs != null) q.outputs = new HashMap<String, String>(outputs);
+        if (inputs != null) q.inputs = new HashMap<String, String>(inputs);
         return q;
     }
 }

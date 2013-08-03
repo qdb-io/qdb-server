@@ -43,6 +43,7 @@ public class RepositoryImpl implements Repository {
     private final ConcurrentMap<String, Database> databases;
     private final ConcurrentMap<String, Queue> queues;
     private final ConcurrentMap<String, Output> outputs;
+    private final ConcurrentMap<String, Input> inputs;
 
     @Inject
     public RepositoryImpl(KeyValueStore<String, ModelObject> store,
@@ -52,6 +53,7 @@ public class RepositoryImpl implements Repository {
         databases = store.getMap("databases", Database.class);
         queues = store.getMap("queues", Queue.class);
         outputs = store.getMap("outputs", Output.class);
+        inputs = store.getMap("inputs", Input.class);
 
         if (findDatabase("default") == null) updateDatabase(new Database("default"));
 
@@ -228,6 +230,43 @@ public class RepositoryImpl implements Repository {
             }
         }
         outputs.remove(id);
+    }
+
+    @Override
+    public Input findInput(String id) throws IOException {
+        return inputs.get(id);
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public List<Input> findInputs(int offset, int limit) throws IOException {
+        return find(inputs, offset, limit);
+    }
+
+    @Override
+    public int countInputs() throws IOException {
+        return inputs.size();
+    }
+
+    @Override
+    public void updateInput(Input input) throws IOException {
+        inputs.put(input.getId(), input);
+    }
+
+    @Override
+    public synchronized void deleteInput(String id) throws IOException {
+        Input o = inputs.get(id);
+        if (o == null) return;
+        Queue q = queues.get(o.getQueue());
+        if (q != null) {
+            String qi = q.getInputForInputId(id);
+            if (qi != null) {
+                q = q.deepCopy();
+                q.getInputs().remove(qi);
+                queues.put(q.getId(), q);
+            }
+        }
+        inputs.remove(id);
     }
 
     @SuppressWarnings("unchecked")
