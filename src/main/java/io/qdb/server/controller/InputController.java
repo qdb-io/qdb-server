@@ -60,8 +60,8 @@ public class InputController extends CrudController {
         public transient Map<String, Object> params;
 
         public String status;
-        public Object lastMessageFetched;
         public Date lastMessageTimestamp;
+        public Object lastMessageFetched;
 
         @SuppressWarnings("UnusedDeclaration")
         public InputDTO() { }
@@ -259,8 +259,8 @@ public class InputController extends CrudController {
             if (dto.warnAfter != null) {
                 try {
                     int secs = convertDuration(dto.warnAfter);
-                    if (secs != q.getWarnAfter()) {
-                        q.setWarnAfter(secs);
+                    if (secs != in.getWarnAfter()) {
+                        in.setWarnAfter(secs);
                         changed = true;
                     }
                 } catch (IllegalArgumentException e) {
@@ -272,8 +272,8 @@ public class InputController extends CrudController {
             if (dto.errorAfter != null) {
                 try {
                     int secs = convertDuration(dto.errorAfter);
-                    if (secs != q.getErrorAfter()) {
-                        q.setErrorAfter(secs);
+                    if (secs != in.getErrorAfter()) {
+                        in.setErrorAfter(secs);
                         changed = true;
                     }
                 } catch (IllegalArgumentException e) {
