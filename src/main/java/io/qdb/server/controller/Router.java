@@ -82,7 +82,14 @@ public class Router implements Container {
                 }
             }
         } catch (Exception e) {
-            log.error("500: " + req.getPath() + " " + e, e);
+            String msg = "500: " + req.getPath() + ": " + e;
+            // ProducerException is package private so we cannot use instanceof
+            if ("org.simpleframework.http.core.ProducerException".equals(e.getClass().getName())) {
+                // likely the remote client has closed the connection so only debug
+                if (log.isDebugEnabled()) log.debug(msg, e);
+            } else {
+                log.error(msg, e);
+            }
             quietRenderCode(req, resp, 500, null);
         }
         try {
@@ -96,7 +103,7 @@ public class Router implements Container {
         try {
             renderer.setCode(resp, code, msg);
         } catch (IOException x) {
-            if (log.isDebugEnabled()) log.debug(req.getPath() + " " + x.getMessage(), x);
+            if (log.isDebugEnabled()) log.debug(req.getPath() + ": Error sending " + code + ": " + x.getMessage());
         }
     }
 }
