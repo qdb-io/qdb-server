@@ -179,13 +179,15 @@ public class InputJob implements Runnable, InputHandler.Sink {
         inputManager.getPool().execute(new Runnable() {
             @Override
             public void run() {
-                if (!isStopFlag()) return;
+                if (isStopFlag()) return;
                 try {
+                    log.debug(InputJob.this + " start");
                     handler.start(InputJob.this);
                 } catch (Exception e) {
                     log.error(this + " start failed: " + e, e);
                     stop();
                 }
+                log.debug(InputJob.this + " start finished");
             }
         });
 
