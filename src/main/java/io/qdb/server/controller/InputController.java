@@ -34,7 +34,6 @@ import org.slf4j.LoggerFactory;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.io.IOException;
-import java.security.SecureRandom;
 import java.util.*;
 import java.util.regex.Pattern;
 
@@ -60,8 +59,9 @@ public class InputController extends CrudController {
         public transient Map<String, Object> params;
 
         public String status;
+        public Long lastMessageId;
         public Date lastMessageTimestamp;
-        public Object lastMessageFetched;
+        public Object lastMessageAppended;
 
         @SuppressWarnings("UnusedDeclaration")
         public InputDTO() { }
@@ -74,6 +74,7 @@ public class InputController extends CrudController {
             enabled = in.isEnabled();
             updateIntervalMs = in.getUpdateIntervalMs();
             params = in.getParams();
+            lastMessageId = null0(in.getLastMessageId());
             lastMessageTimestamp = toDate(in.getLastMessageTimestamp());
 
             if (borg) {
@@ -92,6 +93,10 @@ public class InputController extends CrudController {
         }
 
         private Integer null0(int x) {
+            return x == 0 ? null : x;
+        }
+
+        private Long null0(long x) {
             return x == 0 ? null : x;
         }
 
@@ -173,7 +178,7 @@ public class InputController extends CrudController {
         InputDTO dto = new InputDTO(id, in, borg);
         if (dto.lastMessageTimestamp != null) {
             long ms = System.currentTimeMillis() - dto.lastMessageTimestamp.getTime();
-            dto.lastMessageFetched = borg ? ms : DurationParser.formatHumanMs(ms) + " ago";
+            dto.lastMessageAppended = borg ? ms : DurationParser.formatHumanMs(ms) + " ago";
         }
         Status status = inputStatusMonitor.getStatus(in);
         if (status != null) dto.status = status.toString();
