@@ -51,6 +51,7 @@ public class InputJob implements Runnable, InputHandler.Sink {
     private Input input;
     private int errorCount;
     private boolean stopFlag;
+    private boolean exitFetchLoop;
     private MessageBuffer buffer;
     private long lastMessageTimestamp;
     private long lastMessageId;
@@ -194,22 +195,22 @@ public class InputJob implements Runnable, InputHandler.Sink {
         long lastUpdate = System.currentTimeMillis();
         int updateIntervalMs = input.getUpdateIntervalMs();
 
-        boolean exitLoop = false;
-        while (!exitLoop && !isStopFlag()) {
+        setExitFetchLoop(false);
+        while (!isExitFetchLoop() && !isStopFlag()) {
             try {
                 Thread.sleep(updateIntervalMs);
             } catch (InterruptedException e) {
-                exitLoop = true;
+                setExitFetchLoop(true);
             }
 
             Input in = repo.findInput(inputId);
             if (in != input) {
-                exitLoop = true; // input has been changed by someone else
+                setExitFetchLoop(true);  // input has been changed by someone else
                 errorCount = 0;
             }
 
             synchronized (this) {
-                if (lastMessageId != this.lastMessageId && (exitLoop || updateIntervalMs <= 0
+                if (lastMessageId != this.lastMessageId && (exitFetchLoop || updateIntervalMs <= 0
                         || System.currentTimeMillis() - lastUpdate >= updateIntervalMs)) {
                     synchronized (repo) {
                         in = repo.findInput(inputId);
@@ -249,7 +250,8 @@ public class InputJob implements Runnable, InputHandler.Sink {
                 t instanceof IllegalArgumentException || t instanceof ExpectedIOException ? null : t);
         if (!(t instanceof IllegalArgumentException)) {
             ++errorCount;
-            stop();
+            setExitFetchLoop(true);
+            if (thread != null) thread.interrupt();
         }
     }
 
@@ -270,6 +272,14 @@ public class InputJob implements Runnable, InputHandler.Sink {
 
     private synchronized boolean isStopFlag() {
         return stopFlag;
+    }
+
+    private synchronized boolean isExitFetchLoop() {
+        return exitFetchLoop;
+    }
+
+    private synchronized void setExitFetchLoop(boolean exitFetchLoop) {
+        this.exitFetchLoop = exitFetchLoop;
     }
 
     /**

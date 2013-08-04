@@ -72,11 +72,22 @@ public class OutputJob implements Runnable {
         try {
             mainLoop();
         } catch (Exception x) {
-            log.error(this + ": " + x, x);
+            logError(x);
         } finally {
             if (log.isDebugEnabled()) log.debug(this + " exit");
             outputManager.onOutputJobExit(this);
         }
+    }
+
+    private void logError(Throwable t) {
+        String msg;
+        if (t instanceof ExpectedIOException) {
+            msg = t.getMessage();
+            if (msg == null) msg = t.toString();
+        } else {
+            msg = t.toString();
+        }
+        log.error(this + ": " + msg, t instanceof ExpectedIOException ? null : t);
     }
 
     private void mainLoop() throws Exception {
@@ -121,10 +132,10 @@ public class OutputJob implements Runnable {
                 handler.init(qc, oc, outputPath);
                 initOk = true;
             } catch (IllegalArgumentException e) {
-                log.error(outputPath + ": " + e.getMessage());
+                log.error(this + ": " + e.getMessage());
                 return;
             } catch (Exception e) {
-                log.error(outputPath + ": " + e.getMessage(), e instanceof ExpectedIOException ? null : e);
+                logError(e);
                 ++errorCount;
             }
 
@@ -139,7 +150,7 @@ public class OutputJob implements Runnable {
                             processMessages(buffer, handler);
                         } catch (Exception e) {
                             ++errorCount;
-                            log.error(outputPath + ": " + e.getMessage(), e);
+                            logError(e);
                         }
                     }
                 }
@@ -147,7 +158,7 @@ public class OutputJob implements Runnable {
                 try {
                     handler.close();
                 } catch (IOException e) {
-                    log.error(outputPath + ": Error closing handler: " + e, e);
+                    log.error(this + ": Error closing handler: " + e, e);
                 }
             }
 
@@ -185,7 +196,7 @@ public class OutputJob implements Runnable {
                 } catch (IOException e) {
                     haveMsg = false;
                     exitLoop = true;
-                    log.error(outputPath + ": " + e, e);
+                    logError(e);
                 } catch (InterruptedException e) {
                     haveMsg = false;
                     exitLoop = true;
@@ -201,7 +212,7 @@ public class OutputJob implements Runnable {
                     } catch (Exception e) {
                         exitLoop = true;
                         ++errorCount;
-                        log.error(outputPath + ": " + e, e);
+                        logError(e);
                     }
                 }
 
@@ -232,7 +243,7 @@ public class OutputJob implements Runnable {
                 try {
                     cursor.close();
                 } catch (IOException e) {
-                    log.error(outputPath + ": Error closing cursor: " + e);
+                    log.error(this + ": Error closing cursor: " + e);
                 }
             }
         }

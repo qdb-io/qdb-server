@@ -39,6 +39,7 @@ public class RabbitMQInputHandler extends InputHandlerAdapter implements Shutdow
     protected ConnectionFactory connectionFactory;
     protected Connection con;
     protected Channel channel;
+    protected Sink sink;
 
     protected String exchangeType;
     protected boolean exchangeDurable;
@@ -79,8 +80,9 @@ public class RabbitMQInputHandler extends InputHandlerAdapter implements Shutdow
 
     @Override
     public void start(final Sink sink) throws Exception {
+        this.sink = sink;
         final Channel c = ensureChannel();
-        c.basicConsume(queue, autoAck, "",
+        c.basicConsume(queue, autoAck, "qdb:" + inputPath,
             new DefaultConsumer(c) {
                 @Override
                 public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties,
@@ -140,12 +142,12 @@ public class RabbitMQInputHandler extends InputHandlerAdapter implements Shutdow
     public synchronized void shutdownCompleted(ShutdownSignalException cause) {
         channel = null;
         if (!cause.isInitiatedByApplication()) {
-            log.error(inputPath + ": Channel closed unexpectedly: " + cause.getMessage());
             try {
                 if (con.isOpen()) con.close();
             } catch (Exception ignore) {
             }
             con = null;
+            sink.error("Channel closed unexpectedly: " + cause.getMessage(), null);
         }
     }
 
