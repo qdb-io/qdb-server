@@ -49,6 +49,7 @@ class MessagesSpec extends StandaloneBase {
         long now = System.currentTimeMillis()
         now = now - now % 1000
         def ans = POST("/db/foo/q/bar/messages?routingKey=abc", [hello: "world"], "david", "secret")
+        Thread.sleep(1)
         def ans2 = POST("/db/foo/q/bar/messages", [hello: "2nd world"], "david", "secret")
         SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
         long ts = df.parse(ans.json.timestamp).time
@@ -164,6 +165,25 @@ class MessagesSpec extends StandaloneBase {
         expect:
         ans.code == 200
         ans.json.hello == "world"
+    }
+
+    def "Get message with from and to"() {
+        // read the headers so we know what timestamps and ids to ask for
+        def text = GET("/db/foo/q/bar/messages?from=0&noPayload=true&noLengthPrefix=true&borg=true&limit=2").text
+        println(text)
+        def r = new StringReader(text)
+        def h1 = new JsonSlurper().parseText(r.readLine())
+        def h2 = new JsonSlurper().parseText(r.readLine())
+
+        // specify limit here so test fails quickly if reading does not stop at to
+        def ans = GET("/db/foo/q/bar/messages?from=${h1.timestamp}&to=${h2.timestamp}&limit=2&noHeaders=true")
+        def ans2 = GET("/db/foo/q/bar/messages?fromId=${h1.id}&toId=${h2.id}&limit=2&noHeaders=true")
+
+        expect:
+        ans.code == 200
+        ans.text == "{\"hello\":\"world\"}\n"
+        ans2.code == 200
+        ans2.text == "{\"hello\":\"world\"}\n"
     }
 
     def "Wait for new message"() {

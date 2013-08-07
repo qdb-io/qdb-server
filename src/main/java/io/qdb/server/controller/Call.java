@@ -145,6 +145,11 @@ public class Call {
         }
     }
 
+    public long getTimestamp(String param) throws IOException {
+        Date d = getDate(param);
+        return d == null ? -1 : d.getTime();
+    }
+
     public void setCode(int code) throws IOException {
         setCode(code, null);
     }

@@ -252,6 +252,7 @@ public class MessageController extends CrudController {
         int keepAliveMs = call.getInt("keepAliveMs", 29000);
         byte[] separator = call.getUTF8Bytes("separator", "\n");
         boolean noHeaders = call.getBoolean("noHeaders");
+        boolean noPayload = call.getBoolean("noPayload");
         boolean noLengthPrefix = call.getBoolean("noLengthPrefix");
         boolean borg = call.getBoolean("borg");
 
@@ -263,6 +264,9 @@ public class MessageController extends CrudController {
 
         Date from = call.getDate("from");
         long fromId = from != null ? -1 : call.getLong("fromId", mb.getNextId());
+
+        long to = call.getTimestamp("to");
+        long toId = to > 0 ? -1 : call.getLong("toId", -1);
 
         Response response = call.getResponse();
         response.set("Content-Type", single ? q.getContentType() : "application/octet-stream");
@@ -295,6 +299,8 @@ public class MessageController extends CrudController {
                 break;
             }
 
+            if (to > 0 && c.getTimestamp() >= to || toId > 0 && c.getId() >= toId) break;
+
             if (single) {
                 response.setContentLength(c.getPayloadSize());
                 response.set("QDB-Id", Long.toString(c.getId()));
@@ -303,7 +309,7 @@ public class MessageController extends CrudController {
                         ? Long.toString(timestamp)
                         : DateTimeParser.INSTANCE.formatTimestamp(new Date(timestamp)));
                 response.set("QDB-RoutingKey", c.getRoutingKey());
-                out.write(c.getPayload());
+                if (!noPayload) out.write(c.getPayload());
             } else {
                 if (!noHeaders) {
                     MessageHeader h = new MessageHeader(c);
@@ -312,8 +318,10 @@ public class MessageController extends CrudController {
                     out.write(data);
                     out.write(10);
                 }
-                out.write(c.getPayload());
-                out.write(separator);
+                if (!noPayload) {
+                    out.write(c.getPayload());
+                    out.write(separator);
+                }
                 nextKeepAliveMs = 100;
             }
         }
