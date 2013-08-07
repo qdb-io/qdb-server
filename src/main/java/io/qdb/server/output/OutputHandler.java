@@ -43,6 +43,13 @@ public interface OutputHandler extends Closeable {
     long processMessage(long messageId, String routingKey, long timestamp, byte[] payload) throws Exception;
 
     /**
+     * Finish processing any messages being processed asynchronously and return the id of the message that processing
+     * should start after. This method is called when an output reaches its 'to' or 'toId' setting before it
+     * disables itself. Return 0 if messages are not being processed asynchronously.
+     */
+    long flushMessages() throws Exception;
+
+    /**
      * This is called when processing progress is being recorded with the new output instance. Handlers might want
      * to update fields of the output at this time. In particular the timestamp field will be set to
      * the timestamp of the last message processed and this may not be the same as the last completed message if

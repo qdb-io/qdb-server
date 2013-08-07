@@ -68,10 +68,12 @@ public class DateTimeParser {
                 break;
             default:
                 if (s.lastIndexOf('.') > 0) {
-                    if (n > 23) synchronized (millis) { ans = millis.parse(s); }
+                    if (n > 23) {
+                        synchronized (millis) { ans = millis.parse(s.replace(' ', '+')); }
+                    }
                     else synchronized (millisNoTz) { ans = millisNoTz.parse(s); }
                 } else {
-                    synchronized (full) { ans = full.parse(s); }
+                    synchronized (full) { ans = full.parse(s.replace(' ', '+')); }
                 }
         }
         return ans;

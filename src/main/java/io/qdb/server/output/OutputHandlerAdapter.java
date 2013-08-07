@@ -40,6 +40,11 @@ public abstract class OutputHandlerAdapter implements OutputHandler {
     }
 
     @Override
+    public long flushMessages() throws Exception {
+        return -1;
+    }
+
+    @Override
     public void close() throws IOException {
     }
 }

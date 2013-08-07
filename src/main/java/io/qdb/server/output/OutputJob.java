@@ -186,6 +186,9 @@ public class OutputJob implements Runnable {
             long completedId = atId;
             long timestamp = 0;
             long lastUpdate = System.currentTimeMillis();
+            long to = output.getTo();
+            long toId = output.getToId();
+            boolean reachedTo = false;
             int updateIntervalMs = output.getUpdateIntervalMs();
 
             boolean exitLoop = false;
@@ -204,10 +207,18 @@ public class OutputJob implements Runnable {
                 if (haveMsg) {
                     try {
                         long currentId = cursor.getId();
-                        completedId = handler.processMessage(currentId, cursor.getRoutingKey(),
-                                timestamp = cursor.getTimestamp(), cursor.getPayload());
-                        if (completedId == currentId) completedId = cursor.getNextId();
-                        else ++completedId;
+                        timestamp = cursor.getTimestamp();
+                        reachedTo = to > 0 && timestamp >= to || toId > 0 && currentId >= toId;
+                        if (reachedTo) {
+                            long id = handler.flushMessages();
+                            completedId = id <= 0 ? currentId - 1 : id;
+                            exitLoop = true;
+                        } else {
+                            completedId = handler.processMessage(currentId, cursor.getRoutingKey(), timestamp,
+                                    cursor.getPayload());
+                            if (completedId == currentId) completedId = cursor.getNextId();
+                            else ++completedId;
+                        }
                         errorCount = 0; // we successfully processed a message
                     } catch (Exception e) {
                         exitLoop = true;
@@ -222,7 +233,7 @@ public class OutputJob implements Runnable {
                     errorCount = 0;
                 }
 
-                if (completedId != atId && (exitLoop || updateIntervalMs <= 0
+                if ((completedId != atId || reachedTo) && (exitLoop || updateIntervalMs <= 0
                         || System.currentTimeMillis() - lastUpdate >= updateIntervalMs)) {
                     synchronized (repo) {
                         o = repo.findOutput(oid);
@@ -232,6 +243,7 @@ public class OutputJob implements Runnable {
                         output.setAt(timestamp);
                         handler.updateOutput(output);
                         output.setAtId(completedId);
+                        if (reachedTo) output.setEnabled(false);
                         repo.updateOutput(output);
                         atId = completedId;
                         lastUpdate = System.currentTimeMillis();

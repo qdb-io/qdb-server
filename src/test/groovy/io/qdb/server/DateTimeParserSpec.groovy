@@ -32,6 +32,15 @@ class DateTimeParserSpec extends Specification {
         df.format(d) == "2013-06-16T21:04:32.123+0300"
     }
 
+    def "Millis with space instead of + in timezone works"() {
+        Date d = DateTimeParser.INSTANCE.parse("2013-06-16T21:04:32.123 0300")
+        def df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ")
+        df.setTimeZone(TimeZone.getTimeZone("GMT+3"))
+
+        expect:
+        df.format(d) == "2013-06-16T21:04:32.123+0300"
+    }
+
     def "Millis no timezone works"() {
         Date d = DateTimeParser.INSTANCE.parse("2013-06-16T21:04:32.123")
         def df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS")
@@ -42,6 +51,15 @@ class DateTimeParserSpec extends Specification {
 
     def "Full works"() {
         Date d = DateTimeParser.INSTANCE.parse("2013-06-16T21:04:32+0300")
+        def df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ")
+        df.setTimeZone(TimeZone.getTimeZone("GMT+3"))
+
+        expect:
+        df.format(d) == "2013-06-16T21:04:32+0300"
+    }
+
+    def "Full with space instead of + in timezone works"() {
+        Date d = DateTimeParser.INSTANCE.parse("2013-06-16T21:04:32 0300")
         def df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ")
         df.setTimeZone(TimeZone.getTimeZone("GMT+3"))
 

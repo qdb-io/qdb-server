@@ -169,9 +169,7 @@ class MessagesSpec extends StandaloneBase {
 
     def "Get message with from and to"() {
         // read the headers so we know what timestamps and ids to ask for
-        def text = GET("/db/foo/q/bar/messages?from=0&noPayload=true&noLengthPrefix=true&borg=true&limit=2").text
-        println(text)
-        def r = new StringReader(text)
+        def r = new StringReader(GET("/db/foo/q/bar/messages?from=0&noPayload=true&noLengthPrefix=true&borg=true&limit=2").text)
         def h1 = new JsonSlurper().parseText(r.readLine())
         def h2 = new JsonSlurper().parseText(r.readLine())
 

@@ -37,6 +37,11 @@ public class TestOutputHandler implements OutputHandler {
     }
 
     @Override
+    public long flushMessages() throws Exception {
+        return 0;
+    }
+
+    @Override
     public void updateOutput(Output output) {
     }
 
