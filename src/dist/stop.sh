@@ -7,7 +7,7 @@ QDB_PIDFILE=qdb.pid
 
 if [ ! -f $QDB_PIDFILE ] ; then
     echo "$QDB_PIDFILE not found"
-    exit 1
+    exit 0
 fi
 
 PID=`cat $QDB_PIDFILE`
