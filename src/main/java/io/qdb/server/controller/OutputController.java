@@ -62,6 +62,7 @@ public class OutputController extends CrudController {
         public Date from;
         public Date to;
         public Date at;
+        public Long limit;
         public Integer updateIntervalMs;
         public String status;
         public Object behindBy;
@@ -86,6 +87,8 @@ public class OutputController extends CrudController {
             this.from = toDate(o.getFrom());
             this.to = toDate(o.getTo());
             this.at = toDate(o.getAt());
+            long limit = o.getLimit();
+            this.limit = limit <= 0 ? null : limit;
             this.updateIntervalMs = o.getUpdateIntervalMs();
             this.warnAfter = toPercentage(o.getWarnAfter());
             this.errorAfter = toPercentage(o.getErrorAfter());
@@ -319,6 +322,11 @@ public class OutputController extends CrudController {
             } else if (dto.toId != null && dto.toId != o.getToId()) {
                 o.setToId(dto.toId);
                 o.setTo(0);
+                changed = true;
+            }
+
+            if (dto.limit != null && dto.limit != o.getLimit()) {
+                o.setLimit(dto.limit);
                 changed = true;
             }
 

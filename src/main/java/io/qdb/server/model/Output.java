@@ -33,6 +33,7 @@ public class Output extends ModelObject {
     private long from;
     private long to;
     private long at;
+    private long limit;
     private int updateIntervalMs;
     private double warnAfter;
     private double errorAfter;
@@ -119,6 +120,14 @@ public class Output extends ModelObject {
 
     public void setAt(long at) {
         this.at = at;
+    }
+
+    public long getLimit() {
+        return limit;
+    }
+
+    public void setLimit(long limit) {
+        this.limit = limit;
     }
 
     public int getUpdateIntervalMs() {

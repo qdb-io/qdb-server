@@ -174,7 +174,8 @@ public class OutputJob implements Runnable {
     }
 
     /**
-     * Feed messages to our handler until we are closed or our output is changed by someone else.
+     * Feed messages to our handler until we are closed, reach our to or toId or limit or our output is changed by
+     * someone else.
      */
     public void processMessages(MessageBuffer buffer, OutputHandler handler) throws Exception {
         if (log.isDebugEnabled()) log.debug(outputPath + ": processing messages");
@@ -188,7 +189,9 @@ public class OutputJob implements Runnable {
             long lastUpdate = System.currentTimeMillis();
             long to = output.getTo();
             long toId = output.getToId();
+            long limit = output.getLimit();
             boolean reachedTo = false;
+            boolean reachedLimit = false;
             int updateIntervalMs = output.getUpdateIntervalMs();
 
             boolean exitLoop = false;
@@ -218,6 +221,13 @@ public class OutputJob implements Runnable {
                                     cursor.getPayload());
                             if (completedId == currentId) completedId = cursor.getNextId();
                             else ++completedId;
+                            // limit must be checked after processing so cannot combine this code with reachedTo
+                            reachedLimit = limit > 0 && (--limit == 0);
+                            if (reachedLimit) {
+                                long id = handler.flushMessages();
+                                completedId = id <= 0 ? currentId - 1 : id;
+                                exitLoop = true;
+                            }
                         }
                         errorCount = 0; // we successfully processed a message
                     } catch (Exception e) {
@@ -233,7 +243,7 @@ public class OutputJob implements Runnable {
                     errorCount = 0;
                 }
 
-                if ((completedId != atId || reachedTo) && (exitLoop || updateIntervalMs <= 0
+                if ((completedId != atId || reachedTo || reachedLimit) && (exitLoop || updateIntervalMs <= 0
                         || System.currentTimeMillis() - lastUpdate >= updateIntervalMs)) {
                     synchronized (repo) {
                         o = repo.findOutput(oid);
@@ -243,7 +253,8 @@ public class OutputJob implements Runnable {
                         output.setAt(timestamp);
                         handler.updateOutput(output);
                         output.setAtId(completedId);
-                        if (reachedTo) output.setEnabled(false);
+                        output.setLimit(limit);
+                        if (reachedTo || reachedLimit) output.setEnabled(false);
                         repo.updateOutput(output);
                         atId = completedId;
                         lastUpdate = System.currentTimeMillis();
