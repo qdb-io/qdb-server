@@ -23,7 +23,7 @@ public class GrepMessageFilter implements MessageFilter {
     @Override
     public void init(Queue q) throws IllegalArgumentException {
         try {
-            pattern = Pattern.compile(grep);
+            pattern = Pattern.compile(grep, Pattern.MULTILINE);
         } catch (PatternSyntaxException e) {
             throw new IllegalArgumentException("Invalid grep regex [" + grep + "]: " + e.getMessage());
         }
@@ -46,6 +46,6 @@ public class GrepMessageFilter implements MessageFilter {
         } catch (UnsupportedEncodingException e) {  // this shouldn't happen
             return Result.REJECT;
         }
-        return pattern.matcher(s).matches() ? Result.ACCEPT : Result.REJECT;
+        return pattern.matcher(s).find() ? Result.ACCEPT : Result.REJECT;
     }
 }

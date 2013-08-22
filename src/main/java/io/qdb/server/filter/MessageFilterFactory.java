@@ -37,8 +37,8 @@ public class MessageFilterFactory {
     }
 
     /**
-     * Create an OutputHandler instance for type. Throws IllegalArgumentException if it is invalid or instance
-     * creation fails. The type parameter can be a built in short type name (e.g. rabbitmq) or a fully qualified
+     * Create an MessageFilter instance for type. Throws IllegalArgumentException if it is invalid or instance
+     * creation fails. The type parameter can be a built in short type name (e.g. routingKey) or a fully qualified
      * class name.
      */
     @SuppressWarnings("unchecked")
@@ -46,6 +46,10 @@ public class MessageFilterFactory {
         Class cls;
         if ("routingKey".equals(type)) {
             cls = RoutingKeyMessageFilter.class;
+        } else if ("grep".equals(type)) {
+            cls = GrepMessageFilter.class;
+        } else if ("standard".equals(type)) {
+            cls = StandardMessageFilter.class;
         } else if (type.contains(".")) {
             try {
                 cls = Class.forName(type);

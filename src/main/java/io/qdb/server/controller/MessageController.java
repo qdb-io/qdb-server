@@ -258,7 +258,13 @@ public class MessageController extends CrudController {
         String filter = call.getString("filter", null);
         if (filter == null) {
             String routingKey = call.getString("routingKey", null);
-            if (routingKey != null) filter = "routingKey";
+            String grep = call.getString("grep", null);
+            if (routingKey != null) {
+                if (grep != null) filter = "standard";
+                else filter = "routingKey";
+            } else if (grep != null) {
+                filter = "grep";
+            }
         }
         MessageFilter mf;
         if (filter != null) {

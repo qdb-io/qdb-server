@@ -109,14 +109,28 @@ class MessagesSpec extends StandaloneBase {
     }
 
     def "Get single message matching routingKey"() {
-        def ans = GET("/db/foo/q/bar/messages?fromId=0&single=true&routingKey=def")
-        def df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ")
+        def ans = GET("/db/foo/q/bar/messages?fromId=0&single=true&routingKey=def&timeoutMs=1")
 
         expect:
         ans.code == 200
-        ans.json != null
         ans.json.hello == "2nd world"
         ans.headers["QDB-RoutingKey"] == "def"
+    }
+
+    def "Get single message matching grep"() {
+        def ans = GET("/db/foo/q/bar/messages?fromId=0&single=true&grep=2nd&timeoutMs=1")
+
+        expect:
+        ans.code == 200
+        ans.json.hello == "2nd world"
+    }
+
+    def "Get single message matching routingKey and grep"() {
+        def ans = GET("/db/foo/q/bar/messages?fromId=0&single=true&routingKey=def&grep=2nd&timeoutMs=1")
+
+        expect:
+        ans.code == 200
+        ans.json.hello == "2nd world"
     }
 
     def "Get 2 messages streamed"() {

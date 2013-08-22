@@ -16,33 +16,25 @@
 
 package io.qdb.server
 
-import io.qdb.server.filter.GrepMessageFilter
 import io.qdb.server.filter.MessageFilter
+import io.qdb.server.filter.StandardMessageFilter
 import io.qdb.server.model.Queue
 import spock.lang.Specification
 
-class GrepMessageFilterSpec extends Specification {
+class StandardMessageFilterSpec extends Specification {
 
-    GrepMessageFilter f = new GrepMessageFilter()
+    StandardMessageFilter f = new StandardMessageFilter()
     Queue q = new Queue()
 
-    def "Default encoding"() {
+    def "RoutingKey checked first"() {
+        f.routingKey = "foo"
         f.grep = "[a-z]+"
         f.init(q)
 
         expect:
-        f.accept(0, "", "abc".getBytes("UTF8")) == MessageFilter.Result.ACCEPT
-        f.accept(0, "", "abc0".getBytes("UTF8")) == MessageFilter.Result.ACCEPT
-        f.accept(0, "", "123".getBytes("UTF8")) == MessageFilter.Result.REJECT
-    }
-
-    def "Match whole line"() {
-        f.grep = '^[a-z]+$'
-        f.init(q)
-
-        expect:
-        f.accept(0, "", "abc".getBytes("UTF8")) == MessageFilter.Result.ACCEPT
-        f.accept(0, "", "123\nabc".getBytes("UTF8")) == MessageFilter.Result.ACCEPT
-        f.accept(0, "", "abc0".getBytes("UTF8")) == MessageFilter.Result.REJECT
+        f.accept(0, "bar", null) == MessageFilter.Result.REJECT
+        f.accept(0, "foo", null) == MessageFilter.Result.CHECK_PAYLOAD
+        f.accept(0, "foo", "abc".getBytes("UTF8")) == MessageFilter.Result.ACCEPT
+        f.accept(0, "foo", "123".getBytes("UTF8")) == MessageFilter.Result.REJECT
     }
 }
