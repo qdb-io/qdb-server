@@ -1,9 +1,11 @@
 package io.qdb.server.filter;
 
 /**
- * For filtering messages retuned by the message list endpoint and for outputs etc.
+ * For filtering messages returned by the message list endpoint and for outputs etc.
  */
 public interface MessageFilter {
+
+    enum Result { REJECT, ACCEPT, CHECK_PAYLOAD }
 
     /**
      * This method is called before the first call to {@link #accept(long, String, byte[])}.
@@ -11,8 +13,17 @@ public interface MessageFilter {
     void init() throws IllegalArgumentException;
 
     /**
-     * Return true to process (accept) the message or false to skip it. This method is called twice for each message,
-     * once with just the timestamp and routingKey and once with these and the message payload.
+     * Return {@link Result#ACCEPT} to process the message or {@link Result#REJECT} to skip it. The first call to
+     * this method for a message is made before the payload is read. Return {@link Result#CHECK_PAYLOAD}
+     * if the payload is required and a second call will be made once the payload has been read.
      */
-    boolean accept(long timestamp, String routingKey, byte[] payload);
+    Result accept(long timestamp, String routingKey, byte[] payload);
+
+    /**
+     * Accepts all messages.
+     */
+    public static final MessageFilter NULL = new MessageFilter() {
+        public void init() throws IllegalArgumentException { }
+        public Result accept(long timestamp, String routingKey, byte[] payload) { return Result.ACCEPT; }
+    };
 }

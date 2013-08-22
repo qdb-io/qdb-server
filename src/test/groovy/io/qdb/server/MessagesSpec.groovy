@@ -50,7 +50,7 @@ class MessagesSpec extends StandaloneBase {
         now = now - now % 1000
         def ans = POST("/db/foo/q/bar/messages?routingKey=abc", [hello: "world"], "david", "secret")
         Thread.sleep(1)
-        def ans2 = POST("/db/foo/q/bar/messages", [hello: "2nd world"], "david", "secret")
+        def ans2 = POST("/db/foo/q/bar/messages?routingKey=def", [hello: "2nd world"], "david", "secret")
         SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
         long ts = df.parse(ans.json.timestamp).time
         long ts2 = df.parse(ans2.json.timestamp).time
@@ -108,6 +108,17 @@ class MessagesSpec extends StandaloneBase {
         Long.parseLong(ans.headers["QDB-Timestamp"] as String) >= startTime
     }
 
+    def "Get single message matching routingKey"() {
+        def ans = GET("/db/foo/q/bar/messages?fromId=0&single=true&routingKey=def")
+        def df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ")
+
+        expect:
+        ans.code == 200
+        ans.json != null
+        ans.json.hello == "2nd world"
+        ans.headers["QDB-RoutingKey"] == "def"
+    }
+
     def "Get 2 messages streamed"() {
         def ans = GET("/db/foo/q/bar/messages?fromId=0&limit=2&noLengthPrefix=true")
         def r = new StringReader(ans.text)
@@ -134,7 +145,7 @@ class MessagesSpec extends StandaloneBase {
         h2.id > 1
         df.parse(h2.timestamp).time >= h1.startTime
         h2.payloadSize == m2line.length()
-        h2.routingKey == ""
+        h2.routingKey == "def"
         m2.hello == "2nd world"
     }
 
@@ -145,6 +156,20 @@ class MessagesSpec extends StandaloneBase {
         expect:
         ans.code == 200
         h.timestamp >= startTime
+    }
+
+    def "Get messages streamed matching routingKey"() {
+        def ans = GET("/db/foo/q/bar/messages?fromId=0&limit=1&noLengthPrefix=true&routingKey=def")
+        def r = new StringReader(ans.text)
+
+        def h2 = new JsonSlurper().parseText(r.readLine())
+        def m2line = r.readLine()
+        def m2 = new JsonSlurper().parseText(m2line)
+
+        expect:
+        ans.code == 200
+        h2.routingKey == "def"
+        m2.hello == "2nd world"
     }
 
     def "Get message streamed with header length prefix"() {

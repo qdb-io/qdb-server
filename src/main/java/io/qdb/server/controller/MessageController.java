@@ -18,9 +18,13 @@ package io.qdb.server.controller;
 
 import io.qdb.buffer.MessageBuffer;
 import io.qdb.buffer.MessageCursor;
+import io.qdb.server.databind.DataBinder;
 import io.qdb.server.databind.DateTimeParser;
+import io.qdb.server.filter.MessageFilter;
+import io.qdb.server.filter.MessageFilterFactory;
 import io.qdb.server.model.Queue;
 import io.qdb.server.queue.QueueManager;
+import org.simpleframework.http.Form;
 import org.simpleframework.http.Request;
 import org.simpleframework.http.Response;
 import org.slf4j.Logger;
@@ -33,6 +37,7 @@ import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 @Singleton
 public class MessageController extends CrudController {
@@ -40,6 +45,7 @@ public class MessageController extends CrudController {
     private static final Logger log = LoggerFactory.getLogger(MessageController.class);
 
     private final QueueManager queueManager;
+    private final MessageFilterFactory messageFilterFactory;
 
     public static class CreateDTO {
 
@@ -66,18 +72,20 @@ public class MessageController extends CrudController {
         @SuppressWarnings("UnusedDeclaration")
         public MessageHeader() { }
 
-        public MessageHeader(MessageCursor c) throws IOException {
-            id = c.getId();
-            timestamp = new Date(c.getTimestamp());
-            payloadSize = c.getPayloadSize();
-            routingKey = c.getRoutingKey();
+        public MessageHeader(MessageCursor c, long id, long timestamp, String routingKey, byte[] payload) throws IOException {
+            this.id = id;
+            this.timestamp = new Date(timestamp);
+            this.routingKey = routingKey;
+            payloadSize = payload == null ? c.getPayloadSize() : payload.length;
         }
     }
 
     @Inject
-    public MessageController(JsonService jsonService, QueueManager queueManager) {
+    public MessageController(JsonService jsonService, QueueManager queueManager,
+                             MessageFilterFactory messageFilterFactory) {
         super(jsonService);
         this.queueManager = queueManager;
+        this.messageFilterFactory = messageFilterFactory;
     }
 
     @Override
@@ -247,6 +255,31 @@ public class MessageController extends CrudController {
             return;
         }
 
+        String filter = call.getString("filter", null);
+        if (filter == null) {
+            String routingKey = call.getString("routingKey", null);
+            if (routingKey != null) filter = "routingKey";
+        }
+        MessageFilter mf;
+        if (filter != null) {
+            try {
+                mf = messageFilterFactory.createFilter(filter);
+            } catch (IllegalArgumentException e) {
+                call.setCode(422, e.getMessage());
+                return;
+            }
+            Map<String, String> p = call.getRequest().getQuery();
+            if (p != null && !p.isEmpty()) new DataBinder(jsonService).ignoreInvalidFields(true).bind(p, mf).check();
+            try {
+                mf.init();
+            } catch (IllegalArgumentException e) {
+                call.setCode(422, e.getMessage());
+                return;
+            }
+        } else {
+            mf = MessageFilter.NULL;
+        }
+
         int timeoutMs = call.getInt("timeoutMs", 0);
         byte[] keepAlive = call.getUTF8Bytes("keepAlive", "\n");
         int keepAliveMs = call.getInt("keepAliveMs", 29000);
@@ -275,7 +308,7 @@ public class MessageController extends CrudController {
         MessageCursor c = from != null ? mb.cursorByTimestamp(from.getTime()) : mb.cursor(fromId);
 
         int nextKeepAliveMs = keepAliveMs;
-        for (int sent = 0; limit == 0 || sent < limit; ++sent) {
+        for (int sent = 0; limit == 0 || sent < limit; ) {
             try {
                 if (timeoutMs <= 0) {
                     while (!c.next(single ? 0 : nextKeepAliveMs)) {
@@ -301,30 +334,40 @@ public class MessageController extends CrudController {
 
             if (to > 0 && c.getTimestamp() >= to || toId > 0 && c.getId() >= toId) break;
 
-            if (single) {
-                response.setContentLength(c.getPayloadSize());
-                response.set("QDB-Id", Long.toString(c.getId()));
-                long timestamp = c.getTimestamp();
-                response.set("QDB-Timestamp", borg
-                        ? Long.toString(timestamp)
-                        : DateTimeParser.INSTANCE.formatTimestamp(new Date(timestamp)));
-                response.set("QDB-RoutingKey", c.getRoutingKey());
-                if (!noPayload) out.write(c.getPayload());
-            } else {
-                if (!noHeaders) {
-                    MessageHeader h = new MessageHeader(c);
-                    byte[] data = jsonService.toJsonMsgHeader(h, borg);
-                    if (!noLengthPrefix) out.write((data.length + ":").getBytes("UTF8"));
-                    out.write(data);
-                    out.write(10);
+            long id = c.getId();
+            long timestamp = c.getTimestamp();
+            String routingKey = c.getRoutingKey();
+            byte[] payload = null;
+            MessageFilter.Result result = mf.accept(timestamp, routingKey, null);
+            if (result == MessageFilter.Result.CHECK_PAYLOAD) {
+                result = mf.accept(timestamp, routingKey, payload = c.getPayload());
+            }
+
+            if (result == MessageFilter.Result.ACCEPT) {
+                if (single) {
+                    response.setContentLength(noPayload ? 0 : c.getPayloadSize());
+                    response.set("QDB-Id", Long.toString(c.getId()));
+                    response.set("QDB-Timestamp", borg
+                            ? Long.toString(timestamp)
+                            : DateTimeParser.INSTANCE.formatTimestamp(new Date(timestamp)));
+                    response.set("QDB-RoutingKey", routingKey);
+                    if (!noPayload) out.write(payload == null ? c.getPayload() : payload);
+                } else {
+                    if (!noHeaders) {
+                        MessageHeader h = new MessageHeader(c, id, timestamp, routingKey, payload);
+                        byte[] data = jsonService.toJsonMsgHeader(h, borg);
+                        if (!noLengthPrefix) out.write((data.length + ":").getBytes("UTF8"));
+                        out.write(data);
+                        out.write(10);
+                    }
+                    if (!noPayload) {
+                        out.write(payload == null ? c.getPayload() : payload);
+                        out.write(separator);
+                    }
+                    nextKeepAliveMs = 100;
                 }
-                if (!noPayload) {
-                    out.write(c.getPayload());
-                    out.write(separator);
-                }
-                nextKeepAliveMs = 100;
+                ++sent;
             }
         }
     }
-
 }

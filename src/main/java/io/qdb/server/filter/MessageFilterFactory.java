@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.qdb.server.input;
+package io.qdb.server.filter;
 
 import com.google.inject.Injector;
 import io.qdb.server.output.OutputHandler;
@@ -24,43 +24,43 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * Creates {@link InputHandler} instances.
+ * Creates {@link MessageFilter} instances.
  */
 @Singleton
-public class InputHandlerFactory {
+public class MessageFilterFactory {
 
     final Injector injector;
 
     @Inject
-    public InputHandlerFactory(Injector injector) {
+    public MessageFilterFactory(Injector injector) {
         this.injector = injector;
     }
 
     /**
-     * Create an InputHandler instance for type. Throws IllegalArgumentException if it is invalid or instance
+     * Create an OutputHandler instance for type. Throws IllegalArgumentException if it is invalid or instance
      * creation fails. The type parameter can be a built in short type name (e.g. rabbitmq) or a fully qualified
      * class name.
      */
     @SuppressWarnings("unchecked")
-    public InputHandler createHandler(String type) throws IllegalArgumentException {
+    public MessageFilter createFilter(String type) throws IllegalArgumentException {
         Class cls;
-        if ("rabbitmq".equals(type)) {
-            cls = RabbitMQInputHandler.class;
+        if ("routingKey".equals(type)) {
+            cls = RoutingKeyMessageFilter.class;
         } else if (type.contains(".")) {
             try {
                 cls = Class.forName(type);
             } catch (ClassNotFoundException e) {
-                throw new IllegalArgumentException("Input type class not found [" + type + "]");
+                throw new IllegalArgumentException("Filter class not found [" + type + "]");
             }
-            if (!InputHandler.class.isAssignableFrom(cls)) {
-                throw new IllegalArgumentException("Input type [" + type + "] does not implement " +
-                        InputHandler.class.getName());
+            if (!MessageFilter.class.isAssignableFrom(cls)) {
+                throw new IllegalArgumentException("Filter [" + type + "] does not implement " +
+                        MessageFilter.class.getName());
             }
         } else {
-            throw new IllegalArgumentException("Unknown input type [" + type + "]");
+            throw new IllegalArgumentException("Unknown filter [" + type + "]");
         }
         try {
-            return (InputHandler)injector.getInstance(cls);
+            return (MessageFilter)injector.getInstance(cls);
         } catch (Exception e) {
             throw new IllegalArgumentException(e.toString(), e);
         }

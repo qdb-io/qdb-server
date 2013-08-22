@@ -51,7 +51,7 @@ public class OutputHandlerFactory {
                 throw new IllegalArgumentException("Output type class not found [" + type + "]");
             }
             if (!OutputHandler.class.isAssignableFrom(cls)) {
-                throw new IllegalArgumentException("Output type [" + type + "] does not extend " +
+                throw new IllegalArgumentException("Output type [" + type + "] does not implement " +
                         OutputHandler.class.getName());
             }
         } else {

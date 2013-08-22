@@ -16,6 +16,7 @@
 
 package io.qdb.server
 
+import io.qdb.server.filter.MessageFilter
 import io.qdb.server.filter.RoutingKeyMessageFilter
 import spock.lang.Specification
 
@@ -28,8 +29,8 @@ class RoutingKeyMessageFilterSpec extends Specification {
         f.init()
 
         expect:
-        f.accept(0, "abc", null)
-        !f.accept(0, "abc0", null)
+        f.accept(0, "abc", null) == MessageFilter.Result.ACCEPT
+        f.accept(0, "abc0", null) == MessageFilter.Result.REJECT
     }
 
     def "Regex with trailing slash"() {
@@ -37,8 +38,8 @@ class RoutingKeyMessageFilterSpec extends Specification {
         f.init()
 
         expect:
-        f.accept(0, "abc", null)
-        !f.accept(0, "abc0", null)
+        f.accept(0, "abc", null) == MessageFilter.Result.ACCEPT
+        f.accept(0, "abc0", null) == MessageFilter.Result.REJECT
     }
 
     def "Match exact word"() {
@@ -46,8 +47,8 @@ class RoutingKeyMessageFilterSpec extends Specification {
         f.init()
 
         expect:
-        f.accept(0, "foo", null)
-        !f.accept(0, "foo0", null)
+        f.accept(0, "foo", null) == MessageFilter.Result.ACCEPT
+        f.accept(0, "foo0", null) == MessageFilter.Result.REJECT
     }
 
     def "Match exact words"() {
@@ -55,8 +56,8 @@ class RoutingKeyMessageFilterSpec extends Specification {
         f.init()
 
         expect:
-        f.accept(0, "foo.bar", null)
-        !f.accept(0, "foo0bar", null)
+        f.accept(0, "foo.bar", null) == MessageFilter.Result.ACCEPT
+        f.accept(0, "foo0bar", null) == MessageFilter.Result.REJECT
     }
 
     def "Match any single word"() {
@@ -64,8 +65,8 @@ class RoutingKeyMessageFilterSpec extends Specification {
         f.init()
 
         expect:
-        f.accept(0, "foo", null)
-        !f.accept(0, "foo.bar", null)
+        f.accept(0, "foo", null) == MessageFilter.Result.ACCEPT
+        f.accept(0, "foo.bar", null) == MessageFilter.Result.REJECT
     }
 
     def "Match any single word at end"() {
@@ -73,10 +74,10 @@ class RoutingKeyMessageFilterSpec extends Specification {
         f.init()
 
         expect:
-        f.accept(0, "foo.bar", null)
-        f.accept(0, "foo.", null)
-        !f.accept(0, "foo", null)
-        !f.accept(0, "foo0.bar", null)
+        f.accept(0, "foo.bar", null) == MessageFilter.Result.ACCEPT
+        f.accept(0, "foo.", null) == MessageFilter.Result.ACCEPT
+        f.accept(0, "foo", null) == MessageFilter.Result.REJECT
+        f.accept(0, "foo0.bar", null) == MessageFilter.Result.REJECT
     }
 
     def "Match any single word in middle"() {
@@ -84,10 +85,10 @@ class RoutingKeyMessageFilterSpec extends Specification {
         f.init()
 
         expect:
-        f.accept(0, "foo.bar.baz", null)
-        f.accept(0, "foo..baz", null)
-        !f.accept(0, "foo.bar", null)
-        !f.accept(0, "foo.bar.baz0", null)
+        f.accept(0, "foo.bar.baz", null) == MessageFilter.Result.ACCEPT
+        f.accept(0, "foo..baz", null) == MessageFilter.Result.ACCEPT
+        f.accept(0, "foo.bar", null) == MessageFilter.Result.REJECT
+        f.accept(0, "foo.bar.baz0", null) == MessageFilter.Result.REJECT
     }
 
     def "Match any two words"() {
@@ -95,10 +96,10 @@ class RoutingKeyMessageFilterSpec extends Specification {
         f.init()
 
         expect:
-        f.accept(0, "foo.bar.baz", null)
-        f.accept(0, "foo..baz", null)
-        !f.accept(0, "foo.bar", null)
-        !f.accept(0, "foo.bar.baz.", null)
+        f.accept(0, "foo.bar.baz", null) == MessageFilter.Result.ACCEPT
+        f.accept(0, "foo..baz", null) == MessageFilter.Result.ACCEPT
+        f.accept(0, "foo.bar", null) == MessageFilter.Result.REJECT
+        f.accept(0, "foo.bar.baz.", null) == MessageFilter.Result.REJECT
     }
 
     def "Match one or more words"() {
@@ -106,8 +107,8 @@ class RoutingKeyMessageFilterSpec extends Specification {
         f.init()
 
         expect:
-        f.accept(0, "foo", null)
-        f.accept(0, "foo.bar", null)
+        f.accept(0, "foo", null) == MessageFilter.Result.ACCEPT
+        f.accept(0, "foo.bar", null) == MessageFilter.Result.ACCEPT
     }
 
     def "Match one or more words at end"() {
@@ -115,10 +116,10 @@ class RoutingKeyMessageFilterSpec extends Specification {
         f.init()
 
         expect:
-        f.accept(0, "foo.bar", null)
-        f.accept(0, "foo.bar.baz", null)
-        !f.accept(0, "foo", null)
-        !f.accept(0, "foo0.bar", null)
+        f.accept(0, "foo.bar", null) == MessageFilter.Result.ACCEPT
+        f.accept(0, "foo.bar.baz", null) == MessageFilter.Result.ACCEPT
+        f.accept(0, "foo", null) == MessageFilter.Result.REJECT
+        f.accept(0, "foo0.bar", null) == MessageFilter.Result.REJECT
     }
 
     def "Match one or more words in middle"() {
@@ -126,9 +127,9 @@ class RoutingKeyMessageFilterSpec extends Specification {
         f.init()
 
         expect:
-        f.accept(0, "foo.a.bar", null)
-        f.accept(0, "foo.a.b.bar", null)
-        !f.accept(0, "foo", null)
-        !f.accept(0, "foo.bar", null)
+        f.accept(0, "foo.a.bar", null) == MessageFilter.Result.ACCEPT
+        f.accept(0, "foo.a.b.bar", null) == MessageFilter.Result.ACCEPT
+        f.accept(0, "foo", null) == MessageFilter.Result.REJECT
+        f.accept(0, "foo.bar", null) == MessageFilter.Result.REJECT
     }
 }

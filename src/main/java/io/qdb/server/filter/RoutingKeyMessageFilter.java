@@ -1,6 +1,7 @@
 package io.qdb.server.filter;
 
 import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 /**
  * Accepts messages with routingKey matching a regex or a RabbitMQ style matching expression.
@@ -45,11 +46,15 @@ public class RoutingKeyMessageFilter implements MessageFilter {
             }
             regex = b.toString();
         }
-        pattern = Pattern.compile(regex);
+        try {
+            pattern = Pattern.compile(regex);
+        } catch (PatternSyntaxException e) {
+            throw new IllegalArgumentException("Invalid routingKey [" + routingKey + "]: " + e.getMessage());
+        }
     }
 
     @Override
-    public boolean accept(long timestamp, String routingKey, byte[] payload) {
-        return pattern.matcher(routingKey).matches();
+    public Result accept(long timestamp, String routingKey, byte[] payload) {
+        return pattern.matcher(routingKey).matches() ? Result.ACCEPT : Result.REJECT;
     }
 }
