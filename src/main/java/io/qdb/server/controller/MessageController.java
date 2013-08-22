@@ -271,7 +271,7 @@ public class MessageController extends CrudController {
             Map<String, String> p = call.getRequest().getQuery();
             if (p != null && !p.isEmpty()) new DataBinder(jsonService).ignoreInvalidFields(true).bind(p, mf).check();
             try {
-                mf.init();
+                mf.init(q);
             } catch (IllegalArgumentException e) {
                 call.setCode(422, e.getMessage());
                 return;

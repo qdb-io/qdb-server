@@ -1,5 +1,7 @@
 package io.qdb.server.filter;
 
+import io.qdb.server.model.Queue;
+
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
@@ -15,7 +17,7 @@ public class RoutingKeyMessageFilter implements MessageFilter {
     private static final char[] HEX = new char[]{'0','1','2','3','4','5','6','7','8','9','a','b','c','d','e','f'};
 
     @Override
-    public void init() throws IllegalArgumentException {
+    public void init(Queue q) throws IllegalArgumentException {
         if (routingKey == null || routingKey.length() == 0) throw new IllegalArgumentException("routingKey is required");
         String regex;
         if (routingKey.charAt(0) == '/') {
