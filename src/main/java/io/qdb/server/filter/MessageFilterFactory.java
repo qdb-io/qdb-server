@@ -17,11 +17,15 @@
 package io.qdb.server.filter;
 
 import com.google.inject.Injector;
+import io.qdb.server.controller.JsonService;
+import io.qdb.server.databind.DataBinder;
+import io.qdb.server.model.Queue;
 import io.qdb.server.output.OutputHandler;
 import io.qdb.server.output.RabbitMQOutputHandler;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.util.Map;
 
 /**
  * Creates {@link MessageFilter} instances.
@@ -30,38 +34,69 @@ import javax.inject.Singleton;
 public class MessageFilterFactory {
 
     final Injector injector;
+    final JsonService jsonService;
 
     @Inject
-    public MessageFilterFactory(Injector injector) {
+    public MessageFilterFactory(Injector injector, JsonService jsonService) {
         this.injector = injector;
+        this.jsonService = jsonService;
     }
 
     /**
-     * Create an MessageFilter instance for type. Throws IllegalArgumentException if it is invalid or instance
-     * creation fails. The type parameter can be a built in short type name (e.g. routingKey) or a fully qualified
+     * Create and initialize a MessageFilter instance. If filter is null then routingKey and grep are used to select
+     * a filter if either or both are not null. Returns an 'accept all' filter if all 3 are null.
+     * @param filter built in short filter name (routingKey, grep or standard) or a fully qualified class name or null
+     * @throws IllegalArgumentException on invalid parameters or filter init failure
+     */
+    public MessageFilter createFilter(String filter, String routingKey, String grep, Map params, Queue q)
+            throws IllegalArgumentException {
+        if (filter == null) {
+            if (routingKey != null) {
+                if (grep != null) filter = "standard";
+                else filter = "routingKey";
+            } else if (grep != null) {
+                filter = "grep";
+            }
+        }
+        MessageFilter mf;
+        if (filter != null) {
+            mf = createFilter(filter);
+            if (params != null && !params.isEmpty()) {
+                new DataBinder(jsonService).ignoreInvalidFields(true).bind(params, mf).check();
+            }
+            mf.init(q);
+        } else {
+            mf = MessageFilter.NULL;
+        }
+        return mf;
+    }
+
+    /**
+     * Create an MessageFilter instance for filter. Throws IllegalArgumentException if it is invalid or instance
+     * creation fails. The filter parameter can be a built in short filter name (e.g. routingKey) or a fully qualified
      * class name.
      */
     @SuppressWarnings("unchecked")
-    public MessageFilter createFilter(String type) throws IllegalArgumentException {
+    public MessageFilter createFilter(String filter) throws IllegalArgumentException {
         Class cls;
-        if ("routingKey".equals(type)) {
+        if ("routingKey".equals(filter)) {
             cls = RoutingKeyMessageFilter.class;
-        } else if ("grep".equals(type)) {
+        } else if ("grep".equals(filter)) {
             cls = GrepMessageFilter.class;
-        } else if ("standard".equals(type)) {
+        } else if ("standard".equals(filter)) {
             cls = StandardMessageFilter.class;
-        } else if (type.contains(".")) {
+        } else if (filter.contains(".")) {
             try {
-                cls = Class.forName(type);
+                cls = Class.forName(filter);
             } catch (ClassNotFoundException e) {
-                throw new IllegalArgumentException("Filter class not found [" + type + "]");
+                throw new IllegalArgumentException("Filter class not found [" + filter + "]");
             }
             if (!MessageFilter.class.isAssignableFrom(cls)) {
-                throw new IllegalArgumentException("Filter [" + type + "] does not implement " +
+                throw new IllegalArgumentException("Filter [" + filter + "] does not implement " +
                         MessageFilter.class.getName());
             }
         } else {
-            throw new IllegalArgumentException("Unknown filter [" + type + "]");
+            throw new IllegalArgumentException("Unknown filter [" + filter + "]");
         }
         try {
             return (MessageFilter)injector.getInstance(cls);

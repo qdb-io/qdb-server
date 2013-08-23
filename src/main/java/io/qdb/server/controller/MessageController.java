@@ -255,35 +255,13 @@ public class MessageController extends CrudController {
             return;
         }
 
-        String filter = call.getString("filter", null);
-        if (filter == null) {
-            String routingKey = call.getString("routingKey", null);
-            String grep = call.getString("grep", null);
-            if (routingKey != null) {
-                if (grep != null) filter = "standard";
-                else filter = "routingKey";
-            } else if (grep != null) {
-                filter = "grep";
-            }
-        }
         MessageFilter mf;
-        if (filter != null) {
-            try {
-                mf = messageFilterFactory.createFilter(filter);
-            } catch (IllegalArgumentException e) {
-                call.setCode(422, e.getMessage());
-                return;
-            }
-            Map<String, String> p = call.getRequest().getQuery();
-            if (p != null && !p.isEmpty()) new DataBinder(jsonService).ignoreInvalidFields(true).bind(p, mf).check();
-            try {
-                mf.init(q);
-            } catch (IllegalArgumentException e) {
-                call.setCode(422, e.getMessage());
-                return;
-            }
-        } else {
-            mf = MessageFilter.NULL;
+        try {
+            mf = messageFilterFactory.createFilter(call.getString("filter"), call.getString("routingKey"),
+                    call.getString("grep"), call.getRequest().getQuery(), q);
+        } catch (IllegalArgumentException e) {
+            call.setCode(422, e.getMessage());
+            return;
         }
 
         int timeoutMs = call.getInt("timeoutMs", 0);

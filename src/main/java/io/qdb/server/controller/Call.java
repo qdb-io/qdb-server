@@ -127,6 +127,10 @@ public class Call {
         return s == null ? def : s;
     }
 
+    public String getString(String param) throws IOException {
+        return request.getParameter(param);
+    }
+
     public byte[] getUTF8Bytes(String param, String def) throws IOException {
         String s = request.getParameter(param);
         return s == null ? def == null ? null : def.getBytes("UTF8") : s.getBytes("UTF8");
