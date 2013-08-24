@@ -56,7 +56,7 @@ public class RoutingKeyMessageFilter implements MessageFilter {
     }
 
     @Override
-    public Result accept(long timestamp, String routingKey, byte[] payload) {
+    public Result accept(long id, long timestamp, String routingKey, byte[] payload) {
         return pattern.matcher(routingKey).matches() ? Result.ACCEPT : Result.REJECT;
     }
 }

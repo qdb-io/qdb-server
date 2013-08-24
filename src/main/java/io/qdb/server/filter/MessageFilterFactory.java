@@ -50,11 +50,11 @@ public class MessageFilterFactory {
      */
     public MessageFilter createFilter(String filter, String routingKey, String grep, Map params, Queue q)
             throws IllegalArgumentException {
-        if (filter == null) {
-            if (routingKey != null) {
-                if (grep != null) filter = "standard";
+        if (filter == null || filter.length() == 0) {
+            if (routingKey != null && routingKey.length() > 0) {
+                if (grep != null && grep.length() > 0) filter = "standard";
                 else filter = "routingKey";
-            } else if (grep != null) {
+            } else if (grep != null && grep.length() > 0) {
                 filter = "grep";
             }
         }

@@ -22,6 +22,9 @@ import io.qdb.buffer.MessageBuffer;
 import io.qdb.server.databind.DataBinder;
 import io.qdb.server.databind.DurationParser;
 import io.qdb.server.databind.HasAnySetter;
+import io.qdb.server.filter.GrepMessageFilter;
+import io.qdb.server.filter.MessageFilterFactory;
+import io.qdb.server.filter.RoutingKeyMessageFilter;
 import io.qdb.server.model.Output;
 import io.qdb.server.model.Queue;
 import io.qdb.server.monitor.Status;
@@ -46,6 +49,7 @@ public class OutputController extends CrudController {
     private final OutputHandlerFactory handlerFactory;
     private final QueueManager queueManager;
     private final OutputStatusMonitor outputStatusMonitor;
+    private final MessageFilterFactory messageFilterFactory;
 
     private static final Logger log = LoggerFactory.getLogger(OutputController.class);
 
@@ -70,6 +74,9 @@ public class OutputController extends CrudController {
         public Double behindByPercentage;
         public Double warnAfter;
         public Double errorAfter;
+        public String filter;
+        public String routingKey;
+        public String grep;
         public transient Map<String, Object> params;
 
         @SuppressWarnings("UnusedDeclaration")
@@ -92,6 +99,9 @@ public class OutputController extends CrudController {
             this.updateIntervalMs = o.getUpdateIntervalMs();
             this.warnAfter = toPercentage(o.getWarnAfter());
             this.errorAfter = toPercentage(o.getErrorAfter());
+            this.filter = o.getFilter();
+            this.routingKey = o.getRoutingKey();
+            this.grep = o.getGrep();
             this.params = o.getParams();
         }
 
@@ -129,12 +139,14 @@ public class OutputController extends CrudController {
 
     @Inject
     public OutputController(JsonService jsonService, Repository repo, OutputHandlerFactory handlerFactory,
-                            QueueManager queueManager, OutputStatusMonitor outputStatusMonitor) {
+                            QueueManager queueManager, OutputStatusMonitor outputStatusMonitor,
+                            MessageFilterFactory messageFilterFactory) {
         super(jsonService);
         this.repo = repo;
         this.handlerFactory = handlerFactory;
         this.queueManager = queueManager;
         this.outputStatusMonitor = outputStatusMonitor;
+        this.messageFilterFactory = messageFilterFactory;
     }
 
     @SuppressWarnings("unchecked")
@@ -227,11 +239,11 @@ public class OutputController extends CrudController {
                     return;
                 }
                 if (!VALID_OUTPUT_ID.matcher(id).matches()) {
-                    call.setCode(400, "Output id must contain only letters, numbers, hyphens and underscores");
+                    call.setCode(422, "Output id must contain only letters, numbers, hyphens and underscores");
                     return;
                 }
                 if (dto.type == null) {
-                    call.setCode(400, "type is required");
+                    call.setCode(422, "type is required");
                     return;
                 }
                 MessageBuffer mb = queueManager.getBuffer(q);
@@ -268,7 +280,7 @@ public class OutputController extends CrudController {
                 try {
                     handlerFactory.createHandler(dto.type);
                 } catch (IllegalArgumentException e) {
-                    call.setCode(400, e.getMessage());
+                    call.setCode(422, e.getMessage());
                     return;
                 }
                 o.setType(dto.type);
@@ -337,6 +349,47 @@ public class OutputController extends CrudController {
 
             if (dto.errorAfter != null && Math.abs(dto.errorAfter - o.getErrorAfter()) >= 0.001) {
                 o.setErrorAfter(dto.errorAfter);
+                changed = true;
+            }
+
+            if (dto.filter != null && !dto.filter.equals(o.getFilter())) {
+                if (dto.filter.length() > 0) {
+                    try {
+                        messageFilterFactory.createFilter(dto.filter);
+                    } catch (IllegalArgumentException e) {
+                        call.setCode(422, e.getMessage());
+                        return;
+                    }
+                }
+                o.setFilter(dto.filter);
+                changed = true;
+            }
+
+            if (dto.routingKey != null && !dto.routingKey.equals(o.getRoutingKey())) {
+                if (dto.routingKey.length() > 0) {
+                    RoutingKeyMessageFilter mf = new RoutingKeyMessageFilter();
+                    try {
+                        mf.init(null);
+                    } catch (IllegalArgumentException e) {
+                        call.setCode(422, e.getMessage());
+                        return;
+                    }
+                }
+                o.setRoutingKey(dto.routingKey);
+                changed = true;
+            }
+
+            if (dto.grep != null && !dto.grep.equals(o.getGrep())) {
+                if (dto.grep.length() > 0) {
+                    GrepMessageFilter mf = new GrepMessageFilter();
+                    try {
+                        mf.init(null);
+                    } catch (IllegalArgumentException e) {
+                        call.setCode(422, e.getMessage());
+                        return;
+                    }
+                }
+                o.setGrep(dto.grep);
                 changed = true;
             }
 

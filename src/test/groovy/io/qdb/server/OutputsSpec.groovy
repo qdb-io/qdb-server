@@ -44,7 +44,7 @@ class OutputsSpec extends StandaloneBase {
         def ans = POST("/db/foo/q/bar/out/a?b", [:])
 
         expect:
-        ans.code == 400
+        ans.code == 422
     }
 
     def "List outputs"() {
@@ -85,7 +85,7 @@ class OutputsSpec extends StandaloneBase {
         def ans = POST("/db/foo/q/bar/out/piggy", [type: "oinks"])
 
         expect:
-        ans.code == 400
+        ans.code == 422
     }
 
     def "Delete output"() {

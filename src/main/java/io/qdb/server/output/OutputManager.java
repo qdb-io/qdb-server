@@ -20,6 +20,7 @@ import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.qdb.server.controller.JsonService;
+import io.qdb.server.filter.MessageFilterFactory;
 import io.qdb.server.model.Output;
 import io.qdb.server.repo.Repository;
 import io.qdb.server.queue.QueueManager;
@@ -47,16 +48,19 @@ public class OutputManager implements Closeable, Thread.UncaughtExceptionHandler
     private final Repository repo;
     private final QueueManager queueManager;
     private final OutputHandlerFactory handlerFactory;
+    private final MessageFilterFactory messageFilterFactory;
     private final JsonService jsonService;
     private final Map<String, OutputJob> jobs = new ConcurrentHashMap<String, OutputJob>(); // output id -> job
     private final ExecutorService pool;
 
     @Inject
     public OutputManager(EventBus eventBus, Repository repo, QueueManager queueManager,
-                         OutputHandlerFactory handlerFactory, JsonService jsonService) throws IOException {
+                         OutputHandlerFactory handlerFactory, MessageFilterFactory messageFilterFactory,
+                         JsonService jsonService) throws IOException {
         this.repo = repo;
         this.queueManager = queueManager;
         this.handlerFactory = handlerFactory;
+        this.messageFilterFactory = messageFilterFactory;
         this.jsonService = jsonService;
         this.pool = new ThreadPoolExecutor(1, Integer.MAX_VALUE,
                 60L, TimeUnit.SECONDS,
@@ -99,7 +103,7 @@ public class OutputManager implements Closeable, Thread.UncaughtExceptionHandler
 
         if (!o.isEnabled()) return;
 
-        OutputJob job = new OutputJob(this, handlerFactory, queueManager, repo, jsonService, oid);
+        OutputJob job = new OutputJob(this, handlerFactory, messageFilterFactory, queueManager, repo, jsonService, oid);
         jobs.put(oid, job);
         pool.execute(job);
     }

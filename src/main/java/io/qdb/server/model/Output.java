@@ -37,6 +37,9 @@ public class Output extends ModelObject {
     private int updateIntervalMs;
     private double warnAfter;
     private double errorAfter;
+    private String filter;
+    private String routingKey;
+    private String grep;
     private Map<String, Object> params;
 
     public Output() {
@@ -152,6 +155,30 @@ public class Output extends ModelObject {
 
     public void setErrorAfter(double errorAfter) {
         this.errorAfter = errorAfter;
+    }
+
+    public String getFilter() {
+        return filter;
+    }
+
+    public void setFilter(String filter) {
+        this.filter = filter;
+    }
+
+    public String getRoutingKey() {
+        return routingKey;
+    }
+
+    public void setRoutingKey(String routingKey) {
+        this.routingKey = routingKey;
+    }
+
+    public String getGrep() {
+        return grep;
+    }
+
+    public void setGrep(String grep) {
+        this.grep = grep;
     }
 
     public Map<String, Object> getParams() {

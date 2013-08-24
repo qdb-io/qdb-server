@@ -3,8 +3,6 @@ package io.qdb.server.filter;
 import io.qdb.server.model.Queue;
 
 import java.io.UnsupportedEncodingException;
-import java.nio.ByteBuffer;
-import java.nio.CharBuffer;
 import java.nio.charset.*;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
@@ -27,7 +25,7 @@ public class GrepMessageFilter implements MessageFilter {
         } catch (PatternSyntaxException e) {
             throw new IllegalArgumentException("Invalid grep regex [" + grep + "]: " + e.getMessage());
         }
-        String contentType = q.getContentType();
+        String contentType = q == null ? "UTF8" : q.getContentType();
 
         encoding = "UTF8";  // todo get this from contentType
         try {
@@ -38,7 +36,7 @@ public class GrepMessageFilter implements MessageFilter {
     }
 
     @Override
-    public Result accept(long timestamp, String routingKey, byte[] payload) {
+    public Result accept(long id, long timestamp, String routingKey, byte[] payload) {
         if (payload == null) return Result.CHECK_PAYLOAD;
         String s;
         try {

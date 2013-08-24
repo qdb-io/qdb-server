@@ -31,9 +31,9 @@ class GrepMessageFilterSpec extends Specification {
         f.init(q)
 
         expect:
-        f.accept(0, "", "abc".getBytes("UTF8")) == MessageFilter.Result.ACCEPT
-        f.accept(0, "", "abc0".getBytes("UTF8")) == MessageFilter.Result.ACCEPT
-        f.accept(0, "", "123".getBytes("UTF8")) == MessageFilter.Result.REJECT
+        f.accept(0, 0, "", "abc".getBytes("UTF8")) == MessageFilter.Result.ACCEPT
+        f.accept(0, 0, "", "abc0".getBytes("UTF8")) == MessageFilter.Result.ACCEPT
+        f.accept(0, 0, "", "123".getBytes("UTF8")) == MessageFilter.Result.REJECT
     }
 
     def "Match whole line"() {
@@ -41,8 +41,8 @@ class GrepMessageFilterSpec extends Specification {
         f.init(q)
 
         expect:
-        f.accept(0, "", "abc".getBytes("UTF8")) == MessageFilter.Result.ACCEPT
-        f.accept(0, "", "123\nabc".getBytes("UTF8")) == MessageFilter.Result.ACCEPT
-        f.accept(0, "", "abc0".getBytes("UTF8")) == MessageFilter.Result.REJECT
+        f.accept(0, 0, "", "abc".getBytes("UTF8")) == MessageFilter.Result.ACCEPT
+        f.accept(0, 0, "", "123\nabc".getBytes("UTF8")) == MessageFilter.Result.ACCEPT
+        f.accept(0, 0, "", "abc0".getBytes("UTF8")) == MessageFilter.Result.REJECT
     }
 }

@@ -18,13 +18,11 @@ package io.qdb.server.controller;
 
 import io.qdb.buffer.MessageBuffer;
 import io.qdb.buffer.MessageCursor;
-import io.qdb.server.databind.DataBinder;
 import io.qdb.server.databind.DateTimeParser;
 import io.qdb.server.filter.MessageFilter;
 import io.qdb.server.filter.MessageFilterFactory;
 import io.qdb.server.model.Queue;
 import io.qdb.server.queue.QueueManager;
-import org.simpleframework.http.Form;
 import org.simpleframework.http.Request;
 import org.simpleframework.http.Response;
 import org.slf4j.Logger;
@@ -37,7 +35,6 @@ import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 
 @Singleton
 public class MessageController extends CrudController {
@@ -322,9 +319,9 @@ public class MessageController extends CrudController {
             long timestamp = c.getTimestamp();
             String routingKey = c.getRoutingKey();
             byte[] payload = null;
-            MessageFilter.Result result = mf.accept(timestamp, routingKey, null);
+            MessageFilter.Result result = mf.accept(id, timestamp, routingKey, null);
             if (result == MessageFilter.Result.CHECK_PAYLOAD) {
-                result = mf.accept(timestamp, routingKey, payload = c.getPayload());
+                result = mf.accept(id, timestamp, routingKey, payload = c.getPayload());
             }
 
             if (result == MessageFilter.Result.ACCEPT) {

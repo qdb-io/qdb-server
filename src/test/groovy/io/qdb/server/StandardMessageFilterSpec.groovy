@@ -32,9 +32,9 @@ class StandardMessageFilterSpec extends Specification {
         f.init(q)
 
         expect:
-        f.accept(0, "bar", null) == MessageFilter.Result.REJECT
-        f.accept(0, "foo", null) == MessageFilter.Result.CHECK_PAYLOAD
-        f.accept(0, "foo", "abc".getBytes("UTF8")) == MessageFilter.Result.ACCEPT
-        f.accept(0, "foo", "123".getBytes("UTF8")) == MessageFilter.Result.REJECT
+        f.accept(0, 0, "bar", null) == MessageFilter.Result.REJECT
+        f.accept(0, 0, "foo", null) == MessageFilter.Result.CHECK_PAYLOAD
+        f.accept(0, 0, "foo", "abc".getBytes("UTF8")) == MessageFilter.Result.ACCEPT
+        f.accept(0, 0, "foo", "123".getBytes("UTF8")) == MessageFilter.Result.REJECT
     }
 }

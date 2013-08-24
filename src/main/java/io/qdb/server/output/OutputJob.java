@@ -21,6 +21,8 @@ import io.qdb.buffer.MessageCursor;
 import io.qdb.server.ExpectedIOException;
 import io.qdb.server.controller.JsonService;
 import io.qdb.server.databind.DataBinder;
+import io.qdb.server.filter.MessageFilter;
+import io.qdb.server.filter.MessageFilterFactory;
 import io.qdb.server.model.Database;
 import io.qdb.server.model.Output;
 import io.qdb.server.model.Queue;
@@ -41,6 +43,7 @@ public class OutputJob implements Runnable {
 
     private final OutputManager outputManager;
     private final OutputHandlerFactory handlerFactory;
+    private final MessageFilterFactory messageFilterFactory;
     private final QueueManager queueManager;
     private final Repository repo;
     private final JsonService jsonService;
@@ -52,10 +55,12 @@ public class OutputJob implements Runnable {
     private int errorCount;
     private boolean stopFlag;
 
-    public OutputJob(OutputManager outputManager, OutputHandlerFactory handlerFactory, QueueManager queueManager,
+    public OutputJob(OutputManager outputManager, OutputHandlerFactory handlerFactory,
+                     MessageFilterFactory messageFilterFactory, QueueManager queueManager,
                      Repository repo, JsonService jsonService, String oid) {
         this.outputManager = outputManager;
         this.handlerFactory = handlerFactory;
+        this.messageFilterFactory = messageFilterFactory;
         this.queueManager = queueManager;
         this.repo = repo;
         this.jsonService = jsonService;
@@ -114,6 +119,15 @@ public class OutputJob implements Runnable {
 
             outputPath = toPath(db, q, output);
 
+            MessageFilter messageFilter;
+            try {
+                messageFilter = messageFilterFactory.createFilter(output.getFilter(), output.getRoutingKey(),
+                        output.getGrep(), output.getParams(), q);
+            } catch (IllegalArgumentException e) {
+                log.error("Error creating filter for " + outputPath + ": " + e.getMessage(), e);
+                return;
+            }
+
             OutputHandler handler;
             try {
                 handler = handlerFactory.createHandler(output.getType());
@@ -147,7 +161,7 @@ public class OutputJob implements Runnable {
                         ++errorCount;
                     } else {
                         try {
-                            processMessages(buffer, handler);
+                            processMessages(buffer, handler, messageFilter);
                         } catch (Exception e) {
                             ++errorCount;
                             logError(e);
@@ -177,7 +191,7 @@ public class OutputJob implements Runnable {
      * Feed messages to our handler until we are closed, reach our to or toId or limit or our output is changed by
      * someone else.
      */
-    public void processMessages(MessageBuffer buffer, OutputHandler handler) throws Exception {
+    public void processMessages(MessageBuffer buffer, OutputHandler handler, MessageFilter mf) throws Exception {
         if (log.isDebugEnabled()) log.debug(outputPath + ": processing messages");
         MessageCursor cursor = null;
         try {
@@ -217,16 +231,24 @@ public class OutputJob implements Runnable {
                             completedId = id <= 0 ? currentId - 1 : id;
                             exitLoop = true;
                         } else {
-                            completedId = handler.processMessage(currentId, cursor.getRoutingKey(), timestamp,
-                                    cursor.getPayload());
-                            if (completedId == currentId) completedId = cursor.getNextId();
-                            else ++completedId;
-                            // limit must be checked after processing so cannot combine this code with reachedTo
-                            reachedLimit = limit > 0 && (--limit == 0);
-                            if (reachedLimit) {
-                                long id = handler.flushMessages();
-                                completedId = id <= 0 ? currentId - 1 : id;
-                                exitLoop = true;
+                            String routingKey = cursor.getRoutingKey();
+                            byte[] payload = null;
+                            MessageFilter.Result result = mf.accept(currentId, timestamp, routingKey, null);
+                            if (result == MessageFilter.Result.CHECK_PAYLOAD) {
+                                result = mf.accept(currentId, timestamp, routingKey, payload = cursor.getPayload());
+                            }
+                            if (result == MessageFilter.Result.ACCEPT) {
+                                completedId = handler.processMessage(currentId, routingKey, timestamp,
+                                        payload == null ? cursor.getPayload() : payload);
+                                if (completedId == currentId) completedId = cursor.getNextId();
+                                else ++completedId;
+                                // limit must be checked after processing so cannot combine this code with reachedTo
+                                reachedLimit = limit > 0 && (--limit == 0);
+                                if (reachedLimit) {
+                                    long id = handler.flushMessages();
+                                    completedId = id <= 0 ? currentId - 1 : id;
+                                    exitLoop = true;
+                                }
                             }
                         }
                         errorCount = 0; // we successfully processed a message
