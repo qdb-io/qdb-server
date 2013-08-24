@@ -45,12 +45,13 @@ public class MessageFilterFactory {
     /**
      * Create and initialize a MessageFilter instance. If filter is null then routingKey and grep are used to select
      * a filter if either or both are not null. Returns an 'accept all' filter if all 3 are null.
-     * @param filter built in short filter name (routingKey, grep or standard) or a fully qualified class name or null
      * @throws IllegalArgumentException on invalid parameters or filter init failure
      */
-    public MessageFilter createFilter(String filter, String routingKey, String grep, Map params, Queue q)
-            throws IllegalArgumentException {
+    public MessageFilter createFilter(Map params, Queue q) throws IllegalArgumentException {
+        String filter = (String)params.get("filter");
         if (filter == null || filter.length() == 0) {
+            String routingKey = (String)params.get("routingKey");
+            String grep = (String)params.get("grep");
             if (routingKey != null && routingKey.length() > 0) {
                 if (grep != null && grep.length() > 0) filter = "standard";
                 else filter = "routingKey";
@@ -61,9 +62,7 @@ public class MessageFilterFactory {
         MessageFilter mf;
         if (filter != null) {
             mf = createFilter(filter);
-            if (params != null && !params.isEmpty()) {
-                new DataBinder(jsonService).ignoreInvalidFields(true).bind(params, mf).check();
-            }
+            new DataBinder(jsonService).ignoreInvalidFields(true).bind(params, mf).check();
             mf.init(q);
         } else {
             mf = MessageFilter.NULL;

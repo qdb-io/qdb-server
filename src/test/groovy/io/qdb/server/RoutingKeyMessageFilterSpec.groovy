@@ -132,4 +132,13 @@ class RoutingKeyMessageFilterSpec extends Specification {
         f.accept(0, 0, "foo", null) == MessageFilter.Result.REJECT
         f.accept(0, 0, "foo.bar", null) == MessageFilter.Result.REJECT
     }
+
+    def "Match one or more words in beginning"() {
+        f.routingKey = "#.bar"
+        f.init(null)
+
+        expect:
+        f.accept(0, 0, "foo.bar", null) == MessageFilter.Result.ACCEPT
+        f.accept(0, 0, "foo.baz", null) == MessageFilter.Result.REJECT
+    }
 }

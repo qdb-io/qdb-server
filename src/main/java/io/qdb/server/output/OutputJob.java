@@ -16,6 +16,7 @@
 
 package io.qdb.server.output;
 
+import com.fasterxml.jackson.databind.util.BeanUtil;
 import io.qdb.buffer.MessageBuffer;
 import io.qdb.buffer.MessageCursor;
 import io.qdb.server.ExpectedIOException;
@@ -24,6 +25,7 @@ import io.qdb.server.databind.DataBinder;
 import io.qdb.server.filter.MessageFilter;
 import io.qdb.server.filter.MessageFilterFactory;
 import io.qdb.server.model.Database;
+import io.qdb.server.model.ModelObject;
 import io.qdb.server.model.Output;
 import io.qdb.server.model.Queue;
 import io.qdb.server.queue.QueueManager;
@@ -32,6 +34,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -121,8 +124,7 @@ public class OutputJob implements Runnable {
 
             MessageFilter messageFilter;
             try {
-                messageFilter = messageFilterFactory.createFilter(output.getFilter(), output.getRoutingKey(),
-                        output.getGrep(), output.getParams(), q);
+                messageFilter = messageFilterFactory.createFilter(output.toMap(), q);
             } catch (IllegalArgumentException e) {
                 log.error("Error creating filter for " + outputPath + ": " + e.getMessage(), e);
                 return;
@@ -249,6 +251,9 @@ public class OutputJob implements Runnable {
                                     completedId = id <= 0 ? currentId - 1 : id;
                                     exitLoop = true;
                                 }
+                            } else {
+                                // don't reprocess rejected messages if output restarts
+                                if (completedId == currentId) completedId = cursor.getNextId();
                             }
                         }
                         errorCount = 0; // we successfully processed a message

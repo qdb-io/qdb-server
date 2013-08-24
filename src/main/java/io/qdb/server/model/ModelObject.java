@@ -18,6 +18,11 @@ package io.qdb.server.model;
 
 import com.rits.cloning.Cloner;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * Base class for objects in our model. Supports equals (class and id must match) and hashcode (on id).
  * Serializable to/from JSON with Genson. All subclasses have a deepCopy method.
@@ -80,5 +85,30 @@ public abstract class ModelObject implements Comparable<ModelObject>, Cloneable 
     @Override
     public int compareTo(ModelObject o) {
         return id.compareTo(o.id);
+    }
+
+    /**
+     * Return this objects properties in a map. If the object has a params property then these are included in the
+     * map and not nested.
+     */
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> toMap() {
+        HashMap<String, Object> ans = new HashMap<String, Object>();
+        for (Method m : getClass().getMethods()) {
+            String name = m.getName();
+            if (!name.startsWith("get") || m.getParameterTypes().length > 0) continue;
+            name = Character.toLowerCase(name.charAt(3)) + name.substring(4);
+            Object v;
+            try {
+                v = m.invoke(this);
+            } catch (Exception e) { // this shouldn't happen
+                throw new IllegalArgumentException(e.toString(), e);
+            }
+            if (v != null) {
+                if ("params".equals(name)) ans.putAll((Map)v);
+                else ans.put(name, v);
+            }
+        }
+        return ans;
     }
 }

@@ -368,6 +368,7 @@ public class OutputController extends CrudController {
             if (dto.routingKey != null && !dto.routingKey.equals(o.getRoutingKey())) {
                 if (dto.routingKey.length() > 0) {
                     RoutingKeyMessageFilter mf = new RoutingKeyMessageFilter();
+                    mf.routingKey = dto.routingKey;
                     try {
                         mf.init(null);
                     } catch (IllegalArgumentException e) {
@@ -382,6 +383,7 @@ public class OutputController extends CrudController {
             if (dto.grep != null && !dto.grep.equals(o.getGrep())) {
                 if (dto.grep.length() > 0) {
                     GrepMessageFilter mf = new GrepMessageFilter();
+                    mf.grep = dto.grep;
                     try {
                         mf.init(null);
                     } catch (IllegalArgumentException e) {

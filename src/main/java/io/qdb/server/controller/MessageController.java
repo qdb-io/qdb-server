@@ -254,8 +254,7 @@ public class MessageController extends CrudController {
 
         MessageFilter mf;
         try {
-            mf = messageFilterFactory.createFilter(call.getString("filter"), call.getString("routingKey"),
-                    call.getString("grep"), call.getRequest().getQuery(), q);
+            mf = messageFilterFactory.createFilter(call.getRequest().getQuery(), q);
         } catch (IllegalArgumentException e) {
             call.setCode(422, e.getMessage());
             return;
