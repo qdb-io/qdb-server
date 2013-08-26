@@ -29,13 +29,14 @@ public class RoutingKeyMessageFilter implements MessageFilter {
             String[] a = routingKey.split("\\.");
             StringBuilder b = new StringBuilder();
             for (int i = 0; i < a.length; i++) {
-                if (i > 0) b.append("\\.");
                 String w = a[i];
-                if ("#".equals(w)) {            // match one or more words
-                    b.append(".*");
+                if ("#".equals(w)) {            // match zero or more words
+                    b.append("([^\\.]+[\\.]?)*");
                 } else if ("*".equals(w)) {     // match any one word
+                    if (i > 0) b.append("\\.");
                     b.append("[^\\.]*");
                 } else {                        // match exactly
+                    if (i > 0) b.append("\\.");
                     for (int j = 0, n = w.length(); j < n; j++) {
                         b.append("\\u");
                         int c = w.charAt(j);

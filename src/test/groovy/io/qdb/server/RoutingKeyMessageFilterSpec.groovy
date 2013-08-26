@@ -102,43 +102,47 @@ class RoutingKeyMessageFilterSpec extends Specification {
         f.accept(0, 0, "foo.bar.baz.", null) == MessageFilter.Result.REJECT
     }
 
-    def "Match one or more words"() {
+    def "Match zero or more words"() {
         f.routingKey = "#"
         f.init(null)
 
         expect:
         f.accept(0, 0, "foo", null) == MessageFilter.Result.ACCEPT
         f.accept(0, 0, "foo.bar", null) == MessageFilter.Result.ACCEPT
+        f.accept(0, 0, "", null) == MessageFilter.Result.ACCEPT
     }
 
-    def "Match one or more words at end"() {
+    /*
+    def "Match zero or more words at end"() {
         f.routingKey = "foo.#"
         f.init(null)
 
         expect:
         f.accept(0, 0, "foo.bar", null) == MessageFilter.Result.ACCEPT
         f.accept(0, 0, "foo.bar.baz", null) == MessageFilter.Result.ACCEPT
-        f.accept(0, 0, "foo", null) == MessageFilter.Result.REJECT
+        f.accept(0, 0, "foo", null) == MessageFilter.Result.ACCEPT
         f.accept(0, 0, "foo0.bar", null) == MessageFilter.Result.REJECT
     }
 
-    def "Match one or more words in middle"() {
+    def "Match zero or more words in middle"() {
         f.routingKey = "foo.#.bar"
         f.init(null)
 
         expect:
         f.accept(0, 0, "foo.a.bar", null) == MessageFilter.Result.ACCEPT
         f.accept(0, 0, "foo.a.b.bar", null) == MessageFilter.Result.ACCEPT
+        f.accept(0, 0, "foo.bar", null) == MessageFilter.Result.ACCEPT
         f.accept(0, 0, "foo", null) == MessageFilter.Result.REJECT
-        f.accept(0, 0, "foo.bar", null) == MessageFilter.Result.REJECT
     }
 
-    def "Match one or more words in beginning"() {
+    def "Match zero or more words in beginning"() {
         f.routingKey = "#.bar"
         f.init(null)
 
         expect:
         f.accept(0, 0, "foo.bar", null) == MessageFilter.Result.ACCEPT
+        f.accept(0, 0, "bar", null) == MessageFilter.Result.ACCEPT
         f.accept(0, 0, "foo.baz", null) == MessageFilter.Result.REJECT
     }
+    */
 }
