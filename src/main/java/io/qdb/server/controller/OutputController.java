@@ -200,13 +200,17 @@ public class OutputController extends CrudController {
             boolean borg = call.getBoolean("borg");
             try {
                 Date end = mb.getMostRecentTimestamp();
-                if (dto.to != null && dto.to.before(end)) end = dto.to;
-                if (dto.at != null) {
-                    long ms = end.getTime() - dto.at.getTime();
-                    dto.behindBy = borg ? ms : DurationParser.formatHumanMs(ms);
+                if (end != null) {
+                    if (dto.to != null && dto.to.before(end)) end = dto.to;
+                    if (dto.at != null) {
+                        long ms = end.getTime() - dto.at.getTime();
+                        dto.behindBy = borg ? ms : DurationParser.formatHumanMs(ms);
+                    }
+                    dto.behindByBytes = mb.getNextId() - (dto.atId == null ? dto.fromId == null ? mb.getOldestId() : dto.fromId : dto.atId);
+                    if (dto.behindByBytes < 0) dto.behindByBytes = 0L;
+                } else {
+                    dto.behindByBytes = 0L;
                 }
-                dto.behindByBytes = mb.getNextId() - (dto.atId == null ? dto.fromId == null ? mb.getOldestId() : dto.fromId : dto.atId);
-                if (dto.behindByBytes < 0) dto.behindByBytes = 0L;
                 dto.behindByPercentage = Math.round(dto.behindByBytes * 1000.0 / mb.getMaxSize()) / 10.0;
 
                 Status status = outputStatusMonitor.getStatus(o);
