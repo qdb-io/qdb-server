@@ -89,7 +89,12 @@ public class RabbitMQOutputHandler extends OutputHandlerAdapter implements Shutd
     @Override
     public void close() throws IOException {
         // this method cannot be synchronized or we get deadlock with shutdownCompleted
-        if (con != null) con.close();
+        if (con != null) {
+            try {
+                con.close();
+            } catch (AlreadyClosedException ignore) {
+            }
+        }
     }
 
     protected synchronized Channel ensureChannel() throws Exception {

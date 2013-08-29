@@ -98,26 +98,37 @@ public class OutputJob implements Runnable {
         log.error(this + ": " + msg, t instanceof ExpectedIOException ? null : t);
     }
 
-    private void mainLoop() throws Exception {
+    private void mainLoop() {
         while (!isStopFlag()) {
 
-            output = repo.findOutput(oid);
-            if (output == null) {
-                if (log.isDebugEnabled()) log.debug("Output [" + oid + "] does not exist");
-                return;
-            }
-            if (!output.isEnabled()) return;
+            Queue q;
+            Database db;
+            try {
+                output = repo.findOutput(oid);
+                if (output == null) {
+                    if (log.isDebugEnabled()) log.debug("Output [" + oid + "] does not exist");
+                    return;
+                }
+                if (!output.isEnabled()) return;
 
-            Queue q = repo.findQueue(output.getQueue());
-            if (q == null) {
-                if (log.isDebugEnabled()) log.debug("Queue [" + output.getQueue() + "] does not exist");
-                return;
-            }
+                q = repo.findQueue(output.getQueue());
+                if (q == null) {
+                    if (log.isDebugEnabled()) log.debug("Queue [" + output.getQueue() + "] does not exist");
+                    return;
+                }
 
-            Database db = repo.findDatabase(q.getDatabase());
-            if (db == null) {
-                if (log.isDebugEnabled()) log.debug("Database [" + q.getDatabase() + "] does not exist");
-                return;
+                db = repo.findDatabase(q.getDatabase());
+                if (db == null) {
+                    if (log.isDebugEnabled()) log.debug("Database [" + q.getDatabase() + "] does not exist");
+                    return;
+                }
+            } catch (IOException e) {   // this shouldn't happen but trap anyway as we don't want this job to die
+                log.error(this + ": " + e, e);
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException ignore) {
+                }
+                continue;   // hope the error has gone away
             }
 
             outputPath = toPath(db, q, output);
@@ -126,7 +137,7 @@ public class OutputJob implements Runnable {
             try {
                 messageFilter = messageFilterFactory.createFilter(output.toMap(), q);
             } catch (IllegalArgumentException e) {
-                log.error("Error creating filter for " + outputPath + ": " + e.getMessage(), e);
+                log.error("Error creating filter for " + outputPath + ": " + e.getMessage());
                 return;
             }
 
@@ -134,7 +145,7 @@ public class OutputJob implements Runnable {
             try {
                 handler = handlerFactory.createHandler(output.getType());
             } catch (IllegalArgumentException e) {
-                log.error("Error creating handler for " + outputPath + ": " + e.getMessage(), e);
+                log.error("Error creating handler for " + outputPath + ": " + e.getMessage());
                 return;
             }
 
@@ -173,7 +184,7 @@ public class OutputJob implements Runnable {
             } finally {
                 try {
                     handler.close();
-                } catch (IOException e) {
+                } catch (Exception e) {
                     log.error(this + ": Error closing handler: " + e, e);
                 }
             }
