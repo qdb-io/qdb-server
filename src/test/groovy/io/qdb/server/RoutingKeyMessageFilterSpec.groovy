@@ -94,6 +94,17 @@ class RoutingKeyMessageFilterSpec extends Specification {
         f.accept(0, 0, "foo.bar.baz0", null) == MessageFilter.Result.REJECT
     }
 
+    def "Match any single word at beginning"() {
+        f.routingKey = "*.bar"
+        f.init(null)
+
+        expect:
+        f.accept(0, 0, "foo.bar", null) == MessageFilter.Result.ACCEPT
+        f.accept(0, 0, ".bar", null) == MessageFilter.Result.ACCEPT
+        f.accept(0, 0, "bar", null) == MessageFilter.Result.REJECT
+        f.accept(0, 0, "foo.0bar", null) == MessageFilter.Result.REJECT
+    }
+
     def "Match any two words"() {
         f.routingKey = "foo.*.*"
         f.init(null)
@@ -137,7 +148,6 @@ class RoutingKeyMessageFilterSpec extends Specification {
         f.accept(0, 0, "foo", null) == MessageFilter.Result.REJECT
     }
 
-    /*
     def "Match zero or more words in beginning"() {
         f.routingKey = "#.bar"
         f.init(null)
@@ -147,5 +157,4 @@ class RoutingKeyMessageFilterSpec extends Specification {
         f.accept(0, 0, "bar", null) == MessageFilter.Result.ACCEPT
         f.accept(0, 0, "foo.baz", null) == MessageFilter.Result.REJECT
     }
-    */
 }

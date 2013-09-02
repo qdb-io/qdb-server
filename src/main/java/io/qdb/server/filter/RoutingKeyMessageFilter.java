@@ -42,7 +42,10 @@ public class RoutingKeyMessageFilter implements MessageFilter {
                         if (prev != -1) b.append("(\\..*)?");
                         else b.append(".*");
                     } else {
-                        if (prev != -1) b.append("\\.");
+                        if (prev != -1) {
+                            if (prev == '#') b.append("(\\.|^)");
+                            else b.append("\\.");
+                        }
                         b.append(term);
 //                    for (int j = 0, n = term.length(); j < n; j++) {
 //                        b.append("\\u");
