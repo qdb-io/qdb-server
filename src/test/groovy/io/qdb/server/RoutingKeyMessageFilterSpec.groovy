@@ -19,7 +19,9 @@ package io.qdb.server
 import io.qdb.server.filter.MessageFilter
 import io.qdb.server.filter.RoutingKeyMessageFilter
 import spock.lang.Specification
+import spock.lang.Stepwise
 
+@Stepwise
 class RoutingKeyMessageFilterSpec extends Specification {
 
     RoutingKeyMessageFilter f = new RoutingKeyMessageFilter()
@@ -65,6 +67,7 @@ class RoutingKeyMessageFilterSpec extends Specification {
         f.init(null)
 
         expect:
+        f.accept(0, 0, "", null) == MessageFilter.Result.REJECT
         f.accept(0, 0, "foo", null) == MessageFilter.Result.ACCEPT
         f.accept(0, 0, "foo.bar", null) == MessageFilter.Result.REJECT
     }
@@ -112,7 +115,6 @@ class RoutingKeyMessageFilterSpec extends Specification {
         f.accept(0, 0, "", null) == MessageFilter.Result.ACCEPT
     }
 
-    /*
     def "Match zero or more words at end"() {
         f.routingKey = "foo.#"
         f.init(null)
@@ -135,6 +137,7 @@ class RoutingKeyMessageFilterSpec extends Specification {
         f.accept(0, 0, "foo", null) == MessageFilter.Result.REJECT
     }
 
+    /*
     def "Match zero or more words in beginning"() {
         f.routingKey = "#.bar"
         f.init(null)

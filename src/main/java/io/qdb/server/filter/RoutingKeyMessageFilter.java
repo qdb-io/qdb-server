@@ -26,29 +26,39 @@ public class RoutingKeyMessageFilter implements MessageFilter {
             regex = routingKey.substring(1, n);
         } else {
             // convert RabbitMQ style matching expression to regex
-            String[] a = routingKey.split("\\.");
-            StringBuilder b = new StringBuilder();
-            for (int i = 0; i < a.length; i++) {
-                String w = a[i];
-                if ("#".equals(w)) {            // match zero or more words
-                    b.append("([^\\.]+[\\.]?)*");
-                } else if ("*".equals(w)) {     // match any one word
-                    if (i > 0) b.append("\\.");
-                    b.append("[^\\.]*");
-                } else {                        // match exactly
-                    if (i > 0) b.append("\\.");
-                    for (int j = 0, n = w.length(); j < n; j++) {
-                        b.append("\\u");
-                        int c = w.charAt(j);
-                        b.append(HEX[(c >> 12) & 0xf]);
-                        b.append(HEX[(c >> 8) & 0xf]);
-                        b.append(HEX[(c >> 4) & 0xf]);
-                        b.append(HEX[c & 0xf]);
+            if ("*".equals(routingKey)) {   // special case where * does not match an empty word
+                regex = "[^\\.]+";
+            } else {
+                String[] a = routingKey.split("\\.");
+                StringBuilder b = new StringBuilder();
+                int prev = -1;
+                for (String term : a) {
+                    int current = term.length() == 0 ? 0 : term.charAt(0);
+                    if (current == '*') {
+                        if (prev != -1) b.append("\\.");
+                        b.append("[^\\.]*");
+                    } else if (current == '#') {
+                        if (prev == '#') continue; // eliminate consecutive '#'
+                        if (prev != -1) b.append("(\\..*)?");
+                        else b.append(".*");
+                    } else {
+                        if (prev != -1) b.append("\\.");
+                        b.append(term);
+//                    for (int j = 0, n = term.length(); j < n; j++) {
+//                        b.append("\\u");
+//                        int c = term.charAt(j);
+//                        b.append(HEX[(c >> 12) & 0xf]);
+//                        b.append(HEX[(c >> 8) & 0xf]);
+//                        b.append(HEX[(c >> 4) & 0xf]);
+//                        b.append(HEX[c & 0xf]);
+//                    }
                     }
+                    prev = current;
                 }
+                regex = b.toString();
             }
-            regex = b.toString();
         }
+        System.out.println("routingKey " + routingKey + " -> /" + regex + "/");
         try {
             pattern = Pattern.compile(regex);
         } catch (PatternSyntaxException e) {
