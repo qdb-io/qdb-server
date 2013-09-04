@@ -14,8 +14,6 @@ public class RoutingKeyMessageFilter implements MessageFilter {
 
     private Pattern pattern;
 
-    private static final char[] HEX = new char[]{'0','1','2','3','4','5','6','7','8','9','a','b','c','d','e','f'};
-
     @Override
     public void init(Queue q) throws IllegalArgumentException {
         if (routingKey == null || routingKey.length() == 0) throw new IllegalArgumentException("routingKey is required");
@@ -35,7 +33,10 @@ public class RoutingKeyMessageFilter implements MessageFilter {
                 for (String term : a) {
                     int current = term.length() == 0 ? 0 : term.charAt(0);
                     if (current == '*') {
-                        if (prev != -1) b.append("\\.");
+                        if (prev != -1) {
+                            if (prev == '#') b.append("(\\.|^)");
+                            else b.append("\\.");
+                        }
                         b.append("[^\\.]*");
                     } else if (current == '#') {
                         if (prev == '#') continue; // eliminate consecutive '#'
@@ -46,22 +47,13 @@ public class RoutingKeyMessageFilter implements MessageFilter {
                             if (prev == '#') b.append("(\\.|^)");
                             else b.append("\\.");
                         }
-                        b.append(term);
-//                    for (int j = 0, n = term.length(); j < n; j++) {
-//                        b.append("\\u");
-//                        int c = term.charAt(j);
-//                        b.append(HEX[(c >> 12) & 0xf]);
-//                        b.append(HEX[(c >> 8) & 0xf]);
-//                        b.append(HEX[(c >> 4) & 0xf]);
-//                        b.append(HEX[c & 0xf]);
-//                    }
+                        b.append(Pattern.quote(term));
                     }
                     prev = current;
                 }
                 regex = b.toString();
             }
         }
-        System.out.println("routingKey " + routingKey + " -> /" + regex + "/");
         try {
             pattern = Pattern.compile(regex);
         } catch (PatternSyntaxException e) {
