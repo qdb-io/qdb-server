@@ -1,6 +1,7 @@
 package io.qdb.server.filter;
 
 import io.qdb.server.model.Queue;
+import org.simpleframework.http.parse.ContentParser;
 
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.*;
@@ -25,13 +26,15 @@ public class GrepMessageFilter implements MessageFilter {
         } catch (PatternSyntaxException e) {
             throw new IllegalArgumentException("Invalid grep regex [" + grep + "]: " + e.getMessage());
         }
-        String contentType = q == null ? "UTF8" : q.getContentType();
 
-        encoding = "UTF8";  // todo get this from contentType
+        if (q != null) encoding = new ContentParser(q.getContentType()).getCharset();
+
+        if (encoding == null || encoding.length() == 0) encoding = "UTF8";
         try {
             Charset.forName(encoding);
         } catch (Exception e) {
-            throw new IllegalArgumentException("Invalid queue charset in contentType [" + contentType + "]");
+            throw new IllegalArgumentException("Invalid queue charset in contentType [" +
+                    (q == null ? "(no queue?)" : q.getContentType()) + "]");
         }
     }
 

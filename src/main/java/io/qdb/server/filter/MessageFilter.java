@@ -16,7 +16,7 @@ public interface MessageFilter {
 
     /**
      * Return {@link Result#ACCEPT} to process the message or {@link Result#REJECT} to skip it. The first call to
-     * this method for a message may made before the payload is read and payload will be null. Return
+     * this method for a message will be made before the payload is read and payload will be null. Return
      * {@link Result#CHECK_PAYLOAD} if the payload is required and a second call will be made once the payload has
      * been read.
      */

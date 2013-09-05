@@ -23,6 +23,7 @@ import io.qdb.server.filter.MessageFilter;
 import io.qdb.server.filter.MessageFilterFactory;
 import io.qdb.server.model.Queue;
 import io.qdb.server.queue.QueueManager;
+import org.simpleframework.http.ContentType;
 import org.simpleframework.http.Request;
 import org.simpleframework.http.Response;
 import org.slf4j.Logger;
@@ -259,6 +260,8 @@ public class MessageController extends CrudController {
             call.setCode(422, e.getMessage());
             return;
         }
+
+        ContentType ct = call.getRequest().getContentType();
 
         int timeoutMs = call.getInt("timeoutMs", 0);
         byte[] keepAlive = call.getUTF8Bytes("keepAlive", "\n");
