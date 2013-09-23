@@ -20,8 +20,6 @@ import com.google.inject.Injector;
 import io.qdb.server.controller.JsonService;
 import io.qdb.server.databind.DataBinder;
 import io.qdb.server.model.Queue;
-import io.qdb.server.output.OutputHandler;
-import io.qdb.server.output.RabbitMQOutputHandler;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
