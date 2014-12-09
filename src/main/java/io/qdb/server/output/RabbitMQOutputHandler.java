@@ -32,6 +32,7 @@ public class RabbitMQOutputHandler extends OutputHandlerAdapter implements Shutd
     public String exchange;
     public String[] queues;
     public int heartbeat = 30;
+    public boolean persistentMessages;
 
     protected String outputPath;
     protected ConnectionFactory connectionFactory;
@@ -41,6 +42,8 @@ public class RabbitMQOutputHandler extends OutputHandlerAdapter implements Shutd
     protected String exchangeType;
     protected boolean exchangeDurable;
     protected boolean[] queueDurable;
+
+    protected AMQP.BasicProperties messageProperties;
 
     @SuppressWarnings("unchecked")
     @Override
@@ -73,6 +76,11 @@ public class RabbitMQOutputHandler extends OutputHandlerAdapter implements Shutd
         exchangeType = toks.length >= 2 ? toks[1] : "fanout";
         exchangeDurable = toks.length < 3 || "true".equals(toks[2]);
 
+        if (persistentMessages) {
+            messageProperties = new AMQP.BasicProperties(null, null, null, 2, 0, null, null, null, null, null, null,
+                    null, null, null);
+        }
+
         connectionFactory = new ConnectionFactory();
         connectionFactory.setUri(output.getUrl());
         connectionFactory.setRequestedHeartbeat(heartbeat);
@@ -82,7 +90,7 @@ public class RabbitMQOutputHandler extends OutputHandlerAdapter implements Shutd
     @Override
     public long processMessage(long messageId, String routingKey, long timestamp, byte[] payload) throws Exception {
         if (log.isDebugEnabled()) log.debug(outputPath + ": Publishing " + messageId);
-        ensureChannel().basicPublish(exchange, routingKey, null, payload);
+        ensureChannel().basicPublish(exchange, routingKey, messageProperties, payload);
         return messageId;
     }
 
