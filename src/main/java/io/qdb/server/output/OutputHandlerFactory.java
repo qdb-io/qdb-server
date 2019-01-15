@@ -44,18 +44,17 @@ public class OutputHandlerFactory {
         Class cls;
         if ("rabbitmq".equals(type)) {
             cls = RabbitMQOutputHandler.class;
-        } else if (type.contains(".")) {
+        } else {
+            String clsName = "pulsar".equals(type) ? "io.qdb.server.output.PulsarOutputHandler" : type;
             try {
-                cls = Class.forName(type);
+                cls = Class.forName(clsName);
             } catch (ClassNotFoundException e) {
-                throw new IllegalArgumentException("Output type class not found [" + type + "]");
+                throw new IllegalArgumentException("Output type class not found [" + clsName + "]");
             }
             if (!OutputHandler.class.isAssignableFrom(cls)) {
-                throw new IllegalArgumentException("Output type [" + type + "] does not implement " +
+                throw new IllegalArgumentException("Output type [" + clsName + "] does not implement " +
                         OutputHandler.class.getName());
             }
-        } else {
-            throw new IllegalArgumentException("Unknown output type [" + type + "]");
         }
         try {
             return (OutputHandler)injector.getInstance(cls);

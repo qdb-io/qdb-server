@@ -24,4 +24,6 @@
     <root level="debug">
         <appender-ref ref="STDOUT" />
     </root>
+
+    <logger name="org.apache.pulsar" level="WARN"/>
 </configuration>
