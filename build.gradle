@@ -73,7 +73,10 @@ tasks.jar {
                 'Implementation-Version': "${version} ${now}",
                 'Implementation-Vendor': 'http://qdb.io/')
     }
-    from configurations.runtime.asFileTree.files.collect { zipTree(it) }
+    from configurations.runtime.asFileTree.files.findAll { !it.toString().contains("bouncy") }.collect {
+        //println("" + it)
+        return zipTree(it)
+    }
 }
 
 task dist(dependsOn: jar, type: Tar) {
