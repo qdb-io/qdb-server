@@ -254,7 +254,7 @@ public class OutputJob implements Runnable {
                                 completedId = handler.processMessage(currentId, routingKey, timestamp,
                                         payload == null ? cursor.getPayload() : payload);
                                 if (completedId == currentId) completedId = cursor.getNextId();
-                                else ++completedId;
+                                else if (completedId > 0) ++completedId;
                                 // limit must be checked after processing so cannot combine this code with reachedTo
                                 reachedLimit = limit > 0 && (--limit == 0);
                                 if (reachedLimit) {
@@ -281,6 +281,7 @@ public class OutputJob implements Runnable {
                     errorCount = 0;
                 }
 
+                if (completedId == 0) completedId = atId;
                 if ((completedId != atId || reachedTo || reachedLimit) && (exitLoop || updateIntervalMs <= 0
                         || System.currentTimeMillis() - lastUpdate >= updateIntervalMs)) {
                     synchronized (repo) {
