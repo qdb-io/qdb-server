@@ -80,11 +80,11 @@ public class JsonService {
 
     BorgOrHumanSerializer<Integer> integerSerializer = new BorgOrHumanSerializer<Integer>(Integer.TYPE,
             new HumanNumberSerializer<Integer>(Integer.TYPE),
-            new NumberSerializers.IntegerSerializer());
+            new NumberSerializers.IntegerSerializer(Integer.TYPE));
 
     BorgOrHumanSerializer<Long> longSerializer = new BorgOrHumanSerializer<Long>(Long.TYPE,
             new HumanNumberSerializer<Long>(Long.TYPE),
-            new NumberSerializers.LongSerializer());
+            new NumberSerializers.LongSerializer(Long.TYPE));
 
     @Inject
     @SuppressWarnings("deprecation")
@@ -149,12 +149,13 @@ public class JsonService {
     /**
      * Chooses between human and borg serializers based on the name of the property being serialized.
      */
+    @SuppressWarnings("unchecked")
     private static class BorgOrHumanSerializer<T> extends StdSerializer<T> implements ContextualSerializer {
 
         private final JsonSerializer<T> human;
-        private final JsonSerializer<T> borg;
+        private final JsonSerializer<Object> borg;
 
-        public BorgOrHumanSerializer(Class<T> t, JsonSerializer<T> human, JsonSerializer<T> borg) {
+        public BorgOrHumanSerializer(Class<T> t, JsonSerializer<T> human, JsonSerializer<Object> borg) {
             super(t);
             this.human = human;
             this.borg = borg;
@@ -168,7 +169,7 @@ public class JsonService {
                     return human;
                 }
             }
-            return borg;
+            return (JsonSerializer<T>)borg;
         }
 
         @Override
