@@ -44,8 +44,12 @@ dependencies {
     compile 'me.moocar:logback-gelf:0.9.6p2'
     compile 'uk.com.robust-it:cloning:1.9.0'
     compile 'com.github.mfornos:humanize-slim:1.1.2'
-    compile 'org.apache.pulsar:pulsar-client:2.6.1'
-    compile 'org.apache.pulsar:pulsar-client-admin:2.6.1'
+    compile ('org.apache.pulsar:pulsar-client:2.6.1') {
+        exclude(group: "com.fasterxml.jackson.core", module: "jackson-databind")
+    }
+    compile ('org.apache.pulsar:pulsar-client-admin:2.6.1') {
+        exclude(group: "com.fasterxml.jackson.core", module: "jackson-databind")
+    }
 
     testCompile "org.codehaus.groovy:groovy-all:1.8.6"
     testCompile "org.spockframework:spock-core:0.6-groovy-1.8"
