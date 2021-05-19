@@ -105,9 +105,10 @@ public class MessageController extends CrudController {
     private void createSingle(Call call, MessageBuffer mb) throws IOException {
         Request request = call.getRequest();
         String routingKey = request.getParameter("routingKey");
+        long requestTimeStamp = call.getLong("timeStampMsec", -1);
         int contentLength = request.getContentLength();
         long id = 0;
-        long timestamp = System.currentTimeMillis();
+        long timestamp = requestTimeStamp == -1 ? System.currentTimeMillis() : requestTimeStamp;
         IllegalArgumentException err = null;
         try {
             if (contentLength < 0) {
